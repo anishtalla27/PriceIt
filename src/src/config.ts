@@ -7,7 +7,7 @@ export const API_KEY = "YOUR_API_KEY_HERE";
 export const AI_CONFIG = {
   endpoint: "https://api.openai.com/v1/chat/completions",
   model: "gpt-3.5-turbo",
-  maxTokens: 2000,
+  maxTokens: 10000,
   temperature: 0.7,
 };
 
