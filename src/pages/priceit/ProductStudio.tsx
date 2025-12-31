@@ -4,6 +4,7 @@ import { FaPalette, FaPencilAlt, FaFileAlt, FaStar, FaUsers, FaCommentDots } fro
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
 import ProgressBar from '../../components/priceit/ProgressBar'
+import { callPriceItAI } from '../../priceit/priceitAiClient'
 
 const ProductStudio = () => {
   const { state, updateProductName, updateDescription, updateFeature, updateTargetCustomer } = useAppState()
@@ -70,6 +71,21 @@ const ProductStudio = () => {
   }
 
   const currentQuestion = productCards.find(card => card.id === selectedCard)?.question || 'Pick a card above to get started!'
+
+  // Test function for AI integration
+  const handleTestAI = async () => {
+    try {
+      console.log('Testing PriceIt AI...')
+      const response = await callPriceItAI([
+        { role: 'user', content: 'Suggest three fun product ideas for kids who like drawing.' }
+      ])
+      console.log('AI Response:', response)
+      alert(`AI Response:\n\n${response}`)
+    } catch (error) {
+      console.error('AI Test Error:', error)
+      alert('Error testing AI. Check console for details.')
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white overflow-hidden">
@@ -192,6 +208,17 @@ const ProductStudio = () => {
           Step 1 of 5: Building Your Product
         </p>
       </motion.div>
+
+      {/* Hidden Test Button for AI Integration */}
+      {process.env.NODE_ENV === 'development' && (
+        <button
+          onClick={handleTestAI}
+          className="fixed bottom-4 right-4 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-xs opacity-50 hover:opacity-100 transition-opacity z-50"
+          title="Test AI Integration (Dev Only)"
+        >
+          Test AI
+        </button>
+      )}
       </div>
     </div>
   )
