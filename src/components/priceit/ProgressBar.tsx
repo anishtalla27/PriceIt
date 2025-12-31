@@ -44,6 +44,9 @@ export default function ProgressBar() {
     return null
   }
 
+  // Debug: Log to see if component is rendering
+  console.log('ProgressBar rendering for path:', location.pathname, 'currentStageIndex:', currentStageIndex)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}

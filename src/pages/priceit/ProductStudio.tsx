@@ -87,6 +87,9 @@ const ProductStudio = () => {
     }
   }
 
+  // Debug: Log to verify component is rendering
+  console.log('ProductStudio rendering, path:', window.location.pathname)
+
   return (
     <div className="min-h-screen flex flex-col bg-white overflow-hidden">
       <ProgressBar />
@@ -209,16 +212,15 @@ const ProductStudio = () => {
         </p>
       </motion.div>
 
-      {/* Hidden Test Button for AI Integration */}
-      {process.env.NODE_ENV === 'development' && (
-        <button
-          onClick={handleTestAI}
-          className="fixed bottom-4 right-4 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-xs opacity-50 hover:opacity-100 transition-opacity z-50"
-          title="Test AI Integration (Dev Only)"
-        >
-          Test AI
-        </button>
-      )}
+      {/* Test Button for AI Integration - Always visible for testing */}
+      <button
+        onClick={handleTestAI}
+        className="fixed bottom-4 right-4 bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-full text-base font-semibold shadow-xl z-[9999] transition-all hover:scale-105"
+        title="Test AI Integration"
+        style={{ position: 'fixed', bottom: '16px', right: '16px' }}
+      >
+        🤖 Test AI
+      </button>
       </div>
     </div>
   )
