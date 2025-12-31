@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { FaPalette, FaPencilAlt, FaFileAlt, FaStar, FaUsers, FaCommentDots } from 'react-icons/fa'
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
+import ProgressBar from '../../components/priceit/ProgressBar'
 
 const ProductStudio = () => {
   const { state, updateProductName, updateDescription, updateFeature, updateTargetCustomer } = useAppState()
@@ -71,7 +72,9 @@ const ProductStudio = () => {
   const currentQuestion = productCards.find(card => card.id === selectedCard)?.question || 'Pick a card above to get started!'
 
   return (
-    <div className="min-h-screen flex flex-col items-center pt-24 relative bg-white overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-white overflow-hidden">
+      <ProgressBar />
+      <div className="flex flex-col items-center pt-12 relative">
       {/* Decorative Background Blob */}
       <div className="absolute top-40 right-20 w-64 h-64 bg-purple-300 rounded-full opacity-20 blur-3xl"></div>
       <div className="absolute bottom-20 left-20 w-48 h-48 bg-purple-400 rounded-full opacity-20 blur-3xl"></div>
@@ -189,6 +192,7 @@ const ProductStudio = () => {
           Step 1 of 5: Building Your Product
         </p>
       </motion.div>
+      </div>
     </div>
   )
 }

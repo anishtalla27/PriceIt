@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { FaTools, FaCube, FaBox, FaBriefcase, FaStar } from 'react-icons/fa'
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
+import ProgressBar from '../../components/priceit/ProgressBar'
 
 const CostWorkshop = () => {
   const { state, updateMaterialCost, updatePackagingCost, updateExtraCost } = useAppState()
@@ -30,7 +31,9 @@ const CostWorkshop = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center gap-8 pt-20 bg-white relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
+      <ProgressBar />
+      <div className="flex flex-col items-center gap-8 pt-12">
       {/* Decorative Background Blobs */}
       <div className="absolute top-32 left-16 w-56 h-56 bg-purple-300 rounded-full opacity-20 blur-3xl"></div>
       <div className="absolute bottom-24 right-20 w-48 h-48 bg-purple-400 rounded-full opacity-20 blur-3xl"></div>
@@ -160,6 +163,7 @@ const CostWorkshop = () => {
           Step 2 of 5: Calculating Costs
         </p>
       </motion.div>
+      </div>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { FaStar, FaUsers } from 'react-icons/fa'
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
+import ProgressBar from '../../components/priceit/ProgressBar'
 
 export default function ValueLab() {
   const navigate = useNavigate()
@@ -17,7 +18,9 @@ export default function ValueLab() {
   }
 
   return (
-    <div className="min-h-screen bg-white relative flex flex-col items-center pt-20 px-4">
+    <div className="min-h-screen bg-white relative flex flex-col">
+      <ProgressBar />
+      <div className="flex flex-col items-center pt-12 px-4">
       {/* Background decoration */}
       <div className="pointer-events-none absolute -top-20 -right-20 w-52 h-52 rounded-full bg-purple-200 opacity-30 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-purple-200 opacity-30 blur-3xl" />
@@ -136,6 +139,7 @@ export default function ValueLab() {
       >
         Continue <FaStar className="text-white" />
       </motion.button>
+      </div>
     </div>
   )
 }
