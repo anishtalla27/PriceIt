@@ -1,70 +1,73 @@
-import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
+import React from 'react'
 
-const ValueLab = () => {
-  const navigate = useNavigate()
-
+export default function ValueLab() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow container mx-auto px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-4xl mx-auto"
-        >
-          {/* Page Title */}
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-brand-purple mb-4">
-              🧪 Value Lab
-            </h1>
-            <p className="text-2xl text-gray-600">
-              Discover your perfect price!
-            </p>
-          </div>
+    <div className="min-h-screen bg-white relative flex flex-col items-center pt-20 px-4">
+      {/* Background decoration */}
+      <div className="pointer-events-none absolute -top-20 -right-20 w-52 h-52 rounded-full bg-purple-200 opacity-30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-purple-200 opacity-30 blur-3xl" />
 
-          {/* Content Card */}
-          <div className="card space-y-6">
-            <div className="text-center py-20">
-              <p className="text-3xl text-gray-500 mb-8">
-                Value calculation coming soon! 🎯
-              </p>
-              <p className="text-xl text-gray-400">
-                This is where you'll set your final price
-              </p>
-            </div>
+      {/* Title area */}
+      <h1 className="text-4xl md:text-5xl font-bold text-purple-600 text-center">
+        Value Lab
+      </h1>
+      <p className="mt-2 text-base md:text-lg text-gray-600 text-center max-w-xl">
+        Think about why your product is special and who will love it.
+      </p>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-8 border-t-2 border-brand-purple-light">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/market-street')}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-8 rounded-full transition-colors"
-              >
-                ← Back
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/celebration')}
-                className="btn-primary"
-              >
-                Finish! 🎉
-              </motion.button>
-            </div>
+      {/* Value cards row */}
+      <div className="mt-10 w-full max-w-5xl grid gap-6 md:grid-cols-3">
+        {/* Quality Card */}
+        <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
+          <div className="text-3xl">⭐</div>
+          <h3 className="text-lg font-semibold text-purple-700">Quality</h3>
+          <p className="text-sm text-gray-600">
+            Is your product made really well and built to last?
+          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <div className="h-3 w-3 rounded-full bg-purple-100"></div>
+            <div className="h-3 w-3 rounded-full bg-purple-500"></div>
+            <div className="h-3 w-3 rounded-full bg-purple-100"></div>
           </div>
-        </motion.div>
-      </main>
-      
-      <Footer />
+        </div>
+
+        {/* Uniqueness Card */}
+        <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
+          <div className="text-3xl">✨</div>
+          <h3 className="text-lg font-semibold text-purple-700">Uniqueness</h3>
+          <p className="text-sm text-gray-600">
+            Does your product have something special that makes it different?
+          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <div className="h-3 w-3 rounded-full bg-purple-100"></div>
+            <div className="h-3 w-3 rounded-full bg-purple-500"></div>
+            <div className="h-3 w-3 rounded-full bg-purple-100"></div>
+          </div>
+        </div>
+
+        {/* Target Audience Card */}
+        <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
+          <div className="text-3xl">👥</div>
+          <h3 className="text-lg font-semibold text-purple-700">Target Audience</h3>
+          <p className="text-sm text-gray-600">
+            Who will love your product and want to buy it?
+          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <div className="h-3 w-3 rounded-full bg-purple-100"></div>
+            <div className="h-3 w-3 rounded-full bg-purple-500"></div>
+            <div className="h-3 w-3 rounded-full bg-purple-100"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Placeholder value chart box */}
+      <div className="mt-10 w-full max-w-3xl bg-purple-50 border border-dashed border-purple-300 rounded-3xl p-6 text-center">
+        <h3 className="text-md font-semibold text-purple-700">Future chart area</h3>
+        <p className="mt-1 text-sm text-gray-600">
+          Later, this space can show a bar chart that compares value and price.
+        </p>
+      </div>
     </div>
   )
 }
-
-export default ValueLab
 

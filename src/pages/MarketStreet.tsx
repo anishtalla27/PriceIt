@@ -1,70 +1,79 @@
-import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
+import React from 'react'
 
-const MarketStreet = () => {
-  const navigate = useNavigate()
-
+export default function MarketStreet() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow container mx-auto px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-4xl mx-auto"
-        >
-          {/* Page Title */}
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-brand-purple mb-4">
-              🏪 Market Street
-            </h1>
-            <p className="text-2xl text-gray-600">
-              See what others are charging!
-            </p>
-          </div>
+    <div className="min-h-screen bg-white relative flex flex-col items-center pt-20 px-4">
+      {/* Background decoration */}
+      <div className="pointer-events-none absolute -top-20 -left-20 w-52 h-52 rounded-full bg-purple-200 opacity-30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -right-10 w-64 h-64 rounded-full bg-purple-200 opacity-30 blur-3xl" />
 
-          {/* Content Card */}
-          <div className="card space-y-6">
-            <div className="text-center py-20">
-              <p className="text-3xl text-gray-500 mb-8">
-                Market research coming soon! 📊
-              </p>
-              <p className="text-xl text-gray-400">
-                This is where you'll explore similar products
-              </p>
-            </div>
+      {/* Title area */}
+      <h1 className="text-4xl md:text-5xl font-bold text-purple-600 text-center">
+        Market Street
+      </h1>
+      <p className="mt-2 text-base md:text-lg text-gray-600 text-center max-w-xl">
+        See how other products in the market are priced.
+      </p>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-8 border-t-2 border-brand-purple-light">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/cost-workshop')}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-8 rounded-full transition-colors"
-              >
-                ← Back
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/value-lab')}
-                className="btn-primary"
-              >
-                Next: Value Lab →
-              </motion.button>
+      {/* Comparison cards section */}
+      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 w-full max-w-5xl">
+        {/* Card 1 */}
+        <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
+          <div className="flex items-center">
+            <div className="text-4xl">🧸</div>
+            <div className="ml-auto text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-700">
+              Example
             </div>
           </div>
-        </motion.div>
-      </main>
-      
-      <Footer />
+          <h3 className="text-lg font-semibold text-purple-700">Custom Sticker Pack</h3>
+          <p className="text-sm text-gray-500">Fun stickers for kids to decorate their stuff</p>
+          <div className="flex items-baseline justify-between mt-2">
+            <span className="text-sm text-gray-500">Typical price</span>
+            <span className="text-2xl font-bold text-purple-600">$12.00</span>
+          </div>
+        </div>
+
+        {/* Card 2 */}
+        <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
+          <div className="flex items-center">
+            <div className="text-4xl">🎧</div>
+            <div className="ml-auto text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-700">
+              Example
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold text-purple-700">Kids Headphones</h3>
+          <p className="text-sm text-gray-500">Colorful headphones designed for children</p>
+          <div className="flex items-baseline justify-between mt-2">
+            <span className="text-sm text-gray-500">Typical price</span>
+            <span className="text-2xl font-bold text-purple-600">$25.00</span>
+          </div>
+        </div>
+
+        {/* Card 3 */}
+        <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
+          <div className="flex items-center">
+            <div className="text-4xl">🎨</div>
+            <div className="ml-auto text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-700">
+              Example
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold text-purple-700">Art Supply Kit</h3>
+          <p className="text-sm text-gray-500">Complete set of crayons, markers, and paper</p>
+          <div className="flex items-baseline justify-between mt-2">
+            <span className="text-sm text-gray-500">Typical price</span>
+            <span className="text-2xl font-bold text-purple-600">$18.00</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Your product panel */}
+      <div className="mt-10 w-full max-w-xl bg-purple-50 border border-purple-100 rounded-3xl p-6 flex flex-col gap-3">
+        <h3 className="text-lg font-semibold text-purple-700">Your product price (coming soon)</h3>
+        <p className="text-sm text-gray-600">
+          Later, this section will compare your chosen price to the market examples above.
+        </p>
+      </div>
     </div>
   )
 }
-
-export default MarketStreet
 
