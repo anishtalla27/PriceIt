@@ -1,4 +1,5 @@
 import React from 'react'
+import { FaHeart, FaHeadphones, FaPalette } from 'react-icons/fa'
 
 export default function MarketStreet() {
   return (
@@ -20,7 +21,7 @@ export default function MarketStreet() {
         {/* Card 1 */}
         <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
           <div className="flex items-center">
-            <div className="text-4xl">🧸</div>
+            <FaHeart className="text-4xl text-pink-500" />
             <div className="ml-auto text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-700">
               Example
             </div>
@@ -36,7 +37,7 @@ export default function MarketStreet() {
         {/* Card 2 */}
         <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
           <div className="flex items-center">
-            <div className="text-4xl">🎧</div>
+            <FaHeadphones className="text-4xl text-blue-500" />
             <div className="ml-auto text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-700">
               Example
             </div>
@@ -52,7 +53,7 @@ export default function MarketStreet() {
         {/* Card 3 */}
         <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
           <div className="flex items-center">
-            <div className="text-4xl">🎨</div>
+            <FaPalette className="text-4xl text-pink-500" />
             <div className="ml-auto text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-700">
               Example
             </div>

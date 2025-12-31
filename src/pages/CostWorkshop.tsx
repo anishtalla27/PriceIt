@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { FaTools, FaCube, FaBox, FaBriefcase, FaSparkles } from 'react-icons/fa'
 
 const CostWorkshop = () => {
   return (
@@ -13,8 +14,9 @@ const CostWorkshop = () => {
         animate={{ opacity: 1, y: 0 }}
         className="text-center z-10"
       >
-        <h1 className="text-5xl font-bold text-purple-600">
-          🔧 Cost Workshop
+        <h1 className="text-5xl font-bold text-purple-600 flex items-center justify-center gap-3">
+          <FaTools className="text-orange-500" />
+          Cost Workshop
         </h1>
         <p className="text-lg text-gray-600 mt-2">
           Let's calculate how much it costs to make your product!
@@ -30,7 +32,9 @@ const CostWorkshop = () => {
           transition={{ delay: 0.1 }}
           className="bg-white p-6 rounded-3xl shadow-md border border-purple-100 flex flex-col gap-2 w-full max-w-sm"
         >
-          <div className="text-4xl text-center">🧱</div>
+          <div className="text-4xl text-center flex justify-center">
+            <FaCube className="text-blue-500" />
+          </div>
           <h3 className="text-xl font-semibold text-purple-600 text-center">Materials Cost</h3>
           <input
             type="number"
@@ -46,7 +50,9 @@ const CostWorkshop = () => {
           transition={{ delay: 0.2 }}
           className="bg-white p-6 rounded-3xl shadow-md border border-purple-100 flex flex-col gap-2 w-full max-w-sm"
         >
-          <div className="text-4xl text-center">📦</div>
+          <div className="text-4xl text-center flex justify-center">
+            <FaBox className="text-green-500" />
+          </div>
           <h3 className="text-xl font-semibold text-purple-600 text-center">Packaging Cost</h3>
           <input
             type="number"
@@ -62,7 +68,9 @@ const CostWorkshop = () => {
           transition={{ delay: 0.3 }}
           className="bg-white p-6 rounded-3xl shadow-md border border-purple-100 flex flex-col gap-2 w-full max-w-sm"
         >
-          <div className="text-4xl text-center">💼</div>
+          <div className="text-4xl text-center flex justify-center">
+            <FaBriefcase className="text-purple-500" />
+          </div>
           <h3 className="text-xl font-semibold text-purple-600 text-center">Extra Expenses</h3>
           <p className="text-sm text-gray-500 text-center">(labor, shipping, marketing, etc.)</p>
           <input
@@ -80,9 +88,9 @@ const CostWorkshop = () => {
         transition={{ delay: 0.4 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="mt-6 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg hover:scale-105 transition z-10"
+        className="mt-6 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg hover:scale-105 transition z-10 flex items-center gap-2 mx-auto"
       >
-        Continue ✨
+        Continue <FaSparkles className="text-white" />
       </motion.button>
 
       {/* Progress Indicator */}

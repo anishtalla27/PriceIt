@@ -1,4 +1,5 @@
 import React from 'react'
+import { FaStar, FaSparkles, FaUsers } from 'react-icons/fa'
 
 export default function ValueLab() {
   return (
@@ -19,7 +20,7 @@ export default function ValueLab() {
       <div className="mt-10 w-full max-w-5xl grid gap-6 md:grid-cols-3">
         {/* Quality Card */}
         <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
-          <div className="text-3xl">⭐</div>
+          <FaStar className="text-3xl text-yellow-500" />
           <h3 className="text-lg font-semibold text-purple-700">Quality</h3>
           <p className="text-sm text-gray-600">
             Is your product made really well and built to last?
@@ -33,7 +34,7 @@ export default function ValueLab() {
 
         {/* Uniqueness Card */}
         <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
-          <div className="text-3xl">✨</div>
+          <FaSparkles className="text-3xl text-purple-500" />
           <h3 className="text-lg font-semibold text-purple-700">Uniqueness</h3>
           <p className="text-sm text-gray-600">
             Does your product have something special that makes it different?
@@ -47,7 +48,7 @@ export default function ValueLab() {
 
         {/* Target Audience Card */}
         <div className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3">
-          <div className="text-3xl">👥</div>
+          <FaUsers className="text-3xl text-pink-500" />
           <h3 className="text-lg font-semibold text-purple-700">Target Audience</h3>
           <p className="text-sm text-gray-600">
             Who will love your product and want to buy it?

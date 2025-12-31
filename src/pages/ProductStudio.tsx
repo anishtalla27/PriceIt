@@ -1,15 +1,16 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
+import { FaPalette, FaPencilAlt, FaFileAlt, FaStar, FaUsers, FaCommentDots, FaSparkles } from 'react-icons/fa'
 
 const ProductStudio = () => {
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState('')
 
   const productCards = [
-    { id: 'name', emoji: '✏️', label: 'Product Name', question: 'What should we call your amazing product?' },
-    { id: 'description', emoji: '📝', label: 'Description', question: 'Tell us about your product in one sentence!' },
-    { id: 'feature', emoji: '⭐', label: 'Special Feature', question: 'What makes your product special?' },
-    { id: 'customer', emoji: '👥', label: 'Target Customer', question: 'Who will love your product?' }
+    { id: 'name', Icon: FaPencilAlt, iconColor: 'text-blue-500', label: 'Product Name', question: 'What should we call your amazing product?' },
+    { id: 'description', Icon: FaFileAlt, iconColor: 'text-green-500', label: 'Description', question: 'Tell us about your product in one sentence!' },
+    { id: 'feature', Icon: FaStar, iconColor: 'text-yellow-500', label: 'Special Feature', question: 'What makes your product special?' },
+    { id: 'customer', Icon: FaUsers, iconColor: 'text-pink-500', label: 'Target Customer', question: 'Who will love your product?' }
   ]
 
   const handleCardClick = (cardId: string) => {
@@ -31,8 +32,9 @@ const ProductStudio = () => {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12 z-10"
       >
-        <h1 className="text-5xl font-bold text-purple-600">
-          🎨 Product Studio
+        <h1 className="text-5xl font-bold text-purple-600 flex items-center justify-center gap-3">
+          <FaPalette className="text-pink-500" />
+          Product Studio
         </h1>
         <p className="text-lg text-gray-600 mt-2">
           Choose details about your product!
@@ -61,7 +63,7 @@ const ProductStudio = () => {
                 : 'bg-white border border-purple-100 hover:border-purple-300'
             }`}
           >
-            <div className="text-5xl">{card.emoji}</div>
+            <card.Icon className={`text-5xl ${card.iconColor}`} />
             <p className="mt-3 text-lg font-semibold text-purple-600">
               {card.label}
             </p>
@@ -78,8 +80,9 @@ const ProductStudio = () => {
       >
         {/* Question Bubble */}
         <div className="bg-purple-50 border border-purple-200 rounded-3xl p-6 mb-6 shadow-sm">
-          <p className="text-xl text-purple-700 font-medium text-center">
-            💭 {currentQuestion}
+          <p className="text-xl text-purple-700 font-medium text-center flex items-center justify-center gap-2">
+            <FaCommentDots className="text-purple-500" />
+            {currentQuestion}
           </p>
         </div>
 
@@ -98,10 +101,10 @@ const ProductStudio = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="mt-6 w-full bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg transition-transform disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="mt-6 w-full bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg transition-transform disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           disabled={!inputValue.trim()}
         >
-          Next ✨
+          Next <FaSparkles className="text-white" />
         </motion.button>
       </motion.div>
 
