@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
-import { FaPalette, FaPencilAlt, FaFileAlt, FaStar, FaUsers, FaCommentDots, FaSparkles } from 'react-icons/fa'
+import { FaPalette, FaPencilAlt, FaFileAlt, FaStar, FaUsers, FaCommentDots } from 'react-icons/fa'
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
 
@@ -174,7 +174,7 @@ const ProductStudio = () => {
           className="mt-6 w-full bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg transition-transform disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           disabled={!inputValue.trim()}
         >
-          Next <FaSparkles className="text-white" />
+          Next <FaStar className="text-white" />
         </motion.button>
       </motion.div>
 

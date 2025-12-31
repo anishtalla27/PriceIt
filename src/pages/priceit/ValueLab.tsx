@@ -1,7 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { FaStar, FaSparkles, FaUsers } from 'react-icons/fa'
+import { FaStar, FaUsers } from 'react-icons/fa'
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
 
@@ -79,7 +79,7 @@ export default function ValueLab() {
           transition={{ duration: 0.4, delay: 0.3 }}
           className="bg-white rounded-3xl shadow-md border border-purple-100 p-6 flex flex-col gap-3"
         >
-          <FaSparkles className="text-3xl text-purple-500" />
+          <FaStar className="text-3xl text-purple-500" />
           <h3 className="text-lg font-semibold text-purple-700">Uniqueness</h3>
           <p className="text-sm text-gray-600">
             Does your product have something special that makes it different?
@@ -134,7 +134,7 @@ export default function ValueLab() {
         onClick={handleContinue}
         className="mt-10 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg hover:scale-105 transition-transform flex items-center gap-2"
       >
-        Continue <FaSparkles className="text-white" />
+        Continue <FaStar className="text-white" />
       </motion.button>
     </div>
   )

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { FaTools, FaCube, FaBox, FaBriefcase, FaSparkles } from 'react-icons/fa'
+import { FaTools, FaCube, FaBox, FaBriefcase, FaStar } from 'react-icons/fa'
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
 
@@ -146,7 +146,7 @@ const CostWorkshop = () => {
         onClick={handleContinue}
         className="mt-6 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg hover:scale-105 transition z-10 flex items-center gap-2 mx-auto"
       >
-        Continue <FaSparkles className="text-white" />
+        Continue <FaStar className="text-white" />
       </motion.button>
 
       {/* Progress Indicator */}
