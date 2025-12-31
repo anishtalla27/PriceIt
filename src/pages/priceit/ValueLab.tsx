@@ -2,8 +2,8 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { FaStar, FaSparkles, FaUsers } from 'react-icons/fa'
-import { useAppState } from '../context/AppState'
-import { useSound } from '../hooks/useSound'
+import { useAppState } from '../../context/AppState'
+import { useSound } from '../../hooks/useSound'
 
 export default function ValueLab() {
   const navigate = useNavigate()
@@ -13,7 +13,7 @@ export default function ValueLab() {
   const handleContinue = () => {
     playSound()
     calculatePrice()
-    navigate('/celebration')
+    navigate('/priceit/celebrate')
   }
 
   return (

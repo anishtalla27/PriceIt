@@ -2,8 +2,8 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { FaTrophy } from 'react-icons/fa'
-import { useAppState } from '../context/AppState'
-import { useSound } from '../hooks/useSound'
+import { useAppState } from '../../context/AppState'
+import { useSound } from '../../hooks/useSound'
 
 export default function CelebrationStage() {
   const navigate = useNavigate()
@@ -25,13 +25,13 @@ export default function CelebrationStage() {
 
   const handlePlayAgain = () => {
     playSound()
-    navigate('/')
+    navigate('/priceit')
   }
 
   const handleResetGame = () => {
     playSound()
     resetGame()
-    navigate('/')
+    navigate('/priceit')
   }
 
   return (

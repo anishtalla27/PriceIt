@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { FaPalette, FaPencilAlt, FaFileAlt, FaStar, FaUsers, FaCommentDots, FaSparkles } from 'react-icons/fa'
-import { useAppState } from '../context/AppState'
-import { useSound } from '../hooks/useSound'
+import { useAppState } from '../../context/AppState'
+import { useSound } from '../../hooks/useSound'
 
 const ProductStudio = () => {
   const { state, updateProductName, updateDescription, updateFeature, updateTargetCustomer } = useAppState()

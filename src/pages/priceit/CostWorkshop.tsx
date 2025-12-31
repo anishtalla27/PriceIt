@@ -1,9 +1,13 @@
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { FaTools, FaCube, FaBox, FaBriefcase, FaSparkles } from 'react-icons/fa'
-import { useAppState } from '../context/AppState'
+import { useAppState } from '../../context/AppState'
+import { useSound } from '../../hooks/useSound'
 
 const CostWorkshop = () => {
   const { state, updateMaterialCost, updatePackagingCost, updateExtraCost } = useAppState()
+  const navigate = useNavigate()
+  const playSound = useSound({ volume: 0.2 })
 
   const handleMaterialCostChange = (value: string) => {
     const numValue = parseFloat(value) || 0
@@ -18,6 +22,11 @@ const CostWorkshop = () => {
   const handleExtraCostChange = (value: string) => {
     const numValue = parseFloat(value) || 0
     updateExtraCost(numValue)
+  }
+
+  const handleContinue = () => {
+    playSound()
+    navigate('/priceit/market')
   }
 
   return (
@@ -134,6 +143,7 @@ const CostWorkshop = () => {
         transition={{ duration: 0.4, delay: 0.4 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        onClick={handleContinue}
         className="mt-6 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg hover:scale-105 transition z-10 flex items-center gap-2 mx-auto"
       >
         Continue <FaSparkles className="text-white" />

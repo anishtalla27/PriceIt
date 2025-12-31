@@ -1,8 +1,18 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { FaHeart, FaHeadphones, FaPalette } from 'react-icons/fa'
+import { useSound } from '../../hooks/useSound'
 
 export default function MarketStreet() {
+  const navigate = useNavigate()
+  const playSound = useSound({ volume: 0.2 })
+
+  const handleContinue = () => {
+    playSound()
+    navigate('/priceit/value')
+  }
+
   return (
     <div className="min-h-screen bg-white relative flex flex-col items-center pt-20 px-4">
       {/* Background decoration */}
@@ -116,6 +126,19 @@ export default function MarketStreet() {
           Later, this section will compare your chosen price to the market examples above.
         </p>
       </motion.div>
+
+      {/* Continue Button */}
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.6 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleContinue}
+        className="mt-10 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg hover:scale-105 transition-transform flex items-center gap-2"
+      >
+        Continue
+      </motion.button>
     </div>
   )
 }

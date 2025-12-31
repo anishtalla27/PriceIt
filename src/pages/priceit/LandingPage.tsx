@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { FaLightbulb, FaPalette, FaShoppingBag } from 'react-icons/fa'
-import { useSound } from '../hooks/useSound'
+import { useSound } from '../../hooks/useSound'
 
 const LandingPage = () => {
   const navigate = useNavigate()
@@ -63,7 +63,7 @@ const LandingPage = () => {
           whileTap={{ scale: 0.95 }}
           onClick={() => {
             playSound()
-            navigate('/product-studio')
+            navigate('/priceit/product')
           }}
           className="mt-6 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg hover:scale-105 transition-transform flex items-center gap-2 mx-auto"
         >
