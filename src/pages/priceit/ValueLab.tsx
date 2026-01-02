@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import ProgressBar from '../../components/priceit/ProgressBar'
@@ -26,19 +26,6 @@ export default function ValueLab() {
   const [effort, setEffort] = useState<number>(state.effort?.value || 2)
   const [persona, setPersona] = useState<Persona>("kids")
   const [isRequestingPrice, setIsRequestingPrice] = useState(false)
-
-  // Sync local state to global state when sliders change
-  useEffect(() => {
-    if (updateQuality) updateQuality(quality, "user")
-  }, [quality, updateQuality])
-
-  useEffect(() => {
-    if (updateUniqueness) updateUniqueness(uniqueness, "user")
-  }, [uniqueness, updateUniqueness])
-
-  useEffect(() => {
-    if (updateEffort) updateEffort(effort, "user")
-  }, [effort, updateEffort])
 
   // Helper functions to get label and note for each slider
   const getQualityLabel = (value: number): string => {
@@ -198,7 +185,11 @@ export default function ValueLab() {
                 max={3}
                 step={1}
                 value={quality}
-                onChange={(e) => setQuality(Number(e.target.value))}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  setQuality(newValue)
+                  if (updateQuality) updateQuality(newValue, "user")
+                }}
                 className="w-full mt-3 accent-purple-500"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -226,7 +217,11 @@ export default function ValueLab() {
                 max={3}
                 step={1}
                 value={uniqueness}
-                onChange={(e) => setUniqueness(Number(e.target.value))}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  setUniqueness(newValue)
+                  if (updateUniqueness) updateUniqueness(newValue, "user")
+                }}
                 className="w-full mt-3 accent-purple-500"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -254,7 +249,11 @@ export default function ValueLab() {
                 max={3}
                 step={1}
                 value={effort}
-                onChange={(e) => setEffort(Number(e.target.value))}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  setEffort(newValue)
+                  if (updateEffort) updateEffort(newValue, "user")
+                }}
                 className="w-full mt-3 accent-purple-500"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
