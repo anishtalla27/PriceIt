@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FaCube, FaBox, FaTrash, FaPlus, FaArrowRight } from 'react-icons/fa'
 import { useSound } from '../../hooks/useSound'
@@ -52,18 +52,8 @@ const VariableCosts = () => {
 
   const totalVariablePerProduct = materialsPerProduct + packagingPerProduct
 
-  // Update global state when costs change
-  useEffect(() => {
-    if (updateMaterialCost) {
-      updateMaterialCost(materialsPerProduct, "user")
-    }
-  }, [materialsPerProduct, updateMaterialCost])
-
-  useEffect(() => {
-    if (updatePackagingCost) {
-      updatePackagingCost(packagingPerProduct, "user")
-    }
-  }, [packagingPerProduct, updatePackagingCost])
+  // Update global state only when navigating away (on explicit user action)
+  // This prevents infinite loops from derived values
 
   // Helper to update item name
   const updateItemName = (
@@ -187,7 +177,7 @@ const VariableCosts = () => {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => removeItem(items, setItems, item.id)}
-                className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 -ml-[6.5px]"
                 title="Remove item"
               >
                 <FaTrash className="text-lg" />
@@ -220,6 +210,13 @@ const VariableCosts = () => {
 
   const handleNext = () => {
     playSound()
+    // Update global state only when user explicitly navigates (not on every render)
+    if (updateMaterialCost) {
+      updateMaterialCost(materialsPerProduct, "user")
+    }
+    if (updatePackagingCost) {
+      updatePackagingCost(packagingPerProduct, "user")
+    }
     navigate('/priceit/fixed-costs')
   }
 

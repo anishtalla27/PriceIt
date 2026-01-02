@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FaBriefcase, FaTrash, FaPlus, FaArrowLeft, FaArrowRight } from 'react-icons/fa'
 import { useSound } from '../../hooks/useSound'
@@ -34,23 +34,13 @@ const FixedCosts = () => {
   ])
   const [batchSize, setBatchSize] = useState<number>(state.batchSize || 20)
 
-  // Sync batchSize to global state
-  useEffect(() => {
-    if (updateBatchSize) {
-      updateBatchSize(batchSize)
-    }
-  }, [batchSize, updateBatchSize])
+  // Update batchSize in global state only when user navigates (prevents loops)
 
   // Calculate totals
   const totalFixed = fixedItems.reduce((sum, item) => sum + (item.cost || 0), 0)
   const fixedPerProduct = batchSize > 0 ? totalFixed / batchSize : 0
 
-  // Update global state when fixed costs change
-  useEffect(() => {
-    if (updateExtraCost) {
-      updateExtraCost(totalFixed, "user")
-    }
-  }, [totalFixed, updateExtraCost])
+  // Update global state only when user explicitly navigates (not on every render)
 
   // Helper to update item name
   const updateItemName = (
@@ -93,11 +83,19 @@ const FixedCosts = () => {
 
   const handleBack = () => {
     playSound()
+    // Update batchSize in global state when navigating
+    if (updateBatchSize) {
+      updateBatchSize(batchSize)
+    }
     navigate('/priceit/variable-costs')
   }
 
   const handleContinue = () => {
     playSound()
+    // Update global state only when user explicitly navigates (not on every render)
+    if (updateExtraCost) {
+      updateExtraCost(totalFixed, "user")
+    }
     navigate('/priceit/market')
   }
 

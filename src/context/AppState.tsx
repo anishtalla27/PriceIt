@@ -35,13 +35,21 @@ export type FieldChange = {
   changeId: string
 }
 
+interface VariableCostItem {
+  id: string
+  name: string
+  purchaseCost: number
+  productsPerPurchase: number
+}
+
 interface AppState {
   productName: FieldWithMetadata<string>
   description: FieldWithMetadata<string>
   feature: FieldWithMetadata<string>
   targetCustomer: FieldWithMetadata<string>
-  materialCost: FieldWithMetadata<number>
-  packagingCost: FieldWithMetadata<number>
+  // Raw cost items (source of truth)
+  materialsItems: VariableCostItem[]
+  packagingItems: VariableCostItem[]
   extraCost: FieldWithMetadata<number>
   finalPrice: FieldWithMetadata<number>
   totalCost: number
