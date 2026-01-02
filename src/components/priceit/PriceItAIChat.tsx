@@ -232,7 +232,7 @@ export default function PriceItAIChat() {
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-50 bg-purple-500 text-white px-6 py-3 rounded-full text-lg font-semibold shadow-lg transition-all duration-150 hover:scale-105 active:scale-95 ${
+        className={`fixed bottom-6 right-6 z-[1001] bg-purple-500 text-white px-6 py-3 rounded-full text-lg font-semibold shadow-lg transition-all duration-150 hover:scale-105 active:scale-95 ${
           isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
         aria-label="Toggle AI Helper"
@@ -242,7 +242,7 @@ export default function PriceItAIChat() {
 
       {/* Chat Panel */}
       <div
-        className={`fixed right-0 top-0 h-full w-80 md:w-96 bg-white shadow-2xl z-40 flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 h-full w-80 md:w-96 bg-white shadow-2xl z-[1001] flex flex-col transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

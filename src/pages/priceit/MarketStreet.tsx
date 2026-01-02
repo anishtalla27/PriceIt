@@ -307,7 +307,7 @@ export default function MarketStreet() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="text-center z-10"
+          className="text-center z-10 mt-[40px]"
         >
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -368,7 +368,7 @@ export default function MarketStreet() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-center z-10"
+        className="text-center z-10 mt-[10px]"
       >
         <motion.h1
           initial={{ opacity: 0, y: 20 }}

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { FaTrophy } from 'react-icons/fa'
+import { FaTrophy, FaArrowLeft } from 'react-icons/fa'
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
 
@@ -113,6 +113,11 @@ export default function CelebrationStage() {
     navigate('/priceit')
   }
 
+  const handleGoBack = () => {
+    playSound()
+    navigate('/priceit/value')
+  }
+
   return (
     <div className="min-h-screen bg-white relative flex flex-col items-center justify-center px-4 text-center overflow-hidden opacity-0 translate-y-4 animate-[fadeIn_0.4s_ease-out_forwards]">
       {/* Confetti effect */}
@@ -136,12 +141,24 @@ export default function CelebrationStage() {
       <div className="absolute bottom-1/3 left-1/5 w-2 h-2 rounded-full bg-purple-400"></div>
       <div className="absolute top-1/3 right-1/3 w-4 h-4 rounded-full bg-purple-300"></div>
 
+      {/* Back button */}
+      <motion.button
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        onClick={handleGoBack}
+        className="absolute top-6 left-6 flex items-center gap-2 bg-white hover:bg-purple-50 text-purple-600 px-4 py-2 rounded-full text-sm font-semibold shadow-md border border-purple-200 transition-all duration-150 hover:scale-105 active:scale-95 z-20"
+      >
+        <FaArrowLeft className="text-sm" />
+        <span>Back</span>
+      </motion.button>
+
       {/* Success heading */}
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-5xl font-bold text-purple-600"
+        className="text-5xl font-bold text-purple-600 mt-[40px]"
       >
         You Did It!
       </motion.h1>
@@ -166,7 +183,7 @@ export default function CelebrationStage() {
         <div className="w-full flex flex-col gap-3 items-start">
           <p className="text-gray-600 text-sm">
             <span className="font-semibold text-purple-700">Product Name:</span>{' '}
-            {state.productName.value || '(not set)'}
+            {state.productName?.value || '(not set)'}
           </p>
           <p className="text-gray-600 text-sm">
             <span className="font-semibold text-purple-700">Total Cost:</span>{' '}
@@ -174,7 +191,7 @@ export default function CelebrationStage() {
           </p>
           <p className="text-gray-600 text-sm">
             <span className="font-semibold text-purple-700">Suggested Price:</span>{' '}
-            {formatCurrency(state.suggestedPrice.value || 0)}
+            {formatCurrency(state.suggestedPrice?.value || 0)}
           </p>
           <p className="text-gray-600 text-sm">
             <span className="font-semibold text-purple-700">Profit Margin:</span>{' '}
@@ -219,15 +236,17 @@ export default function CelebrationStage() {
         {state.finalGenerated && state.finalRating ? (
           <>
             {/* Rating Display */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <span className="text-5xl font-bold text-purple-600">
-                  {state.finalRating.value.toFixed(1)}
-                </span>
-                <span className="text-2xl text-gray-500">/5</span>
+            {state.finalRating && (
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <span className="text-5xl font-bold text-purple-600">
+                    {state.finalRating.value.toFixed(1)}
+                  </span>
+                  <span className="text-2xl text-gray-500">/5</span>
+                </div>
+                <StarRating rating={state.finalRating.value} />
               </div>
-              <StarRating rating={state.finalRating.value} />
-            </div>
+            )}
 
             {/* Reviews List */}
             <div className="space-y-4 mb-8">

@@ -10,6 +10,22 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
   }
+  
+  input, textarea, select {
+    @apply bg-white;
+  }
+  
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    @apply bg-white;
+  }
 }
 
 @layer components {

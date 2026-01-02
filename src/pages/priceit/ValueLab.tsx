@@ -5,7 +5,7 @@ import ProgressBar from '../../components/priceit/ProgressBar'
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
 
-type Persona = "kids" | "gift" | "hobbyist"
+type Persona = "kids" | "gift" | "hobbyist" | "parents" | "teens" | "teachers" | "collectors" | "other"
 
 export default function ValueLab() {
   const navigate = useNavigate()
@@ -20,55 +20,94 @@ export default function ValueLab() {
     getFieldMetadata
   } = useAppState()
   
-  // Sync local state with global state
-  const [quality, setQuality] = useState<number>(state.quality?.value || 2)
-  const [uniqueness, setUniqueness] = useState<number>(state.uniqueness?.value || 2)
-  const [effort, setEffort] = useState<number>(state.effort?.value || 2)
+  // Sync local state with global state (default to 3 - middle)
+  const [quality, setQuality] = useState<number>(state.quality?.value || 3)
+  const [uniqueness, setUniqueness] = useState<number>(state.uniqueness?.value || 3)
+  const [effort, setEffort] = useState<number>(state.effort?.value || 3)
   const [persona, setPersona] = useState<Persona>("kids")
+  const [customPersona, setCustomPersona] = useState<string>("")
   const [isRequestingPrice, setIsRequestingPrice] = useState(false)
 
-  // Helper functions to get label and note for each slider
+  // Helper functions to get label for each slider (5 levels)
   const getQualityLabel = (value: number): string => {
-    if (value === 1) return 'Simple'
-    if (value === 2) return 'Good'
-    return 'Excellent'
-  }
-
-  const getQualityNote = (value: number): string => {
-    if (value === 1) return 'Might feel basic. Keep price friendly.'
-    if (value === 2) return 'Nice quality. A fair price can work.'
-    return 'High quality. People may accept higher prices.'
+    if (value === 1) return 'Basic'
+    if (value === 2) return 'Decent'
+    if (value === 3) return 'Good'
+    if (value === 4) return 'Great'
+    return 'Pro'
   }
 
   const getUniquenessLabel = (value: number): string => {
     if (value === 1) return 'Common'
-    if (value === 2) return 'Cool'
+    if (value === 2) return 'Slightly Different'
+    if (value === 3) return 'Cool'
+    if (value === 4) return 'Very Unique'
     return 'One-of-a-kind'
+  }
+
+  const getEffortLabel = (value: number): string => {
+    if (value === 1) return 'Super Quick'
+    if (value === 2) return 'Quick'
+    if (value === 3) return 'Some Time'
+    if (value === 4) return 'Lots of Time'
+    return 'Serious Work'
+  }
+
+  // Helper functions to get guidance bullets for each slider
+  const getQualityGuidance = (value: number): string[] => {
+    if (value === 1) return ["May break easily", "Made with simple materials"]
+    if (value === 2) return ["Works fine", "Not super durable"]
+    if (value === 3) return ["Feels solid", "Most people would be happy"]
+    if (value === 4) return ["Strong + neat", "Looks well-made"]
+    return ["High-end", "Looks store-quality"]
+  }
+
+  const getUniquenessGuidance = (value: number): string[] => {
+    if (value === 1) return ["Many people sell this", "Not much different"]
+    if (value === 2) return ["Small twist", "A few extra features"]
+    if (value === 3) return ["Fun idea", "Stands out a bit"]
+    if (value === 4) return ["Rare concept", "Hard to find elsewhere"]
+    return ["Totally original", "People remember it"]
+  }
+
+  const getEffortGuidance = (value: number): string[] => {
+    if (value === 1) return ["1–5 minutes", "Easy steps"]
+    if (value === 2) return ["5–10 minutes", "A few steps"]
+    if (value === 3) return ["10–20 minutes", "Some careful work"]
+    if (value === 4) return ["20–45 minutes", "Many steps + focus"]
+    return ["45+ minutes", "Lots of careful work"]
+  }
+
+  // Helper functions to get interpretation note for each slider
+  const getQualityNote = (value: number): string => {
+    if (value === 1) return 'Might feel basic. Keep price friendly.'
+    if (value === 2) return 'Decent quality. A fair price can work.'
+    if (value === 3) return 'Good quality. Most people would be happy.'
+    if (value === 4) return 'Great quality. You can charge more.'
+    return 'Pro quality. People may accept premium prices.'
   }
 
   const getUniquenessNote = (value: number): string => {
     if (value === 1) return 'Lots of similar ideas exist.'
-    if (value === 2) return 'Stands out a bit. Add a small value boost.'
-    return 'Very unique. You can price with confidence.'
-  }
-
-  const getEffortLabel = (value: number): string => {
-    if (value === 1) return 'Quick'
-    if (value === 2) return 'Takes time'
-    return 'A lot of work'
+    if (value === 2) return 'Has a small twist. Add a small value boost.'
+    if (value === 3) return 'Stands out a bit. A fair price can work.'
+    if (value === 4) return 'Very unique. You can price with confidence.'
+    return 'One-of-a-kind. People remember it and may pay more.'
   }
 
   const getEffortNote = (value: number): string => {
-    if (value === 1) return 'Fast to make. Lower prices may fit.'
-    if (value === 2) return 'Some effort. Middle prices can fit.'
-    return 'Big effort. Higher prices may make sense.'
+    if (value === 1) return 'Super quick to make. Lower prices may fit.'
+    if (value === 2) return 'Quick to make. Lower-middle prices can fit.'
+    if (value === 3) return 'Some effort. Middle prices can fit.'
+    if (value === 4) return 'Lots of effort. Higher prices may make sense.'
+    return 'Serious work. Higher prices make sense.'
   }
 
-  // Value summary calculations
+  // Value summary calculations (3-15 range)
   const valueScore = quality + uniqueness + effort
   const getValueLevel = (score: number): "Low" | "Medium" | "High" => {
-    if (score <= 4) return "Low"
-    if (score <= 7) return "Medium"
+    if (score <= 6) return "Low"
+    if (score <= 11) return "Medium"
     return "High"
   }
   const valueLevel = getValueLevel(valueScore)
@@ -79,16 +118,33 @@ export default function ValueLab() {
     return "Your product feels premium. People may accept a higher price."
   }
 
-  const getPersonaTip = (persona: Persona): string => {
-    if (persona === "kids") return "Kids usually choose fun first, then price."
-    if (persona === "gift") return "Gift buyers may pay more if it looks special and well-packaged."
-    return "Hobbyists often pay more for quality and unique details."
+  const getActionableSuggestion = (level: "Low" | "Medium" | "High"): string => {
+    if (level === "Low") return "Try improving quality OR packaging to justify a higher price."
+    if (level === "Medium") return "Pick one thing to boost: uniqueness or presentation."
+    return "Make sure your price matches the premium feel."
   }
 
-  // Pricing style calculations
+  const getPersonaTip = (persona: Persona, customPersona?: string): string => {
+    if (persona === "kids") return "Kids usually choose fun first, then price."
+    if (persona === "gift") return "Gift buyers may pay more if it looks special and well-packaged."
+    if (persona === "hobbyist") return "Hobbyists often pay more for quality and unique details."
+    if (persona === "parents") return "Parents look for value and things that last."
+    if (persona === "teens") return "Teens care about what's trendy and looks cool."
+    if (persona === "teachers") return "Teachers want things that are useful and easy to use."
+    if (persona === "collectors") return "Collectors value rare items with special details."
+    if (persona === "other") {
+      if (customPersona && customPersona.trim()) {
+        return `For ${customPersona}, think about what they care about most: price, looks, or quality.`
+      }
+      return "For your customer, think about what they care about most."
+    }
+    return "Think about what your customer cares about most."
+  }
+
+  // Pricing style calculations (updated for 3-15 range)
   const getPricingStyle = (score: number): "Budget Friendly" | "Fair & Balanced" | "Premium" => {
-    if (score <= 4) return "Budget Friendly"
-    if (score <= 7) return "Fair & Balanced"
+    if (score <= 6) return "Budget Friendly"
+    if (score <= 11) return "Fair & Balanced"
     return "Premium"
   }
   const pricingStyle = getPricingStyle(valueScore)
@@ -104,11 +160,37 @@ export default function ValueLab() {
       if (style === "Fair & Balanced") return "A clean presentation helps justify a fair price."
       return "Premium works if packaging and story feel impressive."
     }
-    // hobbyist
-    if (style === "Budget Friendly") return "Hobbyists may doubt the quality if it's too low."
-    if (style === "Fair & Balanced") return "Balance is good if your craftsmanship is solid."
-    return "Premium fits when details and quality are clearly high."
+    if (persona === "hobbyist") {
+      if (style === "Budget Friendly") return "Hobbyists may doubt the quality if it's too low."
+      if (style === "Fair & Balanced") return "Balance is good if your craftsmanship is solid."
+      return "Premium fits when details and quality are clearly high."
+    }
+    if (persona === "parents") {
+      if (style === "Budget Friendly") return "Parents appreciate good value at lower prices."
+      if (style === "Fair & Balanced") return "Fair prices work well if quality is clear."
+      return "Premium can work if it's built to last."
+    }
+    if (persona === "teens") {
+      if (style === "Budget Friendly") return "Teens may skip if it looks too basic."
+      if (style === "Fair & Balanced") return "Fair prices work if it looks trendy."
+      return "Premium can work if it's super cool and unique."
+    }
+    if (persona === "teachers") {
+      if (style === "Budget Friendly") return "Teachers appreciate affordable, useful items."
+      if (style === "Fair & Balanced") return "Fair prices work if it's clearly helpful."
+      return "Premium can work if it saves time or solves a big problem."
+    }
+    if (persona === "collectors") {
+      if (style === "Budget Friendly") return "Collectors may doubt rarity if price is too low."
+      if (style === "Fair & Balanced") return "Fair prices work if details are impressive."
+      return "Premium fits when items are truly unique and detailed."
+    }
+    // other
+    if (style === "Budget Friendly") return "Keep price low but make sure quality is still good."
+    if (style === "Fair & Balanced") return "A fair price works when value is clear."
+    return "Premium can work if it matches what your customer values most."
   }
+
   return (
     <div className="min-h-screen bg-white relative flex flex-col items-center pt-20 px-4 opacity-0 translate-y-4 animate-[fadeIn_0.4s_ease-out_forwards]">
       <ProgressBar />
@@ -122,7 +204,7 @@ export default function ValueLab() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-center z-10"
+        className="text-center z-10 mt-[40px]"
       >
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
@@ -179,10 +261,21 @@ export default function ValueLab() {
                 </span>
               </div>
               <p className="text-sm text-gray-600 mt-1">How good is your product?</p>
+              
+              {/* How to choose guidance */}
+              <div className="mt-2 mb-3">
+                <p className="text-xs font-semibold text-purple-600 mb-1">How to choose?</p>
+                <ul className="text-xs text-gray-600 space-y-0.5">
+                  {getQualityGuidance(quality).map((bullet, idx) => (
+                    <li key={idx}>• {bullet}</li>
+                  ))}
+                </ul>
+              </div>
+
               <input
                 type="range"
                 min={1}
-                max={3}
+                max={5}
                 step={1}
                 value={quality}
                 onChange={(e) => {
@@ -192,9 +285,13 @@ export default function ValueLab() {
                 }}
                 className="w-full mt-3 accent-purple-500"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>Simple</span>
-                <span>Excellent</span>
+              {/* 5 tick labels */}
+              <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                <span>Basic</span>
+                <span>Decent</span>
+                <span>Good</span>
+                <span>Great</span>
+                <span>Pro</span>
               </div>
               <p className="text-sm text-gray-600 mt-2">{getQualityNote(quality)}</p>
             </div>
@@ -211,10 +308,21 @@ export default function ValueLab() {
                 </span>
               </div>
               <p className="text-sm text-gray-600 mt-1">How special is your idea?</p>
+              
+              {/* How to choose guidance */}
+              <div className="mt-2 mb-3">
+                <p className="text-xs font-semibold text-purple-600 mb-1">How to choose?</p>
+                <ul className="text-xs text-gray-600 space-y-0.5">
+                  {getUniquenessGuidance(uniqueness).map((bullet, idx) => (
+                    <li key={idx}>• {bullet}</li>
+                  ))}
+                </ul>
+              </div>
+
               <input
                 type="range"
                 min={1}
-                max={3}
+                max={5}
                 step={1}
                 value={uniqueness}
                 onChange={(e) => {
@@ -224,9 +332,13 @@ export default function ValueLab() {
                 }}
                 className="w-full mt-3 accent-purple-500"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>Common</span>
-                <span>One-of-a-kind</span>
+              {/* 5 tick labels */}
+              <div className="flex justify-between text-[10px] text-gray-500 mt-1 flex-wrap gap-1">
+                <span className="whitespace-nowrap">Common</span>
+                <span className="whitespace-nowrap">Slightly Different</span>
+                <span className="whitespace-nowrap">Cool</span>
+                <span className="whitespace-nowrap">Very Unique</span>
+                <span className="whitespace-nowrap">One-of-a-kind</span>
               </div>
               <p className="text-sm text-gray-600 mt-2">{getUniquenessNote(uniqueness)}</p>
             </div>
@@ -243,10 +355,21 @@ export default function ValueLab() {
                 </span>
               </div>
               <p className="text-sm text-gray-600 mt-1">How much work does it take to make?</p>
+              
+              {/* How to choose guidance */}
+              <div className="mt-2 mb-3">
+                <p className="text-xs font-semibold text-purple-600 mb-1">How to choose?</p>
+                <ul className="text-xs text-gray-600 space-y-0.5">
+                  {getEffortGuidance(effort).map((bullet, idx) => (
+                    <li key={idx}>• {bullet}</li>
+                  ))}
+                </ul>
+              </div>
+
               <input
                 type="range"
                 min={1}
-                max={3}
+                max={5}
                 step={1}
                 value={effort}
                 onChange={(e) => {
@@ -256,12 +379,22 @@ export default function ValueLab() {
                 }}
                 className="w-full mt-3 accent-purple-500"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              {/* 5 tick labels */}
+              <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                <span>Super Quick</span>
                 <span>Quick</span>
-                <span>A lot of work</span>
+                <span>Some Time</span>
+                <span>Lots of Time</span>
+                <span>Serious Work</span>
               </div>
               <p className="text-sm text-gray-600 mt-2">{getEffortNote(effort)}</p>
             </div>
+          </div>
+
+          {/* "Not sure?" helper */}
+          <div className="mt-6 bg-purple-50 border border-purple-100 rounded-2xl p-4">
+            <p className="text-xs font-semibold text-purple-700 mb-1">Not sure what to pick?</p>
+            <p className="text-xs text-gray-600">Start in the middle (3). You can adjust later after you test it.</p>
           </div>
         </motion.div>
 
@@ -275,7 +408,7 @@ export default function ValueLab() {
           <h3 className="text-lg font-semibold text-purple-700 mb-1">Who Is This For?</h3>
           <p className="text-sm text-gray-600 mb-4">Pick the kind of customer you want to impress.</p>
           
-          <div className="mt-4 grid gap-6 md:grid-cols-3">
+          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {/* Kids Persona */}
             <div
               onClick={() => setPersona("kids")}
@@ -292,7 +425,7 @@ export default function ValueLab() {
             {/* Gift Buyer Persona */}
             <div
               onClick={() => setPersona("gift")}
-              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform hover:scale-105 flex flex-col gap-2 ${
+              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform transition-shadow duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col gap-2 ${
                 persona === "gift" ? "ring-2 ring-purple-300" : ""
               }`}
             >
@@ -305,7 +438,7 @@ export default function ValueLab() {
             {/* Hobbyist Persona */}
             <div
               onClick={() => setPersona("hobbyist")}
-              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform hover:scale-105 flex flex-col gap-2 ${
+              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform transition-shadow duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col gap-2 ${
                 persona === "hobbyist" ? "ring-2 ring-purple-300" : ""
               }`}
             >
@@ -314,7 +447,94 @@ export default function ValueLab() {
               <p className="text-sm text-gray-600">Quality + uniqueness</p>
               <p className="text-xs text-gray-500">Details and craftsmanship matter.</p>
             </div>
+
+            {/* Parents Persona */}
+            <div
+              onClick={() => setPersona("parents")}
+              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform transition-shadow duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col gap-2 ${
+                persona === "parents" ? "ring-2 ring-purple-300" : ""
+              }`}
+            >
+              <span className="text-4xl"><span className="inline-block transition-transform hover:-translate-y-1">🧑‍👧‍👦</span></span>
+              <h4 className="text-lg font-semibold text-purple-700">Parents</h4>
+              <p className="text-sm text-gray-600">Useful + worth it</p>
+              <p className="text-xs text-gray-500">Parents like quality that lasts.</p>
+            </div>
+
+            {/* Teens Persona */}
+            <div
+              onClick={() => setPersona("teens")}
+              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform transition-shadow duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col gap-2 ${
+                persona === "teens" ? "ring-2 ring-purple-300" : ""
+              }`}
+            >
+              <span className="text-4xl"><span className="inline-block transition-transform hover:-translate-y-1">📱</span></span>
+              <h4 className="text-lg font-semibold text-purple-700">Teens</h4>
+              <p className="text-sm text-gray-600">Trendy + fun</p>
+              <p className="text-xs text-gray-500">Looks and vibe matter a lot.</p>
+            </div>
+
+            {/* Teachers Persona */}
+            <div
+              onClick={() => setPersona("teachers")}
+              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform transition-shadow duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col gap-2 ${
+                persona === "teachers" ? "ring-2 ring-purple-300" : ""
+              }`}
+            >
+              <span className="text-4xl"><span className="inline-block transition-transform hover:-translate-y-1">🍎</span></span>
+              <h4 className="text-lg font-semibold text-purple-700">Teachers</h4>
+              <p className="text-sm text-gray-600">Helpful + simple</p>
+              <p className="text-xs text-gray-500">Make it clear and easy to use.</p>
+            </div>
+
+            {/* Collectors Persona */}
+            <div
+              onClick={() => setPersona("collectors")}
+              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform transition-shadow duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col gap-2 ${
+                persona === "collectors" ? "ring-2 ring-purple-300" : ""
+              }`}
+            >
+              <span className="text-4xl"><span className="inline-block transition-transform hover:-translate-y-1">🧾</span></span>
+              <h4 className="text-lg font-semibold text-purple-700">Collectors</h4>
+              <p className="text-sm text-gray-600">Rare + detailed</p>
+              <p className="text-xs text-gray-500">Details can justify higher prices.</p>
+            </div>
+
+            {/* Other Persona */}
+            <div
+              onClick={() => setPersona("other")}
+              className={`bg-white rounded-3xl shadow-md border border-purple-100 p-6 cursor-pointer transition-transform transition-shadow duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col gap-2 ${
+                persona === "other" ? "ring-2 ring-purple-300" : ""
+              }`}
+            >
+              <span className="text-4xl"><span className="inline-block transition-transform hover:-translate-y-1">✍️</span></span>
+              <h4 className="text-lg font-semibold text-purple-700">Other</h4>
+              <p className="text-sm text-gray-600">Make your own</p>
+              <p className="text-xs text-gray-500">Type who your customer is.</p>
+            </div>
           </div>
+
+          {/* Custom Persona Input (shown when "other" is selected) */}
+          {persona === "other" && (
+            <div className="mt-6">
+              <label htmlFor="customPersona" className="block text-sm font-semibold text-purple-700 mb-2">
+                Describe your target customer
+              </label>
+              <input
+                id="customPersona"
+                type="text"
+                value={customPersona}
+                onChange={(e) => setCustomPersona(e.target.value)}
+                placeholder="Example: 'college students who like cozy rooms'"
+                className="w-full px-4 py-2 border border-purple-300 rounded-lg text-base focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+              />
+              {!customPersona.trim() && (
+                <p className="text-sm text-purple-600 mt-2">
+                  Add a short description so I know who it's for.
+                </p>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* C) Value Summary */}
@@ -338,11 +558,11 @@ export default function ValueLab() {
             </p>
             
             <p className="text-sm text-gray-700">
-              {getPersonaTip(persona)}
+              {getPersonaTip(persona, customPersona)}
             </p>
             
-            <p className="text-sm text-gray-700">
-              Nice choices. You're building a real product story!
+            <p className="text-sm font-semibold text-purple-700">
+              {getActionableSuggestion(valueLevel)}
             </p>
           </div>
 

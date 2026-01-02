@@ -378,7 +378,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       quality: {
-        value: Math.max(1, Math.min(3, value)),
+        value: Math.max(1, Math.min(5, value)),
         metadata: {
           lastUpdatedBy: source,
           ...(source === "user" ? {} : { aiConfidence: prev.quality?.metadata.aiConfidence, aiReason: prev.quality?.metadata.aiReason })
@@ -391,7 +391,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       uniqueness: {
-        value: Math.max(1, Math.min(3, value)),
+        value: Math.max(1, Math.min(5, value)),
         metadata: {
           lastUpdatedBy: source,
           ...(source === "user" ? {} : { aiConfidence: prev.uniqueness?.metadata.aiConfidence, aiReason: prev.uniqueness?.metadata.aiReason })
@@ -404,7 +404,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       effort: {
-        value: Math.max(1, Math.min(3, value)),
+        value: Math.max(1, Math.min(5, value)),
         metadata: {
           lastUpdatedBy: source,
           ...(source === "user" ? {} : { aiConfidence: prev.effort?.metadata.aiConfidence, aiReason: prev.effort?.metadata.aiReason })
@@ -521,15 +521,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             applied++
             break
           case 'quality':
-            updates.quality = { value: Math.max(1, Math.min(3, Number(value))), metadata }
+            updates.quality = { value: Math.max(1, Math.min(5, Number(value))), metadata }
             applied++
             break
           case 'uniqueness':
-            updates.uniqueness = { value: Math.max(1, Math.min(3, Number(value))), metadata }
+            updates.uniqueness = { value: Math.max(1, Math.min(5, Number(value))), metadata }
             applied++
             break
         case 'effort':
-          updates.effort = { value: Math.max(1, Math.min(3, Number(value))), metadata }
+          updates.effort = { value: Math.max(1, Math.min(5, Number(value))), metadata }
           applied++
           break
         case 'suggestedPrice':
@@ -605,12 +605,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       : state.extraCost.value
     const totalCostPerProduct = variablePerProduct + fixedPerProduct
     
-    // Simple margin recommendation based on value
-    const valueScore = (state.quality?.value || 2) + (state.uniqueness?.value || 2) + (state.effort?.value || 2)
+    // Simple margin recommendation based on value (3-15 range)
+    const valueScore = (state.quality?.value || 3) + (state.uniqueness?.value || 3) + (state.effort?.value || 3)
     let recommendedMarginPercent = 50 // Default 50% margin
-    if (valueScore <= 4) {
+    if (valueScore <= 6) {
       recommendedMarginPercent = 30 // Lower margin for low value
-    } else if (valueScore >= 8) {
+    } else if (valueScore >= 12) {
       recommendedMarginPercent = 80 // Higher margin for high value
     }
 
@@ -629,9 +629,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Calculate value level
-    const valueScore = (state.quality?.value || 2) + (state.uniqueness?.value || 2) + (state.effort?.value || 2)
-    const valueLevel = valueScore <= 4 ? "low" : valueScore <= 7 ? "medium" : "high"
+    // Calculate value level (3-15 range)
+    const valueScore = (state.quality?.value || 3) + (state.uniqueness?.value || 3) + (state.effort?.value || 3)
+    const valueLevel = valueScore <= 6 ? "low" : valueScore <= 11 ? "medium" : "high"
     
     // Get cost breakdown
     const costBreakdown = calculateCostBreakdown()

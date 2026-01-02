@@ -5,7 +5,6 @@ import { FaPalette, FaPencilAlt, FaFileAlt, FaStar, FaUsers, FaCommentDots } fro
 import { useAppState } from '../../context/AppState'
 import { useSound } from '../../hooks/useSound'
 import ProgressBar from '../../components/priceit/ProgressBar'
-import { callPriceItAI } from '../../priceit/priceitAiClient'
 import AIFieldIndicator from '../../components/priceit/AIFieldIndicator'
 
 const ProductStudio = () => {
@@ -114,20 +113,6 @@ const ProductStudio = () => {
 
   const currentQuestion = productCards.find(card => card.id === selectedCard)?.question || 'Pick a card above to get started!'
 
-  // Test function for AI integration
-  const handleTestAI = async () => {
-    try {
-      console.log('Testing PriceIt AI...')
-      const response = await callPriceItAI([
-        { role: 'user', content: 'Suggest three fun product ideas for kids who like drawing.' }
-      ])
-      console.log('AI Response:', response)
-      alert(`AI Response:\n\n${response}`)
-    } catch (error) {
-      console.error('AI Test Error:', error)
-      alert('Error testing AI. Check console for details.')
-    }
-  }
 
   return (
     <>
@@ -260,24 +245,6 @@ const ProductStudio = () => {
 
       </div>
       </div>
-      
-      {/* Test Button for AI Integration - Fixed position, always visible */}
-      <button
-        onClick={handleTestAI}
-        className="fixed bottom-6 right-6 bg-purple-500 hover:bg-purple-600 text-white px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-150 hover:scale-105 active:scale-95 border-4 border-white"
-        title="Test AI Integration"
-        style={{ 
-          position: 'fixed', 
-          bottom: '24px', 
-          right: '24px',
-          zIndex: 99999,
-          backgroundColor: '#9333ea',
-          color: 'white',
-          cursor: 'pointer'
-        }}
-      >
-        🤖 Test AI
-      </button>
     </>
   )
 }
