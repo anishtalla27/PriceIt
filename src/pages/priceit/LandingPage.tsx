@@ -8,7 +8,7 @@ const LandingPage = () => {
   const playSound = useSound({ volume: 0.2 })
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden bg-white">
+    <div className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden bg-white opacity-0 translate-y-4 animate-[fadeIn_0.4s_ease-out_forwards]">
       {/* Decorative Background Blobs */}
       <div className="absolute top-20 left-20 w-40 h-40 bg-purple-400 rounded-full opacity-20 blur-3xl"></div>
       <div className="absolute bottom-32 right-32 w-32 h-32 bg-purple-500 rounded-full opacity-20 blur-3xl"></div>
@@ -27,7 +27,7 @@ const LandingPage = () => {
           transition={{ duration: 0.4 }}
           className="text-5xl font-bold text-purple-600 text-center flex items-center justify-center gap-3"
         >
-          <FaLightbulb className="text-yellow-500" />
+          <span className="inline-block transition-transform hover:-translate-y-1"><FaLightbulb className="text-yellow-500" /></span>
           PriceIt!
         </motion.h1>
 
@@ -38,7 +38,7 @@ const LandingPage = () => {
           transition={{ duration: 0.4, delay: 0.1 }}
           className="text-lg text-gray-600 text-center mt-2 flex items-center justify-center gap-2"
         >
-          Learn how to price products through play! <FaPalette className="text-pink-500" />
+          Learn how to price products through play! <span className="inline-block transition-transform hover:-translate-y-1"><FaPalette className="text-pink-500" /></span>
         </motion.p>
 
         {/* CTA Button */}
@@ -65,9 +65,9 @@ const LandingPage = () => {
             playSound()
             navigate('/priceit/product')
           }}
-          className="mt-6 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg hover:scale-105 transition-transform flex items-center gap-2 mx-auto"
+          className="mt-6 bg-purple-500 text-white px-10 py-4 rounded-full text-xl font-semibold shadow-lg transition-all duration-150 hover:scale-105 active:scale-95 flex items-center gap-2 mx-auto"
         >
-          Start Pricing <FaShoppingBag className="text-white" />
+          Start Pricing <span className="inline-block transition-transform hover:-translate-y-1"><FaShoppingBag className="text-white" /></span>
         </motion.button>
       </motion.div>
     </div>

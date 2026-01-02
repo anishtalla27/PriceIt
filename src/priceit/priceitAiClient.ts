@@ -3,16 +3,21 @@ export type PriceItMessage = {
   content: string 
 }
 
+export type PriceItAIMode = "chat" | "autofill" | "final"
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
-export async function callPriceItAI(messages: PriceItMessage[]): Promise<string> {
+export async function callPriceItAI(
+  messages: PriceItMessage[],
+  mode: PriceItAIMode = "chat"
+): Promise<string> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/priceit/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, mode }),
     })
 
     if (!response.ok) {

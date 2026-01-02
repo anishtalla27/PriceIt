@@ -44,15 +44,20 @@ export default function ProgressBar() {
     return null
   }
 
-  // Debug: Log to see if component is rendering
-  console.log('ProgressBar rendering for path:', location.pathname, 'currentStageIndex:', currentStageIndex)
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full bg-white border-b-2 border-purple-200 shadow-sm sticky top-0 z-50"
+      className="w-full bg-white border-b-4 border-purple-500 shadow-lg sticky top-0"
+      style={{ 
+        zIndex: 1000,
+        position: 'sticky',
+        top: 0,
+        backgroundColor: 'white',
+        borderBottom: '4px solid #9333ea',
+        width: '100%'
+      }}
     >
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between gap-4">
@@ -63,32 +68,45 @@ export default function ProgressBar() {
               const isCurrent = index === currentStageIndex
               const isUpcoming = index > currentStageIndex
 
+              const handleStageClick = () => {
+                playSound()
+                navigate(stage.route)
+              }
+
               return (
                 <div key={stage.id} className="flex items-center gap-2 flex-shrink-0">
-                  {/* Stage Circle */}
+                  {/* Stage Circle - Clickable */}
                   <div className="flex flex-col items-center gap-1">
-                    <motion.div
+                    <motion.button
+                      onClick={handleStageClick}
                       className={`
                         w-12 h-12 rounded-full flex items-center justify-center
-                        transition-all duration-300
+                        transition-all duration-300 cursor-pointer
                         ${isCompleted 
-                          ? 'bg-purple-500 text-white' 
+                          ? 'bg-purple-500 text-white hover:bg-purple-600 hover:scale-110' 
                           : isCurrent 
-                          ? 'bg-purple-600 text-white scale-110 shadow-lg' 
-                          : 'bg-purple-100 text-purple-400'
+                          ? 'bg-purple-600 text-white scale-110 shadow-lg hover:bg-purple-700' 
+                          : 'bg-purple-100 text-purple-400 hover:bg-purple-200 hover:scale-105'
                         }
                       `}
+                      whileHover={{ scale: isCurrent ? 1.15 : 1.1 }}
+                      whileTap={{ scale: 0.95 }}
                       animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                       transition={{ duration: 0.5, repeat: isCurrent ? Infinity : 0, repeatDelay: 2 }}
+                      title={`Go to ${stage.name}`}
                     >
                       <stage.Icon className="text-lg" />
-                    </motion.div>
-                    <span className={`
-                      text-xs font-semibold whitespace-nowrap
-                      ${isCurrent ? 'text-purple-600' : isCompleted ? 'text-purple-500' : 'text-gray-400'}
-                    `}>
+                    </motion.button>
+                    <button
+                      onClick={handleStageClick}
+                      className={`
+                        text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer hover:underline
+                        ${isCurrent ? 'text-purple-600' : isCompleted ? 'text-purple-500 hover:text-purple-600' : 'text-gray-400 hover:text-purple-500'}
+                      `}
+                      title={`Go to ${stage.name}`}
+                    >
                       {stage.name}
-                    </span>
+                    </button>
                   </div>
 
                   {/* Connector Line */}
