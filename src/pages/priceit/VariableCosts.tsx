@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FaCube, FaBox, FaTrash, FaPlus, FaArrowRight } from 'react-icons/fa'
+import { FaCube, FaBox, FaTrash, FaPlus, FaArrowRight, FaTag } from 'react-icons/fa'
 import { useSound } from '../../hooks/useSound'
 import { useAppState } from '../../context/AppState'
 import ProgressBar from '../../components/priceit/ProgressBar'
@@ -28,12 +28,15 @@ const safeNumber = (value: string, defaultValue: number = 0, min: number = 0): n
 const VariableCosts = () => {
   const navigate = useNavigate()
   const playSound = useSound({ volume: 0.2 })
-  const { updateMaterialCost, updatePackagingCost } = useAppState()
+  const { updateMaterialCost, updatePackagingCost, updateExtraCost } = useAppState()
 
   const [materialsItems, setMaterialsItems] = useState<VariableCostItem[]>([
     { id: generateId(), name: '', purchaseCost: 0, productsPerPurchase: 1 }
   ])
   const [packagingItems, setPackagingItems] = useState<VariableCostItem[]>([
+    { id: generateId(), name: '', purchaseCost: 0, productsPerPurchase: 1 }
+  ])
+  const [extraCostsItems, setExtraCostsItems] = useState<VariableCostItem[]>([
     { id: generateId(), name: '', purchaseCost: 0, productsPerPurchase: 1 }
   ])
 
@@ -50,7 +53,13 @@ const VariableCosts = () => {
     return sum + (cost / perPurchase)
   }, 0)
 
-  const totalVariablePerProduct = materialsPerProduct + packagingPerProduct
+  const extraCostsPerProduct = extraCostsItems.reduce((sum, item) => {
+    const cost = item.purchaseCost || 0
+    const perPurchase = item.productsPerPurchase || 1
+    return sum + (cost / perPurchase)
+  }, 0)
+
+  const totalVariablePerProduct = materialsPerProduct + packagingPerProduct + extraCostsPerProduct
 
   // Update global state only when navigating away (on explicit user action)
   // This prevents infinite loops from derived values
@@ -117,7 +126,8 @@ const VariableCosts = () => {
     items: VariableCostItem[],
     setItems: React.Dispatch<React.SetStateAction<VariableCostItem[]>>,
     perProduct: number,
-    delay: number
+    delay: number,
+    description?: string
   ) => {
     return (
       <motion.div
@@ -130,6 +140,9 @@ const VariableCosts = () => {
           <div className="text-4xl"><span className="inline-block transition-transform hover:-translate-y-1">{icon}</span></div>
           <h3 className="text-xl font-semibold text-purple-600">{title}</h3>
         </div>
+        {description && (
+          <p className="text-sm text-gray-600 text-center mb-2">{description}</p>
+        )}
 
         {/* Items List */}
         <div className="flex flex-col gap-3">
@@ -217,6 +230,9 @@ const VariableCosts = () => {
     if (updatePackagingCost) {
       updatePackagingCost(packagingPerProduct, "user")
     }
+    if (updateExtraCost) {
+      updateExtraCost(extraCostsPerProduct, "user")
+    }
     navigate('/priceit/fixed-costs')
   }
 
@@ -286,6 +302,16 @@ const VariableCosts = () => {
             packagingPerProduct,
             0.3
           )}
+
+          {renderSection(
+            'Extra Costs',
+            <FaTag className="text-orange-500" />,
+            extraCostsItems,
+            setExtraCostsItems,
+            extraCostsPerProduct,
+            0.4,
+            "Other costs like shipping, stickers, batteries, or marketing."
+          )}
         </motion.div>
 
         {/* Summary Panel */}
@@ -304,6 +330,10 @@ const VariableCosts = () => {
               <div className="flex justify-between items-center">
                 <span className="text-xl font-semibold text-white">Packaging per product:</span>
                 <span className="text-2xl font-bold text-white">{formatCurrency(packagingPerProduct)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xl font-semibold text-white">Extra costs per product:</span>
+                <span className="text-2xl font-bold text-white">{formatCurrency(extraCostsPerProduct)}</span>
               </div>
               <div className="pt-3 border-t-2 border-purple-400 flex justify-between items-center">
                 <span className="text-2xl font-bold text-white">Total variable cost per product:</span>

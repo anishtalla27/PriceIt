@@ -66,6 +66,7 @@ IMPORTANT CONSTRAINTS:
 - If you're unsure, say so clearly
 - Never overwrite user intent - only suggest improvements
 - Keep responses concise (under 5 sentences unless asked for more)
+- Do not use markdown bullet lists or asterisks. Use short paragraphs and simple lines.
 
 Remember: You're helping kids learn about pricing in a fun, safe way!`
 
@@ -100,6 +101,28 @@ export type PriceItChangeProposal = {
 }
 
 /**
+ * Explicit allowlist of AppState field paths that AI can modify.
+ * These MUST match exactly the field names in AppState interface.
+ * DO NOT use labels like "Product Name" - use "productName" exactly.
+ */
+export const AI_ALLOWED_FIELDS = [
+  'productName',      // Product name (string)
+  'description',      // Product description (string)
+  'feature',          // Special feature (string)
+  'targetCustomer',   // Target customer/persona (string)
+  'materialCost',     // Material cost per product (number)
+  'packagingCost',    // Packaging cost per product (number)
+  'extraCost',        // Extra/fixed costs (number)
+  'finalPrice',       // Final price (number)
+  'suggestedPrice',   // AI-suggested price (number)
+  'pricePosition',    // Price position: "budget" | "fair" | "premium" (string)
+  'pricingExplanation', // Pricing explanation text (string)
+  'quality',          // Quality level 1-5 (number)
+  'uniqueness',       // Uniqueness level 1-5 (number)
+  'effort'            // Effort level 1-5 (number)
+] as const
+
+/**
  * Main AI function with model routing based on mode.
  * 
  * @param mode - Determines which model to use (chat/autofill/final)
@@ -129,9 +152,9 @@ export async function callPriceItAI(
   if (mode === "autofill") {
     systemPrompt += `
 
-IMPORTANT: You are in AUTOFILL mode. You MUST respond with ONLY valid JSON, no prose outside JSON.
+CRITICAL: You are in AUTOFILL mode. You MUST respond with ONLY valid JSON. No markdown, no code blocks, no extra text before or after the JSON.
 
-Response format (required):
+REQUIRED JSON FORMAT (no other text allowed):
 {
   "changes": [
     {
@@ -144,12 +167,65 @@ Response format (required):
   "summary": "I filled in a few guesses based on what you told me."
 }
 
-Valid fields: productName, description, feature, targetCustomer, materialCost, packagingCost, extraCost, finalPrice, quality, uniqueness, effort
-- Do NOT invent unknown fields
-- confidence must be 0.0 to 1.0
-- reason must be one short sentence
-- Only propose changes you're confident about (confidence >= 0.6)
-- If user edited a field (you'll know from context), do NOT change it unless explicitly asked`
+VALID FIELDS - USE ONLY THESE EXACT FIELD NAMES (case-sensitive):
+You MUST use these exact field names. Do NOT use labels like "Product Name" or "product name". Use the machine field names exactly as shown.
+
+EXACT ALLOWLIST (copy these exactly):
+["productName", "description", "feature", "targetCustomer", "materialCost", "packagingCost", "extraCost", "finalPrice", "suggestedPrice", "pricePosition", "pricingExplanation", "quality", "uniqueness", "effort"]
+
+FIELD DESCRIPTIONS (IMPORTANT - READ CAREFULLY):
+- "productName" (string) - Product name
+- "description" (string) - Product description
+- "feature" (string) - Special feature
+- "targetCustomer" (string) - Target customer/persona
+- "materialCost" (number) - COST PER PRODUCT for materials. If user says "$5 for 10 products", calculate: 5 / 10 = 0.50. Set materialCost to 0.50.
+- "packagingCost" (number) - COST PER PRODUCT for packaging. If user says "$1 for 10 products", calculate: 1 / 10 = 0.10. Set packagingCost to 0.10.
+- "extraCost" (number) - COST PER PRODUCT for extra costs. Calculate per-product cost the same way.
+- "finalPrice" (number) - Final selling price
+- "suggestedPrice" (number) - AI-suggested price
+- "pricePosition" (string) - Must be exactly "budget", "fair", or "premium"
+- "pricingExplanation" (string) - Explanation of pricing
+- "quality" (number) - Must be 1, 2, 3, 4, or 5
+- "uniqueness" (number) - Must be 1, 2, 3, 4, or 5
+- "effort" (number) - Must be 1, 2, 3, 4, or 5
+
+COST CALCULATION EXAMPLES:
+- User says: "add a material cost named boxes for $5 and it makes 10 products"
+  → Calculate: 5 / 10 = 0.50
+  → Set: {"field": "materialCost", "value": 0.50, "confidence": 0.95, "reason": "User said $5 for 10 products, so $0.50 per product."}
+
+- User says: "packaging costs $1 for 10 products"
+  → Calculate: 1 / 10 = 0.10
+  → Set: {"field": "packagingCost", "value": 0.10, "confidence": 0.95, "reason": "User said $1 for 10 products, so $0.10 per product."}
+
+CRITICAL RULES:
+1. You must ONLY use the field paths listed in the allowlist above.
+2. Do NOT use labels like "Product Name" or "Material Cost".
+3. If a field is not listed in the allowlist, skip it - DO NOT include it.
+4. Do NOT invent new field names or use variations (no "product_name", "ProductName", etc.).
+5. confidence must be between 0.0 and 1.0
+6. reason must be one short sentence
+7. Only propose changes you're confident about (confidence >= 0.6)
+8. Return ONLY the JSON object, nothing else.
+
+Example of CORRECT format (will be accepted):
+{
+  "changes": [
+    {"field": "productName", "value": "GlowBuddy", "confidence": 0.9, "reason": "User mentioned the product name."},
+    {"field": "description", "value": "A fun glowing toy", "confidence": 0.8, "reason": "Based on user description."},
+    {"field": "materialCost", "value": 5.50, "confidence": 0.7, "reason": "Estimated material cost."}
+  ],
+  "summary": "I filled in the product name, description, and material cost."
+}
+
+Example of INCORRECT format (will be REJECTED):
+{
+  "changes": [
+    {"field": "Product Name", "value": "GlowBuddy", ...}  // WRONG - "Product Name" is not in allowlist
+    {"field": "product_name", "value": "GlowBuddy", ...}   // WRONG - "product_name" is not in allowlist
+    {"field": "materials", "value": 5.50, ...}             // WRONG - "materials" is not in allowlist, use "materialCost"
+  ]
+}`
   }
 
   // Ensure system prompt is always first
@@ -190,10 +266,19 @@ Valid fields: productName, description, feature, targetCustomer, materialCost, p
       return 'Sorry, I got a response but it was empty. Please try again.'
     }
 
-    // For autofill mode, validate JSON structure
+    // For autofill mode, validate JSON structure and field allowlist
     if (mode === "autofill") {
       try {
-        const parsed = JSON.parse(assistantMessage)
+        // Remove any markdown code blocks if present
+        let cleanedMessage = assistantMessage.trim()
+        if (cleanedMessage.startsWith('```json')) {
+          cleanedMessage = cleanedMessage.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+        } else if (cleanedMessage.startsWith('```')) {
+          cleanedMessage = cleanedMessage.replace(/^```\s*/, '').replace(/\s*```$/, '')
+        }
+        
+        const parsed = JSON.parse(cleanedMessage)
+        
         // Validate structure
         if (!parsed.changes || !Array.isArray(parsed.changes)) {
           return JSON.stringify({
@@ -202,17 +287,63 @@ Valid fields: productName, description, feature, targetCustomer, materialCost, p
             summary: "I had trouble understanding. Please try again."
           })
         }
-        // Validate each change
+        
+        // Field allowlist - must match AI_ALLOWED_FIELDS exactly
+        const validFields = [...AI_ALLOWED_FIELDS]
+        
+        // Validate each change with detailed logging
         const validChanges = parsed.changes.filter((change: any) => {
-          return (
-            change.field &&
-            (change.value !== undefined && change.value !== null) &&
-            typeof change.confidence === 'number' &&
-            change.confidence >= 0 &&
-            change.confidence <= 1 &&
-            typeof change.reason === 'string'
-          )
+          // Check field is in allowlist
+          if (!change.field || !validFields.includes(change.field)) {
+            console.warn(`[Autofill] SKIPPED field "${change.field}": Not in allowlist. Valid fields: ${validFields.join(', ')}`)
+            return false
+          }
+          
+          // Check value exists and type matches
+          if (change.value === undefined || change.value === null) {
+            console.warn(`[Autofill] SKIPPED field "${change.field}": Value is undefined or null`)
+            return false
+          }
+          
+          // Type validation based on field
+          const numericFields = ['materialCost', 'packagingCost', 'extraCost', 'finalPrice', 'suggestedPrice', 'quality', 'uniqueness', 'effort']
+          if (numericFields.includes(change.field) && typeof change.value !== 'number') {
+            console.warn(`[Autofill] SKIPPED field "${change.field}": Requires number, got ${typeof change.value} (value: ${JSON.stringify(change.value)})`)
+            return false
+          }
+          
+          const stringFields = ['productName', 'description', 'feature', 'targetCustomer', 'pricePosition', 'pricingExplanation']
+          if (stringFields.includes(change.field) && typeof change.value !== 'string') {
+            console.warn(`[Autofill] SKIPPED field "${change.field}": Requires string, got ${typeof change.value} (value: ${JSON.stringify(change.value)})`)
+            return false
+          }
+          
+          // Validate confidence
+          if (typeof change.confidence !== 'number' || change.confidence < 0 || change.confidence > 1) {
+            console.warn(`[Autofill] SKIPPED field "${change.field}": Invalid confidence ${change.confidence} (must be 0.0-1.0)`)
+            return false
+          }
+          
+          // Validate reason
+          if (typeof change.reason !== 'string' || !change.reason.trim()) {
+            console.warn(`[Autofill] SKIPPED field "${change.field}": Missing or empty reason`)
+            return false
+          }
+          
+          // Log valid change
+          console.log(`[Autofill] VALID change: ${change.field} = ${JSON.stringify(change.value)} (confidence: ${change.confidence})`)
+          return true
         })
+        
+        // Log validation summary
+        const totalChanges = parsed.changes.length
+        const validCount = validChanges.length
+        const invalidCount = totalChanges - validCount
+        console.log(`[Autofill] Validation: ${validCount} valid, ${invalidCount} invalid out of ${totalChanges} total changes`)
+        if (invalidCount > 0) {
+          console.warn(`[Autofill] ${invalidCount} change(s) were filtered out. Check logs above for reasons.`)
+        }
+        
         return JSON.stringify({
           changes: validChanges,
           summary: parsed.summary || "I made some suggestions."

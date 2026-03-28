@@ -85,18 +85,134 @@ export default function PriceItAIChat() {
 
   // Detect if user wants autofill
   const isAutofillRequest = (text: string): boolean => {
-    const lower = text.toLowerCase()
+    const lower = text.toLowerCase().trim()
+    
+    // Direct autofill keywords
     const autofillKeywords = [
-      'fill in', 'autofill', 'help me fill', 'fill out', 'complete',
-      'fill the form', 'fill this', 'suggest', 'replace everything',
-      'overwrite', 'update all'
+      'fill it in',
+      'fill it in for me',
+      'autofill',
+      'apply that',
+      'use those',
+      'set these values',
+      'put that into the form',
+      'update the fields',
+      'fill in',
+      'help me fill',
+      'fill out',
+      'complete',
+      'fill the form',
+      'fill this',
+      'suggest',
+      'replace everything',
+      'overwrite',
+      'update all'
     ]
-    return autofillKeywords.some(keyword => lower.includes(keyword))
+    
+    // Check for direct autofill intent
+    if (autofillKeywords.some(keyword => lower.includes(keyword))) {
+      return true
+    }
+    
+    // Check for confirmation responses after suggestions
+    const confirmationKeywords = ['yes', 'do it', 'go ahead', 'sure', 'ok', 'okay', 'yep', 'yeah', 'apply', 'use that']
+    const isConfirmation = confirmationKeywords.some(keyword => {
+      // Match whole word or at start/end of string
+      const regex = new RegExp(`(^|\\s)${keyword}(\\s|$|[.,!?])`, 'i')
+      return regex.test(lower)
+    })
+    
+    if (isConfirmation && messages.length > 0) {
+      // Check if last assistant message suggested values or changes
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === 'assistant') {
+        const lastContent = lastMessage.content.toLowerCase()
+        const hasSuggestions = lastContent.includes('suggest') || 
+                              lastContent.includes('recommend') ||
+                              lastContent.includes('change') ||
+                              lastContent.includes('update') ||
+                              lastContent.includes('fill') ||
+                              lastMessage.isChangeProposal ||
+                              (lastMessage.changeData && lastMessage.changeData.changes.length > 0)
+        
+        if (hasSuggestions) {
+          return true
+        }
+      }
+    }
+    
+    // Check for imperative commands with field keywords
+    // Examples: "add a material cost...", "set the product name...", "update the description..."
+    const imperativeVerbs = ['add', 'set', 'update', 'change', 'replace', 'remove', 'put', 'make', 'create', 'enter']
+    const fieldKeywords = [
+      'material', 'materials', 'packaging', 'extra cost', 'extra costs',
+      'cost', 'costs', 'price', 'prices', 'name', 'description', 'target',
+      'customer', 'feature', 'quality', 'uniqueness', 'effort', 'product name',
+      'target customer', 'special feature', 'product', 'item'
+    ]
+    
+    const hasImperativeVerb = imperativeVerbs.some(verb => {
+      // Check if verb appears at start of message or after whitespace/punctuation
+      // Match patterns like: "add ", "add a", "add the", "set ", "set the", etc.
+      const regex = new RegExp(`(^|\\s)${verb}(\\s|$)`, 'i')
+      return regex.test(lower)
+    })
+    
+    const hasFieldKeyword = fieldKeywords.some(keyword => lower.includes(keyword))
+    
+    if (hasImperativeVerb && hasFieldKeyword) {
+      return true
+    }
+    
+    return false
   }
 
   const shouldAllowOverwrite = (text: string): boolean => {
     const lower = text.toLowerCase()
     return lower.includes('replace') || lower.includes('overwrite') || lower.includes('update all')
+  }
+
+  // Normalize AI messages to remove markdown formatting
+  const normalizeAIMessage = (content: string): string => {
+    let normalized = content
+    // Remove markdown bullets and asterisks at start of lines
+    normalized = normalized.replace(/^[\s]*[-*•]\s+/gm, '')
+    // Remove markdown bold/italic markers
+    normalized = normalized.replace(/\*\*([^*]+)\*\*/g, '$1')
+    normalized = normalized.replace(/\*([^*]+)\*/g, '$1')
+    // Clean up multiple line breaks
+    normalized = normalized.replace(/\n{3,}/g, '\n\n')
+    // Trim each line
+    normalized = normalized.split('\n').map(line => line.trim()).join('\n')
+    return normalized.trim()
+  }
+
+  // Detect if AI response contains suggested values
+  const hasSuggestedValues = (content: string): boolean => {
+    const lower = content.toLowerCase()
+    const suggestionKeywords = [
+      'suggest', 'recommend', 'try', 'could be', 'might be',
+      'how about', 'what about', 'consider', 'you could'
+    ]
+    return suggestionKeywords.some(keyword => lower.includes(keyword))
+  }
+
+  // Check if user initially asked for help filling things in
+  const userAskedForHelp = (): boolean => {
+    // Check last few user messages for help requests
+    const recentUserMessages = messages
+      .filter(msg => msg.role === 'user')
+      .slice(-3)
+      .map(msg => msg.content.toLowerCase())
+    
+    const helpKeywords = [
+      'help', 'fill', 'complete', 'suggest', 'recommend',
+      'what should', 'what can', 'how do', 'tell me'
+    ]
+    
+    return recentUserMessages.some(msg => 
+      helpKeywords.some(keyword => msg.includes(keyword))
+    )
   }
 
   const handleSend = async () => {
@@ -120,23 +236,33 @@ export default function PriceItAIChat() {
 - Packaging Cost: $${state.packagingCost.value}
 - Extra Cost: $${state.extraCost.value}`
 
+      // Keep last ~12 messages for context (limit conversation history)
+      const recentMessages = messages.slice(-12)
       const conversationHistory: PriceItMessage[] = [
-        ...messages.map(msg => ({ role: msg.role, content: msg.content })),
+        ...recentMessages.map(msg => ({ role: msg.role, content: msg.content })),
         { role: "user" as const, content: `${stateContext}\n\nUser: ${trimmedInput}` }
       ]
 
-      // Determine mode
+      // Determine mode based on intent detection
       const isAutofill = isAutofillRequest(trimmedInput)
       const allowOverwrite = shouldAllowOverwrite(trimmedInput)
       const mode = isAutofill ? "autofill" : "chat"
 
-      // Call AI
+      // Debug logging
+      console.log(`[PriceIt AI] Intent detected: ${isAutofill ? 'AUTOFILL_REQUEST' : 'CHAT'}`, {
+        userMessage: trimmedInput,
+        mode,
+        allowOverwrite
+      })
+
+      // Call AI with appropriate mode
       const response = await callPriceItAI(conversationHistory, mode)
 
       if (isAutofill) {
         // Parse JSON response
         try {
           const changeData = JSON.parse(response)
+          
           if (changeData.error) {
             const errorMessage: ChatMessage = {
               role: "assistant",
@@ -144,33 +270,24 @@ export default function PriceItAIChat() {
             }
             setMessages(prev => [...prev, errorMessage])
           } else if (changeData.changes && changeData.changes.length > 0) {
-            // Check if confirmation needed
-            const lowConfidence = changeData.changes.some((c: any) => c.confidence < 0.6)
-            const manyChanges = changeData.changes.length > 5
-
-            if (lowConfidence || manyChanges) {
-              // Ask for confirmation
-              setPendingChanges({ ...changeData, allowOverwrite })
-              const confirmMessage: ChatMessage = {
-                role: "assistant",
-                content: `${changeData.summary}\n\nI'd like to update ${changeData.changes.length} field(s). Should I apply these changes?`,
-                isChangeProposal: true,
-                changeData
-              }
-              setMessages(prev => [...prev, confirmMessage])
-            } else {
-              // Auto-apply
-              const result = applyAIChanges(changeData.changes, allowOverwrite)
-              const appliedMessage: ChatMessage = {
-                role: "assistant",
-                content: `${changeData.summary}\n\nI filled in ${result.applied} field(s). You can change anything if needed!`
-              }
-              setMessages(prev => [...prev, appliedMessage])
+            // Always apply changes when autofill is requested and response is valid
+            const result = applyAIChanges(changeData.changes, allowOverwrite)
+            
+            // Show clean, simple response
+            const appliedMessage: ChatMessage = {
+              role: "assistant",
+              content: result.applied > 0 
+                ? "Done. I filled in the fields on the page. You can change anything."
+                : "I couldn't update any fields. They may have already been filled in."
             }
+            setMessages(prev => [...prev, appliedMessage])
+            
+            // Log for debugging
+            console.log(`[PriceIt AI] Applied ${result.applied} changes, skipped ${result.skipped}`)
           } else {
             const noChangesMessage: ChatMessage = {
               role: "assistant",
-              content: changeData.summary || "I couldn't find anything to fill in. Can you tell me more about your product?"
+              content: "I couldn't find anything to fill in. Can you tell me more about your product?"
             }
             setMessages(prev => [...prev, noChangesMessage])
           }
@@ -183,8 +300,15 @@ export default function PriceItAIChat() {
           setMessages(prev => [...prev, errorMessage])
         }
       } else {
-        // Regular chat response
-        const aiMessage: ChatMessage = { role: "assistant", content: response }
+        // Regular chat response - normalize formatting
+        let normalizedResponse = normalizeAIMessage(response)
+        
+        // Proactively offer to apply if AI suggested values and user asked for help
+        if (hasSuggestedValues(normalizedResponse) && userAskedForHelp()) {
+          normalizedResponse += "\n\nWant me to apply these to the form?"
+        }
+        
+        const aiMessage: ChatMessage = { role: "assistant", content: normalizedResponse }
         setMessages(prev => [...prev, aiMessage])
       }
     } catch (error) {
@@ -310,7 +434,7 @@ export default function PriceItAIChat() {
                       : 'bg-white text-gray-800 border border-purple-100'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">{message.role === 'assistant' ? normalizeAIMessage(message.content) : message.content}</p>
                 </div>
               </div>
               {message.isChangeProposal && message.changeData && (

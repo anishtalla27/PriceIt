@@ -431,6 +431,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }))
   }
 
+  // Helper to generate unique change IDs
+  const generateChangeId = (): string => {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID()
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  }
+
   const applyAIChanges = (
     changes: Array<{
       field: string
@@ -443,20 +451,36 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     let applied = 0
     let skipped = 0
 
+    // Field allowlist - MUST match AI_ALLOWED_FIELDS in server/api/priceit.ts
+    // These are the exact AppState field names that AI can modify
+    // Do NOT use labels like "Product Name" - use "productName" exactly
     const validFields = [
-      'productName', 'description', 'feature', 'targetCustomer',
-      'materialCost', 'packagingCost', 'extraCost', 'finalPrice',
-      'suggestedPrice', 'pricePosition', 'pricingExplanation',
-      'quality', 'uniqueness', 'effort'
+      'productName',      // Product name (string)
+      'description',      // Product description (string)
+      'feature',          // Special feature (string)
+      'targetCustomer',   // Target customer/persona (string)
+      'materialCost',     // Material cost per product (number)
+      'packagingCost',    // Packaging cost per product (number)
+      'extraCost',        // Extra/fixed costs (number)
+      'finalPrice',       // Final price (number)
+      'suggestedPrice',   // AI-suggested price (number)
+      'pricePosition',    // Price position: "budget" | "fair" | "premium" (string)
+      'pricingExplanation', // Pricing explanation text (string)
+      'quality',          // Quality level 1-5 (number)
+      'uniqueness',       // Uniqueness level 1-5 (number)
+      'effort'            // Effort level 1-5 (number)
     ]
 
     // Batch all updates into a single setState call
     setState(prev => {
       const updates: Partial<AppState> = {}
+      const changeBatch: FieldChange[] = []
+      const changeIds: string[] = []
 
       changes.forEach(change => {
-        // Validate field exists
+        // Validate field exists - must match exact AppState field names
         if (!validFields.includes(change.field)) {
+          console.warn(`[AppState] SKIPPED field "${change.field}": Not in allowlist. Valid fields: ${validFields.join(', ')}`)
           skipped++
           return
         }
@@ -464,12 +488,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         // Check if user has edited this field
         const field = (prev as any)[change.field]
         if (field && field.metadata && field.metadata.lastUpdatedBy === "user" && !allowOverwrite) {
+          console.warn(`[AppState] SKIPPED field "${change.field}": User has edited this field and allowOverwrite=false`)
           skipped++
           return
         }
 
         // Validate confidence
         if (change.confidence < 0 || change.confidence > 1) {
+          console.warn(`[AppState] SKIPPED field "${change.field}": Invalid confidence ${change.confidence} (must be 0.0-1.0)`)
           skipped++
           return
         }
@@ -486,7 +512,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         // Apply change based on field type
         const value = change.value
-        const changeId = generateChangeId()
         switch (change.field) {
           case 'productName':
             updates.productName = { value: String(value), metadata }
@@ -535,10 +560,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         case 'suggestedPrice':
           // Round to nearest 0.50 and ensure >= totalCostPerProduct
           // Calculate cost breakdown inline
-          const variablePerProduct = (prev.materialCost?.value || 0) + (prev.packagingCost?.value || 0)
+          // Variable costs: materials + packaging + extra costs (from Variable Costs page)
+          const variablePerProduct = (prev.materialCost?.value || 0) + (prev.packagingCost?.value || 0) + (prev.extraCost?.value || 0)
+          // Fixed costs: Note - extraCost is also used for fixed costs total, this may need refactoring
           const fixedPerProduct = prev.batchSize && prev.batchSize > 0 
             ? (prev.extraCost?.value || 0) / prev.batchSize 
-            : (prev.extraCost?.value || 0)
+            : 0
           const totalCostPerProduct = variablePerProduct + fixedPerProduct
           const rawPrice = Math.max(totalCostPerProduct, Number(value))
           const rounded = Math.round(rawPrice * 2) / 2
@@ -563,6 +590,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         // Record change if value actually changed
         if (prevValue !== value) {
+          const changeId = generateChangeId()
           changeBatch.push({
             field: change.field,
             prevValue,
@@ -579,11 +607,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       // Limit batch size to prevent memory bloat
       const maxBatchSize = 50
-      const trimmedBatch = changeBatch.slice(-maxBatchSize)
+      const trimmedBatch = changeBatch.length > 0 ? changeBatch.slice(-maxBatchSize) : []
 
-      // Update change log and undo stack
-      const newChangeLog = [...prev.changeLog, ...trimmedBatch].slice(-200) // Keep last 200 changes
-      const newUndoStack = [...prev.undoStack, trimmedBatch].slice(-50) // Keep last 50 batches
+      // Update change log and undo stack only if there are changes
+      const newChangeLog = trimmedBatch.length > 0 
+        ? [...prev.changeLog, ...trimmedBatch].slice(-200) // Keep last 200 changes
+        : prev.changeLog
+      const newUndoStack = trimmedBatch.length > 0
+        ? [...prev.undoStack, trimmedBatch].slice(-50) // Keep last 50 batches
+        : prev.undoStack
 
       return {
         ...prev,
@@ -594,15 +626,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
     })
 
+    // Log summary
+    console.log(`[AppState] Autofill complete: Applied ${applied} changes, skipped ${skipped} changes`)
+    if (skipped > 0) {
+      console.warn(`[AppState] ${skipped} change(s) were skipped. Check logs above for reasons.`)
+    }
+
     return { applied, skipped }
   }
 
   // Deterministic cost breakdown calculator (no AI needed)
   const calculateCostBreakdown = (): PriceBreakdown => {
-    const variablePerProduct = state.materialCost.value + state.packagingCost.value
+    // Variable costs: materials + packaging + extra costs (from Variable Costs page)
+    const variablePerProduct = state.materialCost.value + state.packagingCost.value + state.extraCost.value
+    // Fixed costs: handled separately in FixedCosts page (stored in extraCost temporarily, then divided by batchSize)
+    // Note: extraCost is used for both variable extra costs and fixed costs total - this may need refactoring
     const fixedPerProduct = state.batchSize && state.batchSize > 0 
-      ? state.extraCost.value / state.batchSize 
-      : state.extraCost.value
+      ? (state.extraCost.value / state.batchSize) 
+      : 0
     const totalCostPerProduct = variablePerProduct + fixedPerProduct
     
     // Simple margin recommendation based on value (3-15 range)
