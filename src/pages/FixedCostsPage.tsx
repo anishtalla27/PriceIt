@@ -1,0 +1,576 @@
+import React, { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppState } from "@/context/AppStateContext";
+import type { FixedCostItem, FixedCostCategory } from "@/context/AppStateContext";
+import { ChronicleButton } from "@/components/ui/chronicle-button";
+import { ProgressSteps } from "@/components/ui/progress-steps";
+import { injectBauhausCardStyles } from "@/components/ui/bauhaus-card";
+import { injectFieldCardStyles } from "@/components/ui/field-card";
+import logo from "../../logo.png";
+
+// ─── constants ────────────────────────────────────────────────────────────────
+
+const CATEGORY_OPTIONS: { value: FixedCostCategory; emoji: string; label: string }[] = [
+  { value: "Equipment", emoji: "🔧", label: "Equipment" },
+  { value: "Rent",      emoji: "🏠", label: "Rent" },
+  { value: "Supplies",  emoji: "📦", label: "Supplies" },
+  { value: "Packaging", emoji: "📫", label: "Packaging" },
+  { value: "Other",     emoji: "✨", label: "Other" },
+];
+
+function categoryEmoji(cat: FixedCostCategory) {
+  return CATEGORY_OPTIONS.find((c) => c.value === cat)?.emoji ?? "✨";
+}
+
+// ─── math ─────────────────────────────────────────────────────────────────────
+
+function monthlyPortion(item: FixedCostItem): number {
+  if (item.totalCost === "" || Number(item.totalCost) <= 0) return 0;
+  if (item.type === "monthly") return Number(item.totalCost);
+  if (item.monthsOfUse === "" || Number(item.monthsOfUse) <= 0) return 0;
+  return Number(item.totalCost) / Number(item.monthsOfUse);
+}
+
+function isRowComplete(item: FixedCostItem): boolean {
+  if (item.name.trim() === "") return false;
+  if (item.totalCost === "" || Number(item.totalCost) <= 0) return false;
+  if (item.type === "one-time" && (item.monthsOfUse === "" || Number(item.monthsOfUse) <= 0))
+    return false;
+  return true;
+}
+
+// ─── shared card container with bauhaus gradient border + mouse tracking ──────
+
+function CardShell({
+  accentColor = "#5DB7C4",
+  compact = false,
+  children,
+}: {
+  accentColor?: string;
+  compact?: boolean;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    injectBauhausCardStyles();
+    injectFieldCardStyles();
+    const card = ref.current;
+    const onMove = (e: MouseEvent) => {
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      card.style.setProperty("--rotation", Math.atan2(-x, y) + "rad");
+    };
+    card?.addEventListener("mousemove", onMove);
+    return () => card?.removeEventListener("mousemove", onMove);
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="bauhaus-field-card"
+      style={{
+        "--card-bg": "#ffffff",
+        "--card-accent": accentColor,
+        "--card-radius": "1rem",
+        "--card-border-width": "2px",
+        padding: compact ? "0.75rem 1rem" : "1.1rem 1.4rem 1.35rem",
+      } as React.CSSProperties}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── compact summary card ─────────────────────────────────────────────────────
+
+function CompactCard({
+  item,
+  onEdit,
+  onDelete,
+  confirmingDelete,
+}: {
+  item: FixedCostItem;
+  onEdit: () => void;
+  onDelete: () => void;
+  confirmingDelete: boolean;
+}) {
+  const monthly = monthlyPortion(item);
+
+  return (
+    <CardShell accentColor="#5DB7C4" compact>
+      <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+        {/* Emoji */}
+        <span className="text-2xl select-none leading-none">{categoryEmoji(item.category)}</span>
+
+        {/* Name + subtitle */}
+        <div className="flex-1 min-w-0">
+          <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#B0C4C7]"}`}>
+            {item.name || "Unnamed item"}
+          </p>
+          <p className="text-[11px] text-[#7B9EA3] mt-0.5 truncate">
+            {item.category}
+            {item.type === "one-time" && item.monthsOfUse
+              ? ` · One-Time · ${item.monthsOfUse} mo`
+              : item.type === "monthly"
+              ? " · Monthly"
+              : ""}
+          </p>
+        </div>
+
+        {/* Monthly cost */}
+        <div className="shrink-0 text-right mr-1">
+          <p className="font-extrabold text-[#5DB7C4] text-sm leading-tight">
+            {monthly > 0 ? `$${monthly.toFixed(2)}` : "—"}
+          </p>
+          <p className="text-[10px] text-[#9BBFC3] font-semibold">/mo</p>
+        </div>
+
+        {/* Edit button */}
+        <button
+          type="button"
+          onClick={onEdit}
+          className="shrink-0 min-h-11 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#EEF6F8] text-[#5DB7C4] hover:bg-[#5DB7C4] hover:text-white transition-colors"
+        >
+          Edit
+        </button>
+
+        {/* Delete button */}
+        <button
+          type="button"
+          onClick={onDelete}
+          className="shrink-0 min-h-11 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-sm font-bold px-3"
+          aria-label="Delete"
+        >
+          {confirmingDelete ? "Sure?" : "Delete"}
+        </button>
+      </div>
+    </CardShell>
+  );
+}
+
+// ─── expanded edit card ───────────────────────────────────────────────────────
+
+function EditCard({
+  item,
+  onUpdate,
+  onDelete,
+  onDone,
+  confirmingDelete,
+}: {
+  item: FixedCostItem;
+  onUpdate: (updates: Partial<FixedCostItem>) => void;
+  onDelete: () => void;
+  onDone: () => void;
+  confirmingDelete: boolean;
+}) {
+  const [touched, setTouched] = useState({
+    name: false,
+    totalCost: false,
+    monthsOfUse: false,
+  });
+  const monthly = monthlyPortion(item);
+  const nameError = touched.name && item.name.trim() === "";
+  const totalCostError = touched.totalCost && (item.totalCost === "" || Number(item.totalCost) <= 0);
+  const monthsError =
+    item.type === "one-time" &&
+    touched.monthsOfUse &&
+    (item.monthsOfUse === "" || Number(item.monthsOfUse) <= 0);
+
+  return (
+    <CardShell accentColor="#5DB7C4">
+      {/* Row 1: Name + category + delete */}
+      <div className="flex flex-col sm:flex-row gap-2 items-start mb-3">
+        <div className="flex-1">
+          <label className="bauhaus-field-label">Cost item name</label>
+          <input
+            className="bauhaus-field-input"
+            type="text"
+            value={item.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
+            placeholder="e.g. Sewing Machine"
+            autoFocus
+            style={nameError ? { borderColor: "#F36C3D", background: "#FFF5F0" } : undefined}
+          />
+          {nameError && (
+            <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+              Add a name so we know what this cost is.
+            </p>
+          )}
+        </div>
+        <div className="w-full sm:w-36 shrink-0">
+          <label className="bauhaus-field-label">Category</label>
+          <select
+            className="bauhaus-field-input"
+            value={item.category}
+            onChange={(e) => onUpdate({ category: e.target.value as FixedCostCategory })}
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235DB7C4' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 10px center",
+              appearance: "none",
+              paddingRight: "2rem",
+            }}
+          >
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.emoji} {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="mt-1 sm:mt-6 min-h-11 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-sm font-bold px-3"
+          aria-label="Delete cost item"
+        >
+          {confirmingDelete ? "Sure?" : "Delete"}
+        </button>
+      </div>
+
+      {/* Row 2: Total cost + type toggle */}
+      <div className="flex flex-col sm:flex-row gap-3 items-end mb-3">
+        <div className="flex-1">
+          <label className="bauhaus-field-label">Total cost</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7B9EA3] font-semibold select-none pointer-events-none">
+              $
+            </span>
+            <input
+              className="bauhaus-field-input"
+              type="number"
+              min="0"
+              step="0.01"
+              value={item.totalCost}
+              onChange={(e) => {
+                if (e.target.value === "") {
+                  onUpdate({ totalCost: "" });
+                  return;
+                }
+                const parsed = Number(e.target.value);
+                if (!Number.isFinite(parsed)) return;
+                onUpdate({ totalCost: Math.max(0, parsed) });
+              }}
+              onBlur={() => {
+                setTouched((prev) => ({ ...prev, totalCost: true }));
+                if (item.totalCost !== "") {
+                  onUpdate({ totalCost: Number(Number(item.totalCost).toFixed(2)) });
+                }
+              }}
+              placeholder="0.00"
+              style={{
+                paddingLeft: "1.75rem",
+                ...(totalCostError ? { borderColor: "#F36C3D", background: "#FFF5F0" } : {}),
+              }}
+            />
+          </div>
+          {totalCostError && (
+            <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+              Enter a cost bigger than $0.00.
+            </p>
+          )}
+        </div>
+
+        <div className="flex-1 w-full">
+          <label className="bauhaus-field-label">Type</label>
+          <div className="flex rounded-xl overflow-hidden border-2 border-[#E0EFF1] min-h-11">
+            <button
+              type="button"
+              onClick={() => onUpdate({ type: "one-time" })}
+              className={`flex-1 min-h-11 text-xs font-bold transition-colors ${
+                item.type === "one-time"
+                  ? "bg-[#5DB7C4] text-white"
+                  : "bg-[#E8ECEE] text-[#7B9EA3] hover:bg-[#dce5e8]"
+              }`}
+            >
+              One-Time
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdate({ type: "monthly" })}
+              className={`flex-1 min-h-11 text-xs font-bold transition-colors ${
+                item.type === "monthly"
+                  ? "bg-[#5DB7C4] text-white"
+                  : "bg-[#E8ECEE] text-[#7B9EA3] hover:bg-[#dce5e8]"
+              }`}
+            >
+              Monthly
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Months of use (one-time only) + live calc */}
+      {item.type === "one-time" && (
+        <div className="flex flex-col sm:flex-row gap-3 items-end mb-3">
+          <div className="w-full sm:w-32 shrink-0">
+            <label className="bauhaus-field-label">Months of use</label>
+            <input
+              className="bauhaus-field-input"
+              type="number"
+              min="1"
+              step="1"
+              value={item.monthsOfUse}
+              onChange={(e) => {
+                if (e.target.value === "") {
+                  onUpdate({ monthsOfUse: "" });
+                  return;
+                }
+                const parsed = Number(e.target.value);
+                if (!Number.isFinite(parsed)) return;
+                onUpdate({ monthsOfUse: Math.max(0, parsed) });
+              }}
+              onBlur={() => {
+                setTouched((prev) => ({ ...prev, monthsOfUse: true }));
+                if (item.monthsOfUse !== "") {
+                  onUpdate({ monthsOfUse: Math.round(Number(item.monthsOfUse)) });
+                }
+              }}
+              placeholder="12"
+              style={monthsError ? { borderColor: "#F36C3D", background: "#FFF5F0" } : undefined}
+            />
+            {monthsError && (
+              <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+                Enter at least 1 month.
+              </p>
+            )}
+          </div>
+          {monthly > 0 && (
+            <div className="flex-1 rounded-xl bg-[#FFF0EA] border border-[#F36C3D]/20 px-3 py-2">
+              <p className="text-xs font-bold text-[#F36C3D] leading-snug">
+                ${Number(item.totalCost).toFixed(2)} over {item.monthsOfUse}{" "}
+                month{Number(item.monthsOfUse) !== 1 ? "s" : ""}
+              </p>
+              <p className="text-base font-extrabold text-[#F36C3D]">
+                = ${monthly.toFixed(2)}/month
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Footer: Done button */}
+      <div className="mt-2 pt-3 border-t border-[#E0EFF1] flex items-center justify-between">
+        <span className="text-xs font-semibold text-[#9BBFC3]">
+          {monthly > 0 ? `Monthly portion: $${monthly.toFixed(2)}/mo` : "Monthly portion: —"}
+        </span>
+        <button
+          type="button"
+          onClick={onDone}
+          className="min-h-11 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#5DB7C4] text-white hover:bg-[#4aa8b5] transition-colors"
+        >
+          ✓ Done
+        </button>
+      </div>
+    </CardShell>
+  );
+}
+
+// ─── page ─────────────────────────────────────────────────────────────────────
+
+export default function FixedCostsPage() {
+  const navigate = useNavigate();
+  const { state, addFixedCost, updateFixedCost, deleteFixedCost } = useAppState();
+  const { fixedCosts } = state;
+
+  // IDs of cards currently open in edit mode
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string>>(new Set());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [assistantHighlight, setAssistantHighlight] = useState(false);
+  const deleteConfirmTimerRef = useRef<number | null>(null);
+  const addedRowTimersRef = useRef<number[]>([]);
+
+  const expand = (id: string) =>
+    setExpandedIds((prev) => new Set([...prev, id]));
+  const collapse = (id: string) =>
+    setExpandedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+
+  const handleAdd = () => {
+    const id = addFixedCost();
+    expand(id);
+    setNewlyAddedIds((prev) => new Set([...prev, id]));
+    const timer = window.setTimeout(() => {
+      setNewlyAddedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 450);
+    addedRowTimersRef.current.push(timer);
+  };
+
+  const handleDelete = (id: string) => {
+    collapse(id);
+    deleteFixedCost(id);
+  };
+
+  const handleDeletePress = (id: string) => {
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      if (deleteConfirmTimerRef.current) {
+        window.clearTimeout(deleteConfirmTimerRef.current);
+      }
+      deleteConfirmTimerRef.current = window.setTimeout(() => {
+        setConfirmDeleteId((current) => (current === id ? null : current));
+      }, 2000);
+      return;
+    }
+
+    if (deleteConfirmTimerRef.current) {
+      window.clearTimeout(deleteConfirmTimerRef.current);
+      deleteConfirmTimerRef.current = null;
+    }
+    setConfirmDeleteId(null);
+    handleDelete(id);
+  };
+
+  useEffect(() => {
+    const handleStateChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ section?: string }>).detail;
+      if (detail?.section !== "fixedCosts") return;
+      setAssistantHighlight(true);
+      window.setTimeout(() => setAssistantHighlight(false), 1000);
+    };
+    window.addEventListener("priceit-state-changed", handleStateChange);
+    return () => window.removeEventListener("priceit-state-changed", handleStateChange);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (deleteConfirmTimerRef.current) window.clearTimeout(deleteConfirmTimerRef.current);
+      addedRowTimersRef.current.forEach((id) => window.clearTimeout(id));
+      addedRowTimersRef.current = [];
+    };
+  }, []);
+
+  const total = fixedCosts.reduce((sum, item) => sum + monthlyPortion(item), 0);
+  const canProceed = fixedCosts.length > 0 && fixedCosts.every(isRowComplete);
+
+  return (
+    <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+        <button
+          onClick={() => navigate("/setup")}
+          className="min-h-11 px-3 flex items-center gap-2 text-[#5DB7C4] font-semibold text-sm hover:text-[#F36C3D] transition-colors"
+        >
+          Back
+        </button>
+        <img src={logo} alt="PriceIt logo" className="h-9 w-auto" />
+        <div className="w-16" />
+      </header>
+
+      <main className="flex-1 flex flex-col items-center px-4 py-8">
+        <div className="w-full max-w-lg">
+          <ProgressSteps currentStep={2} />
+
+          {/* Page title */}
+          <div className="mb-5 text-center">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
+              What are your fixed costs?
+            </h1>
+            <p className="mt-1 text-[#7B9EA3] text-sm">
+              These are costs you pay no matter how many you sell.
+            </p>
+          </div>
+
+          {/* Cost item cards */}
+          <div className={`flex flex-col gap-3 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
+            {fixedCosts.length === 0 && (
+              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-10 text-center">
+                <p className="text-3xl mb-2">🏷️</p>
+                <p className="text-[#7B9EA3] font-semibold text-sm">No costs yet! Hit "Add Fixed Cost" to get started 💸</p>
+                <p className="text-[#B0C4C7] text-xs mt-0.5">
+                  Add things like rent, equipment, or supplies.
+                </p>
+              </div>
+            )}
+
+            {fixedCosts.map((item) =>
+              <div key={item.id} className={newlyAddedIds.has(item.id) ? "priceit-row-enter" : ""}>
+                {expandedIds.has(item.id) ? (
+                  <EditCard
+                    item={item}
+                    onUpdate={(updates) => updateFixedCost(item.id, updates)}
+                    onDelete={() => handleDeletePress(item.id)}
+                    onDone={() => collapse(item.id)}
+                    confirmingDelete={confirmDeleteId === item.id}
+                  />
+                ) : (
+                  <CompactCard
+                    item={item}
+                    onEdit={() => expand(item.id)}
+                    onDelete={() => handleDeletePress(item.id)}
+                    confirmingDelete={confirmDeleteId === item.id}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Add button */}
+            <div className="flex justify-center">
+              <ChronicleButton
+                text="+ Add Fixed Cost"
+                onClick={handleAdd}
+                hoverColor="#F36C3D"
+                customBackground="#EAF7F9"
+                customForeground="#5DB7C4"
+                hoverForeground="#ffffff"
+                width="100%"
+                borderRadius="14px"
+              />
+            </div>
+          </div>
+
+          {/* Running total */}
+          {fixedCosts.length > 0 && (
+            <div className="mt-4 rounded-2xl bg-white border border-[#E0EFF1] px-5 py-4 flex items-center justify-between shadow-sm">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#7B9EA3]">
+                  Total Monthly Fixed Costs
+                </p>
+                <p className="text-xs text-[#B0C4C7] mt-0.5">
+                  Sum of all monthly portions above
+                </p>
+              </div>
+              <p className="text-2xl font-extrabold text-[#5DB7C4]">
+                ${total.toFixed(2)}
+                <span className="text-sm font-bold text-[#9BBFC3]">/mo</span>
+              </p>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="mt-7 flex items-center justify-between gap-2">
+            <ChronicleButton
+              text="Back"
+              onClick={() => navigate("/setup")}
+              hoverColor="#5DB7C4"
+              customBackground="#E8ECEE"
+              customForeground="#5DB7C4"
+              hoverForeground="#ffffff"
+              width="140px"
+              borderRadius="10px"
+            />
+            <ChronicleButton
+              text="Next"
+              onClick={() => { if (canProceed) navigate("/setup/variable-costs"); }}
+              hoverColor="#F36C3D"
+              customBackground="#5DB7C4"
+              customForeground="#ffffff"
+              hoverForeground="#ffffff"
+              width="160px"
+              borderRadius="10px"
+              disabled={!canProceed}
+            />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

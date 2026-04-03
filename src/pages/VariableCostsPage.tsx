@@ -1,0 +1,597 @@
+import React, { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppState } from "@/context/AppStateContext";
+import type { VariableCostItem, VariableCostCategory } from "@/context/AppStateContext";
+import { ChronicleButton } from "@/components/ui/chronicle-button";
+import { ProgressSteps } from "@/components/ui/progress-steps";
+import { injectBauhausCardStyles } from "@/components/ui/bauhaus-card";
+import { injectFieldCardStyles } from "@/components/ui/field-card";
+import logo from "../../logo.png";
+
+// ─── constants ────────────────────────────────────────────────────────────────
+
+const CATEGORY_OPTIONS: { value: VariableCostCategory; emoji: string; label: string }[] = [
+  { value: "Materials",    emoji: "🪡", label: "Materials" },
+  { value: "Ingredients",  emoji: "🧂", label: "Ingredients" },
+  { value: "Packaging",    emoji: "📫", label: "Packaging" },
+  { value: "Labor",        emoji: "🙌", label: "Labor" },
+  { value: "Other",        emoji: "✨", label: "Other" },
+];
+
+function categoryEmoji(cat: VariableCostCategory) {
+  return CATEGORY_OPTIONS.find((c) => c.value === cat)?.emoji ?? "✨";
+}
+
+// ─── math ─────────────────────────────────────────────────────────────────────
+
+function costPerProduct(item: VariableCostItem): number {
+  const price = Number(item.pricePerPack);
+  const perPack = Number(item.unitsPerPack);
+  const used = Number(item.unitsPerProduct);
+  if (!price || !perPack || !used) return 0;
+  return (price / perPack) * used;
+}
+
+function isRowComplete(item: VariableCostItem): boolean {
+  return (
+    item.name.trim() !== "" &&
+    item.pricePerPack !== "" && Number(item.pricePerPack) > 0 &&
+    item.unitsPerPack !== "" && Number(item.unitsPerPack) > 0 &&
+    item.unitsPerProduct !== "" && Number(item.unitsPerProduct) > 0
+  );
+}
+
+// ─── small tooltip helper ─────────────────────────────────────────────────────
+
+function Tip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex items-center">
+      <button
+        type="button"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full border border-[#5DB7C4] bg-white text-[9px] font-bold text-[#5DB7C4] hover:border-[#F36C3D] hover:text-[#F36C3D] transition-colors"
+        aria-label="Help"
+      >
+        ?
+      </button>
+      {open && (
+        <span className="absolute left-6 top-1/2 z-30 w-56 -translate-y-1/2 rounded-xl border border-[#A9DDE3] bg-white px-3 py-2 text-[11px] font-medium text-[#2B2B2B] shadow-lg leading-relaxed normal-case tracking-normal">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ─── number input helper ──────────────────────────────────────────────────────
+
+function NumInput({
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  prefix,
+  invalid = false,
+}: {
+  value: number | "";
+  onChange: (v: number | "") => void;
+  onBlur?: () => void;
+  placeholder?: string;
+  prefix?: string;
+  invalid?: boolean;
+}) {
+  return (
+    <div className="relative">
+      {prefix && (
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7B9EA3] font-semibold select-none pointer-events-none text-sm">
+          {prefix}
+        </span>
+      )}
+      <input
+        className="bauhaus-field-input"
+        type="number"
+        min="0"
+        step="any"
+        value={value}
+        onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        onBlur={onBlur}
+        placeholder={placeholder ?? "0"}
+        style={{
+          ...(prefix ? { paddingLeft: "1.75rem" } : {}),
+          ...(invalid ? { borderColor: "#F36C3D", background: "#FFF5F0" } : {}),
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── card shell (bauhaus gradient border + mouse tracking) ────────────────────
+
+function CardShell({
+  accentColor = "#5DB7C4",
+  compact = false,
+  children,
+}: {
+  accentColor?: string;
+  compact?: boolean;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    injectBauhausCardStyles();
+    injectFieldCardStyles();
+    const card = ref.current;
+    const onMove = (e: MouseEvent) => {
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      card.style.setProperty("--rotation", Math.atan2(-x, y) + "rad");
+    };
+    card?.addEventListener("mousemove", onMove);
+    return () => card?.removeEventListener("mousemove", onMove);
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="bauhaus-field-card"
+      style={{
+        "--card-bg": "#ffffff",
+        "--card-accent": accentColor,
+        "--card-radius": "1rem",
+        "--card-border-width": "2px",
+        padding: compact ? "0.75rem 1rem" : "1.1rem 1.4rem 1.35rem",
+      } as React.CSSProperties}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── compact summary card ─────────────────────────────────────────────────────
+
+function CompactCard({
+  item,
+  onEdit,
+  onDelete,
+  confirmingDelete,
+}: {
+  item: VariableCostItem;
+  onEdit: () => void;
+  onDelete: () => void;
+  confirmingDelete: boolean;
+}) {
+  const cpp = costPerProduct(item);
+
+  return (
+    <CardShell compact>
+      <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+        <span className="text-2xl select-none leading-none">{categoryEmoji(item.category)}</span>
+        <div className="flex-1 min-w-0">
+          <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#B0C4C7]"}`}>
+            {item.name || "Unnamed input"}
+          </p>
+          <p className="text-[11px] text-[#7B9EA3] mt-0.5 truncate">
+            {item.category}
+            {item.unitsPerProduct !== "" ? ` · ${item.unitsPerProduct} per product` : ""}
+          </p>
+        </div>
+        <div className="shrink-0 text-right mr-1">
+          <p className="font-extrabold text-[#F36C3D] text-sm leading-tight">
+            {cpp > 0 ? `$${cpp.toFixed(3)}` : "—"}
+          </p>
+          <p className="text-[10px] text-[#9BBFC3] font-semibold">/product</p>
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="shrink-0 min-h-11 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#EEF6F8] text-[#5DB7C4] hover:bg-[#5DB7C4] hover:text-white transition-colors"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="shrink-0 min-h-11 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-sm font-bold px-3"
+          aria-label="Delete"
+        >
+          {confirmingDelete ? "Sure?" : "Delete"}
+        </button>
+      </div>
+    </CardShell>
+  );
+}
+
+// ─── expanded edit card ───────────────────────────────────────────────────────
+
+function EditCard({
+  item,
+  onUpdate,
+  onDelete,
+  onDone,
+  confirmingDelete,
+}: {
+  item: VariableCostItem;
+  onUpdate: (updates: Partial<VariableCostItem>) => void;
+  onDelete: () => void;
+  onDone: () => void;
+  confirmingDelete: boolean;
+}) {
+  const [touched, setTouched] = useState({
+    name: false,
+    pricePerPack: false,
+    unitsPerPack: false,
+    unitsPerProduct: false,
+  });
+  const cpp = costPerProduct(item);
+  const nameError = touched.name && item.name.trim() === "";
+  const priceError = touched.pricePerPack && (item.pricePerPack === "" || Number(item.pricePerPack) <= 0);
+  const perPackError = touched.unitsPerPack && (item.unitsPerPack === "" || Number(item.unitsPerPack) <= 0);
+  const unitsPerProductError =
+    touched.unitsPerProduct &&
+    (item.unitsPerProduct === "" || Number(item.unitsPerProduct) <= 0);
+
+  return (
+    <CardShell accentColor={cpp > 0 ? "#F36C3D" : "#5DB7C4"}>
+      {/* Row 1: Name + category + delete */}
+      <div className="flex flex-col sm:flex-row gap-2 items-start mb-3">
+        <div className="flex-1">
+          <label className="bauhaus-field-label">Input name</label>
+          <input
+            className="bauhaus-field-input"
+            type="text"
+            value={item.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
+            placeholder="e.g. Batteries, Fabric, Flour"
+            autoFocus
+            style={nameError ? { borderColor: "#F36C3D", background: "#FFF5F0" } : undefined}
+          />
+          {nameError && (
+            <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+              Add a name so you can track this input.
+            </p>
+          )}
+        </div>
+        <div className="w-full sm:w-36 shrink-0">
+          <label className="bauhaus-field-label">Category</label>
+          <select
+            className="bauhaus-field-input"
+            value={item.category}
+            onChange={(e) => onUpdate({ category: e.target.value as VariableCostCategory })}
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235DB7C4' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 10px center",
+              appearance: "none",
+              paddingRight: "2rem",
+            }}
+          >
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.emoji} {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="mt-1 sm:mt-6 min-h-11 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-sm font-bold px-3"
+          aria-label="Delete"
+        >
+          {confirmingDelete ? "Sure?" : "Delete"}
+        </button>
+      </div>
+
+      {/* Row 2: Pack math */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+        <div>
+          <label className="bauhaus-field-label flex items-center">
+            Price per pack
+            <Tip text="How much did you pay for one pack or bundle? e.g. $3.99 for a pack of batteries." />
+          </label>
+          <NumInput
+            value={item.pricePerPack}
+            onChange={(v) => onUpdate({ pricePerPack: v === "" ? "" : Math.max(0, Number(v)) })}
+            onBlur={() => {
+              setTouched((prev) => ({ ...prev, pricePerPack: true }));
+              if (item.pricePerPack !== "") {
+                onUpdate({ pricePerPack: Number(Number(item.pricePerPack).toFixed(2)) });
+              }
+            }}
+            placeholder="3.99"
+            prefix="$"
+            invalid={priceError}
+          />
+          {priceError && (
+            <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+              Enter a pack price bigger than $0.00.
+            </p>
+          )}
+        </div>
+        <div>
+          <label className="bauhaus-field-label flex items-center">
+            Units in pack
+            <Tip text="How many pieces come in that pack? e.g. 4 batteries in one pack." />
+          </label>
+          <NumInput
+            value={item.unitsPerPack}
+            onChange={(v) => onUpdate({ unitsPerPack: v === "" ? "" : Math.max(0, Number(v)) })}
+            onBlur={() => setTouched((prev) => ({ ...prev, unitsPerPack: true }))}
+            placeholder="4"
+            invalid={perPackError}
+          />
+          {perPackError && (
+            <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+              Enter how many units are in one pack.
+            </p>
+          )}
+        </div>
+        <div>
+          <label className="bauhaus-field-label">
+            <div className="inline-flex items-center gap-1">
+              <span className="whitespace-nowrap">USED PER PRODUCT</span>
+              <Tip text="How many of this do you use to make one finished product? e.g. 2 batteries per toy." />
+            </div>
+          </label>
+          <NumInput
+            value={item.unitsPerProduct}
+            onChange={(v) => onUpdate({ unitsPerProduct: v === "" ? "" : Math.max(0, Number(v)) })}
+            onBlur={() => setTouched((prev) => ({ ...prev, unitsPerProduct: true }))}
+            placeholder="2"
+            invalid={unitsPerProductError}
+          />
+          {unitsPerProductError && (
+            <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+              Enter how many units you use per product.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Live calc callout */}
+      <div
+        className={`rounded-xl px-4 py-3 mb-3 transition-colors ${
+          cpp > 0
+            ? "bg-[#FFF0EA] border border-[#F36C3D]/25"
+            : "bg-[#F7F9FA] border border-[#E0EFF1]"
+        }`}
+      >
+        {cpp > 0 ? (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-[#F36C3D] font-semibold">
+              (${Number(item.pricePerPack).toFixed(2)} ÷ {item.unitsPerPack}) × {item.unitsPerProduct}
+            </p>
+            <p className="text-lg font-extrabold text-[#F36C3D]">
+              = ${cpp.toFixed(3)} per product
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs text-[#B0C4C7] font-semibold text-center">
+            Fill in the three fields above to see the cost per product
+          </p>
+        )}
+      </div>
+
+      {/* Footer: Done */}
+      <div className="pt-2.5 border-t border-[#E0EFF1] flex items-center justify-between">
+        <span className="text-xs font-semibold text-[#9BBFC3]">
+          {categoryEmoji(item.category)} {item.category}
+        </span>
+        <button
+          type="button"
+          onClick={onDone}
+          className="min-h-11 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#5DB7C4] text-white hover:bg-[#4aa8b5] transition-colors"
+        >
+          ✓ Done
+        </button>
+      </div>
+    </CardShell>
+  );
+}
+
+// ─── page ─────────────────────────────────────────────────────────────────────
+
+export default function VariableCostsPage() {
+  const navigate = useNavigate();
+  const { state, addVariableCost, updateVariableCost, deleteVariableCost } = useAppState();
+  const { variableCosts } = state;
+
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string>>(new Set());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [assistantHighlight, setAssistantHighlight] = useState(false);
+  const deleteConfirmTimerRef = useRef<number | null>(null);
+  const addRowTimersRef = useRef<number[]>([]);
+
+  const expand  = (id: string) => setExpandedIds((p) => new Set([...p, id]));
+  const collapse = (id: string) => setExpandedIds((p) => { const n = new Set(p); n.delete(id); return n; });
+
+  const handleAdd = () => {
+    const id = addVariableCost();
+    expand(id);
+    setNewlyAddedIds((prev) => new Set([...prev, id]));
+    const timer = window.setTimeout(() => {
+      setNewlyAddedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 450);
+    addRowTimersRef.current.push(timer);
+  };
+
+  const handleDelete = (id: string) => {
+    collapse(id);
+    deleteVariableCost(id);
+  };
+
+  const handleDeletePress = (id: string) => {
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      if (deleteConfirmTimerRef.current) {
+        window.clearTimeout(deleteConfirmTimerRef.current);
+      }
+      deleteConfirmTimerRef.current = window.setTimeout(() => {
+        setConfirmDeleteId((current) => (current === id ? null : current));
+      }, 2000);
+      return;
+    }
+    if (deleteConfirmTimerRef.current) {
+      window.clearTimeout(deleteConfirmTimerRef.current);
+      deleteConfirmTimerRef.current = null;
+    }
+    setConfirmDeleteId(null);
+    handleDelete(id);
+  };
+
+  useEffect(() => {
+    const handleStateChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ section?: string }>).detail;
+      if (detail?.section !== "variableCosts") return;
+      setAssistantHighlight(true);
+      window.setTimeout(() => setAssistantHighlight(false), 1000);
+    };
+    window.addEventListener("priceit-state-changed", handleStateChange);
+    return () => window.removeEventListener("priceit-state-changed", handleStateChange);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (deleteConfirmTimerRef.current) window.clearTimeout(deleteConfirmTimerRef.current);
+      addRowTimersRef.current.forEach((id) => window.clearTimeout(id));
+      addRowTimersRef.current = [];
+    };
+  }, []);
+
+  const total = variableCosts.reduce((sum, item) => sum + costPerProduct(item), 0);
+  const canProceed = variableCosts.length > 0 && variableCosts.every(isRowComplete);
+
+  return (
+    <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+        <button
+          onClick={() => navigate("/setup/costs")}
+          className="min-h-11 px-3 flex items-center gap-2 text-[#5DB7C4] font-semibold text-sm hover:text-[#F36C3D] transition-colors"
+        >
+          Back
+        </button>
+        <img src={logo} alt="PriceIt logo" className="h-9 w-auto" />
+        <div className="w-16" />
+      </header>
+
+      <main className="flex-1 flex flex-col items-center px-4 py-8">
+        <div className="w-full max-w-lg">
+          <ProgressSteps currentStep={3} />
+
+          <div className="mb-5 text-center">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
+              What goes into each product?
+            </h1>
+            <p className="mt-1 text-[#7B9EA3] text-sm">
+              Add every material or ingredient you use to make one.
+            </p>
+          </div>
+
+          {/* Item cards */}
+          <div className={`flex flex-col gap-3 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
+            {variableCosts.length === 0 && (
+              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-10 text-center">
+                <p className="text-3xl mb-2">🧩</p>
+                <p className="text-[#7B9EA3] font-semibold text-sm">No inputs yet! Hit "Add Input" to get started 💸</p>
+                <p className="text-[#B0C4C7] text-xs mt-0.5">
+                  Add each material or ingredient you use per product.
+                </p>
+              </div>
+            )}
+
+            {variableCosts.map((item) =>
+              <div key={item.id} className={newlyAddedIds.has(item.id) ? "priceit-row-enter" : ""}>
+                {expandedIds.has(item.id) ? (
+                  <EditCard
+                    item={item}
+                    onUpdate={(u) => updateVariableCost(item.id, u)}
+                    onDelete={() => handleDeletePress(item.id)}
+                    onDone={() => collapse(item.id)}
+                    confirmingDelete={confirmDeleteId === item.id}
+                  />
+                ) : (
+                  <CompactCard
+                    item={item}
+                    onEdit={() => expand(item.id)}
+                    onDelete={() => handleDeletePress(item.id)}
+                    confirmingDelete={confirmDeleteId === item.id}
+                  />
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-center">
+              <ChronicleButton
+                text="+ Add Input"
+                onClick={handleAdd}
+                hoverColor="#F36C3D"
+                customBackground="#EAF7F9"
+                customForeground="#5DB7C4"
+                hoverForeground="#ffffff"
+                width="100%"
+                borderRadius="14px"
+              />
+            </div>
+          </div>
+
+          {/* Running total */}
+          {variableCosts.length > 0 && (
+            <div className="mt-4 rounded-2xl bg-white border border-[#E0EFF1] px-5 py-4 flex items-center justify-between shadow-sm">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#7B9EA3]">
+                  Total Variable Cost
+                </p>
+                <p className="text-xs text-[#B0C4C7] mt-0.5">
+                  Cost of materials per product made
+                </p>
+              </div>
+              <p className="text-2xl font-extrabold text-[#F36C3D]">
+                ${total.toFixed(3)}
+                <span className="text-sm font-bold text-[#9BBFC3]">/product</span>
+              </p>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="mt-7 flex items-center justify-between gap-2">
+            <ChronicleButton
+              text="Back"
+              onClick={() => navigate("/setup/costs")}
+              hoverColor="#5DB7C4"
+              customBackground="#E8ECEE"
+              customForeground="#5DB7C4"
+              hoverForeground="#ffffff"
+              width="140px"
+              borderRadius="10px"
+            />
+            <ChronicleButton
+              text="Next"
+              onClick={() => { if (canProceed) navigate("/setup/pricing"); }}
+              hoverColor="#F36C3D"
+              customBackground="#5DB7C4"
+              customForeground="#ffffff"
+              hoverForeground="#ffffff"
+              width="160px"
+              borderRadius="10px"
+              disabled={!canProceed}
+            />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
