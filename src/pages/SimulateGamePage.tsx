@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppState } from "@/context/AppStateContext";
 import type { StartingQuality, FixedCostItem, VariableCostItem } from "@/context/AppStateContext";
@@ -89,16 +90,16 @@ const TOTAL_WEEKS = 12;
 const SIM_GAME_STORAGE_KEY = "priceit_sim_game_v1";
 
 const RANDOM_EVENTS: RandomEvent[] = [
-  { id: "fair",    name: "School fair nearby this weekend! 🎪", description: "A big crowd is coming to your area!", modifier: 1.4 },
-  { id: "rain",    name: "Rainy week, fewer shoppers ☔",        description: "People are staying home this week.", modifier: 0.8 },
-  { id: "viral",   name: "Your product got shared online! 📱",   description: "Someone posted about it and everyone wants one!", modifier: 1.3 },
-  { id: "comp",    name: "A competitor launched nearby 😬",       description: "Someone else started selling something similar.", modifier: 0.75 },
-  { id: "news",    name: "Local news featured kid entrepreneurs! 📰", description: "Everyone loves a good kid business story!", modifier: 1.2 },
-  { id: "holiday", name: "Holiday weekend coming up 🎉",          description: "People are in a spending mood!", modifier: 1.35 },
-  { id: "slow",    name: "Slow week, nothing special 😐",         description: "Just a regular week. Stay the course!", modifier: 1.0 },
-  { id: "supply",  name: "Supply costs spiked this week 📦",      description: "Materials cost more than usual.", modifier: 0.9, materialCostModifier: 1.2 },
-  { id: "loyal",   name: "Your regular customers came back 💛",    description: "Your biggest fans showed up for you!", modifier: 1.15 },
-  { id: "sunny",   name: "Weather was perfect for shopping ☀️",   description: "A beautiful day brought out the crowds.", modifier: 1.1 },
+  { id: "fair",    name: "School fair nearby this weekend! 🎪", description: "A big crowd is coming to your area!", modifier: 1.4,  modifierLabel: "Demand up 40%" },
+  { id: "rain",    name: "Rainy week, fewer shoppers ☔",        description: "People are staying home this week.", modifier: 0.8,  modifierLabel: "Demand down 20%" },
+  { id: "viral",   name: "Your product got shared online! 📱",   description: "Someone posted about it and everyone wants one!", modifier: 1.3,  modifierLabel: "Demand up 30%" },
+  { id: "comp",    name: "A competitor launched nearby 😬",       description: "Someone else started selling something similar.", modifier: 0.75, modifierLabel: "Demand down 25%" },
+  { id: "news",    name: "Local news featured kid entrepreneurs! 📰", description: "Everyone loves a good kid business story!", modifier: 1.2,  modifierLabel: "Demand up 20%" },
+  { id: "holiday", name: "Holiday weekend coming up 🎉",          description: "People are in a spending mood!", modifier: 1.35, modifierLabel: "Demand up 35%" },
+  { id: "slow",    name: "Slow week, nothing special 😐",         description: "Just a regular week. Stay the course!", modifier: 1.0,  modifierLabel: "Normal demand" },
+  { id: "supply",  name: "Supply costs spiked this week 📦",      description: "Materials cost more than usual.", modifier: 0.9,  modifierLabel: "Demand -10% · Costs +20%", materialCostModifier: 1.2 },
+  { id: "loyal",   name: "Your regular customers came back 💛",    description: "Your biggest fans showed up for you!", modifier: 1.15, modifierLabel: "Demand up 15%" },
+  { id: "sunny",   name: "Weather was perfect for shopping ☀️",   description: "A beautiful day brought out the crowds.", modifier: 1.1,  modifierLabel: "Demand up 10%" },
 ];
 
 function pickRandomEvent(): RandomEvent {
@@ -214,14 +215,14 @@ function computeWeek(
   let mktFactor = 1.0;
   if (d.marketing.includes("flyers")) mktFactor += 0.10;
   if (d.marketing.includes("social")) mktFactor += 0.20;
-  if (d.marketing.includes("wom"))    mktFactor += (s.wordOfMouthStack + 1) * 0.05;
+  // Word-of-mouth stacks but caps at 6 weeks of use (+30% max)
+  if (d.marketing.includes("wom"))    mktFactor += Math.min(s.wordOfMouthStack + 1, 6) * 0.05;
   if (saleOn)                          mktFactor += 0.30;
 
   const satFactor = (s.satisfaction / 100) * 0.3 + 0.7;
 
-  const finalDemand = Math.max(0, Math.round(
-    maxWeeklyUnits * Math.max(0, priceFactor) * qualityFactor * mktFactor * satFactor * event.modifier
-  ));
+  const rawDemand = maxWeeklyUnits * Math.max(0, priceFactor) * qualityFactor * mktFactor * satFactor * event.modifier;
+  const finalDemand = isFinite(rawDemand) ? Math.max(0, Math.round(rawDemand)) : 0;
 
   const supply = unitsToProduce + s.inventory;
   const unitsSold = Math.min(supply, finalDemand);
@@ -250,19 +251,68 @@ function computeWeek(
 
 const fd = (n: number) => "$" + Math.abs(n).toFixed(2);
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const roundToStep = (value: number, step: number) =>
+  step > 0 ? Math.round(value / step) * step : value;
 
 // ─── sub-components ───────────────────────────────────────────────────────────
 
-function EventCard({ event }: { event: RandomEvent }) {
+function DecisionSlider({
+  value,
+  min,
+  max,
+  step,
+  accent,
+  ariaLabel,
+  onChange,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  accent: string;
+  ariaLabel: string;
+  onChange: (value: number) => void;
+}) {
+  const safeMax = Math.max(max, min + step);
+  const safeValue = Math.min(safeMax, Math.max(min, value));
+  const pct = safeMax > min ? ((safeValue - min) / (safeMax - min)) * 100 : 0;
+
+  return (
+    <input
+      type="range"
+      className="priceit-range mt-2"
+      min={min}
+      max={safeMax}
+      step={step}
+      value={safeValue}
+      onChange={(e) => onChange(Number(e.target.value))}
+      aria-label={ariaLabel}
+      style={
+        {
+          "--range-accent": accent,
+          background: `linear-gradient(90deg, ${accent} 0%, ${accent} ${pct}%, #D8E4E6 ${pct}%, #D8E4E6 100%)`,
+        } as CSSProperties
+      }
+    />
+  );
+}
+
+function EventCard({ event, week }: { event: RandomEvent; week: number }) {
   const good = event.modifier >= 1.0;
   return (
     <div
       className="rounded-2xl px-4 py-3 flex items-start gap-3"
       style={{ background: good ? "#EAF7F9" : "#FFF5F0", border: `1.5px solid ${good ? "#A9DDE3" : "#FCCBB0"}` }}
     >
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-extrabold flex-shrink-0"
+        style={{ background: good ? "#D7EEF2" : "#FFE3D2", color: good ? "#1E6470" : "#9A3412" }}
+      >
+        W{week}
+      </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: good ? "#5DB7C4" : "#F36C3D" }}>
-          This week's event
+          Week event
         </p>
         <p className="font-extrabold text-sm text-[#2B2B2B] leading-snug">{event.name}</p>
         <p className="text-xs text-[#7B9EA3] mt-0.5">{event.description}</p>
@@ -341,29 +391,31 @@ function SummaryModal({
   tip: string | null;
 }) {
   const pos = result.profit >= 0;
+  const bigWin = result.profit > 0 && result.unitsSold >= result.finalDemand && result.finalDemand > 0;
   const stockout = result.finalDemand > result.unitsSold && result.finalDemand > 0;
   const lastWeek = week === TOTAL_WEEKS;
 
+  const headingEmoji = bigWin ? "🚀" : pos ? "🎉" : "💪";
+  const headingText = bigWin ? "Nailed it!" : pos ? "Nice work!" : "Tough week!";
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
       <div
         className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl"
-        style={{ border: `2px solid ${pos ? "#86efac" : "#FCCBB0"}` }}
+        style={{ border: `2px solid ${bigWin ? "#5DB7C4" : pos ? "#86efac" : "#FCCBB0"}` }}
       >
-        <div className="text-center mb-5">
-          <div className="text-4xl mb-2">{pos ? "🎉" : "💪"}</div>
-          <h2 className="text-xl font-extrabold text-[#2B2B2B]">
-            {pos ? "Great week!" : "Tough week!"}
-          </h2>
-          <p className="text-xs text-[#9BBFC3] mt-1">Week {result.week} complete</p>
+        <div className="text-center mb-4">
+          <div className="text-4xl mb-2">{headingEmoji}</div>
+          <h2 className="text-xl font-extrabold text-[#2B2B2B]">{headingText}</h2>
+          <p className="text-xs text-[#9BBFC3] mt-1">Week {result.week} done</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="grid grid-cols-2 gap-2 mb-3">
           {[
-            { label: "Units Sold",  val: `${result.unitsSold} / ${result.finalDemand}`,          color: "#2B2B2B" },
-            { label: "Revenue",     val: `+${fd(result.revenue)}`,                                color: "#16a34a" },
-            { label: "Costs",       val: `-${fd(result.totalCost)}`,                              color: "#F36C3D" },
-            { label: "Profit",      val: `${result.profit >= 0 ? "+" : "-"}${fd(result.profit)}`, color: pos ? "#16a34a" : "#ef4444" },
+            { label: "Sold",     val: `${result.unitsSold} of ${result.finalDemand}`,              color: "#2B2B2B" },
+            { label: "Revenue",  val: `+${fd(result.revenue)}`,                                     color: "#16a34a" },
+            { label: "Costs",    val: `-${fd(result.totalCost)}`,                                   color: "#F36C3D" },
+            { label: "Profit",   val: `${result.profit >= 0 ? "+" : "-"}${fd(result.profit)}`,      color: pos ? "#16a34a" : "#ef4444" },
           ].map(({ label, val, color }) => (
             <div key={label} className="bg-[#F7F9FA] rounded-xl px-3 py-2 text-center">
               <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">{label}</p>
@@ -372,14 +424,41 @@ function SummaryModal({
           ))}
         </div>
 
+        {/* Event that affected this week */}
+        {(() => {
+          const good = result.event.modifier >= 1.0;
+          return (
+            <div
+              className="rounded-xl px-3 py-2 mb-3 flex items-center gap-2"
+              style={{ background: good ? "#EAF7F9" : "#FFF5F0", border: `1px solid ${good ? "#A9DDE3" : "#FCCBB0"}` }}
+            >
+              <span className="text-base flex-shrink-0">{good ? "📈" : "📉"}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: good ? "#5DB7C4" : "#F36C3D" }}>
+                  This week's event
+                </p>
+                <p className="text-xs font-extrabold text-[#2B2B2B] leading-snug">{result.event.name}</p>
+              </div>
+              {result.event.modifierLabel && (
+                <span
+                  className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: good ? "#A9DDE3" : "#FCCBB0", color: good ? "#1E6470" : "#9A3412" }}
+                >
+                  {result.event.modifierLabel}
+                </span>
+              )}
+            </div>
+          );
+        })()}
+
         {stockout && (
-          <div className="bg-[#FFF5F0] border border-[#FCCBB0] rounded-xl px-3 py-2 mb-4 text-xs text-[#F36C3D] font-semibold text-center">
-            ⚠️ You ran out of stock! {result.finalDemand - result.unitsSold} customers left empty-handed.
+          <div className="bg-[#FFF5F0] border border-[#FCCBB0] rounded-xl px-3 py-2 mb-3 text-xs text-[#F36C3D] font-semibold text-center">
+            Out of stock! {result.finalDemand - result.unitsSold} customers walked away. Make more next week!
           </div>
         )}
 
         <div
-          className="rounded-xl px-4 py-3 text-center mb-4"
+          className="rounded-xl px-4 py-3 text-center mb-3"
           style={{ background: result.endCash >= 0 ? "#EAF7F9" : "#FFF5F0" }}
         >
           <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Cash Balance</p>
@@ -508,6 +587,7 @@ export default function SimulateGamePage() {
   // ── AI: weekly tip ────────────────────────────────────────────────────
   const [weeklyTip, setWeeklyTip] = useState<string | null>(null);
   const tipAbortRef = useRef<AbortController | null>(null);
+  const tipAbortTimerRef = useRef<number | null>(null);
   const startWeekTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -602,6 +682,23 @@ Make it specific to their product, not generic. Be creative and fun.`;
   );
 
   const effectiveMax = decisions.hireHelper ? Math.floor(maxWeeklyUnits * 1.5) : maxWeeklyUnits;
+  const priceStep = 0.25;
+  const priceMin = 0.25;
+  const priceMax = Math.max(
+    8,
+    Math.ceil(
+      Math.max(
+        originalPrice * 2,
+        decisions.sellingPrice * 1.25,
+        variableCostPerUnit * 4,
+        originalPrice + 10
+      ) / priceStep
+    ) * priceStep
+  );
+  const effectiveSalePrice = decisions.marketing.includes("sale")
+    ? decisions.sellingPrice * 0.85
+    : decisions.sellingPrice;
+  const projectedCashColor = proj.projectedCash >= 0 ? "#16a34a" : "#ef4444";
   const canStart =
     simState.gameStatus === "active" &&
     proj.productionCost <= simState.cash &&
@@ -664,7 +761,8 @@ Make it specific to their product, not generic. Be creative and fun.`;
       const tipController = new AbortController();
       tipAbortRef.current = tipController;
       setWeeklyTip(null);
-      window.setTimeout(() => tipController.abort(), 3000);
+      if (tipAbortTimerRef.current) window.clearTimeout(tipAbortTimerRef.current);
+      tipAbortTimerRef.current = window.setTimeout(() => tipController.abort(), 3000);
 
       const tipPrompt = `You are a friendly business coach for kids aged 8-12.
 Based on these weekly results, give exactly one short encouraging tip (max 20 words) that helps them do better next week.
@@ -756,6 +854,7 @@ Marketing actions used: ${decisions.marketing.join(", ") || "none"}`;
   useEffect(() => {
     return () => {
       tipAbortRef.current?.abort();
+      if (tipAbortTimerRef.current) window.clearTimeout(tipAbortTimerRef.current);
       if (startWeekTimerRef.current) {
         window.clearTimeout(startWeekTimerRef.current);
       }
@@ -806,40 +905,80 @@ Marketing actions used: ${decisions.marketing.join(", ") || "none"}`;
           <div className="flex flex-col gap-3">
 
             {/* Event card */}
-            <EventCard event={simState.currentEvent} />
+            <EventCard event={simState.currentEvent} week={simState.week} />
 
-            {/* Production section */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-4">
-              <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Production</p>
+            {/* Production decisions */}
+            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Production decisions</p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF7F9] text-[#5DB7C4]">
+                  Cap {effectiveMax}
+                </span>
+              </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-[#2B2B2B]">
-                  How many will you make? <span className="text-[#9BBFC3] font-normal">(max {effectiveMax})</span>
-                </label>
-                <div className="flex items-center gap-2">
+              <div className="rounded-xl border border-[#E7EFF1] bg-[#F8FBFC] px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-[#2B2B2B]">Units to produce</label>
+                  <span className="text-xs font-extrabold text-[#5DB7C4]">{decisions.unitsToProduce} units</span>
+                </div>
+                <div className="mt-1.5 flex items-center gap-2">
                   <input
                     type="number"
                     min={0}
                     max={effectiveMax}
+                    step={1}
                     value={decisions.unitsToProduce}
-                    onChange={e => setDecisions(prev => ({
-                      ...prev,
-                      unitsToProduce: Math.min(effectiveMax, Math.max(0, Number(e.target.value) || 0)),
-                    }))}
-                    className="flex-1 border-2 border-[#E0EFF1] focus:border-[#5DB7C4] rounded-xl px-3 py-2.5 text-[#2B2B2B] font-bold text-lg bg-[#F7F9FA] outline-none transition-colors"
+                    onChange={e =>
+                      setDecisions(prev => ({
+                        ...prev,
+                        unitsToProduce: Math.min(effectiveMax, Math.max(0, Number(e.target.value) || 0)),
+                      }))
+                    }
+                    onBlur={e =>
+                      setDecisions(prev => ({
+                        ...prev,
+                        unitsToProduce: Math.min(effectiveMax, Math.max(0, Math.round(Number(e.target.value) || 0))),
+                      }))
+                    }
+                    className="flex-1 border-2 border-[#E0EFF1] focus:border-[#5DB7C4] rounded-xl px-3 py-2 text-[#2B2B2B] font-bold bg-white outline-none transition-colors"
                   />
                   <span className="text-xs text-[#9BBFC3] font-semibold whitespace-nowrap">units</span>
                 </div>
-                {simState.inventory > 0 && (
-                  <p className="text-xs text-[#5DB7C4] font-semibold">
-                    + {simState.inventory} in stock from last week → total supply: {decisions.unitsToProduce + simState.inventory}
+                <DecisionSlider
+                  value={decisions.unitsToProduce}
+                  min={0}
+                  max={effectiveMax}
+                  step={1}
+                  accent="#5DB7C4"
+                  ariaLabel="Units to produce slider"
+                  onChange={(value) =>
+                    setDecisions(prev => ({
+                      ...prev,
+                      unitsToProduce: Math.min(effectiveMax, Math.max(0, Math.round(value))),
+                    }))
+                  }
+                />
+                <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#9BBFC3]">
+                  <span>0</span>
+                  <span>{effectiveMax}</span>
+                </div>
+                {simState.inventory > 0 ? (
+                  <p className="text-[11px] text-[#5DB7C4] font-semibold mt-1">
+                    +{simState.inventory} in stock, so your total supply is {proj.supply}.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-[#9BBFC3] font-semibold mt-1">
+                    More production can raise sales, but also raises costs.
                   </p>
                 )}
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="rounded-xl border border-[#E7EFF1] bg-[#F8FBFC] px-3 py-2.5">
                 <label className="text-sm font-bold text-[#2B2B2B]">Material quality</label>
-                <div className="flex gap-2">
+                <p className="text-[11px] text-[#7B9EA3] mt-0.5">
+                  Better quality can lift demand, but materials cost more.
+                </p>
+                <div className="mt-2 flex gap-2">
                   {(["Standard", "Premium", "Deluxe"] as StartingQuality[]).map(q => (
                     <button
                       key={q}
@@ -848,7 +987,7 @@ Marketing actions used: ${decisions.marketing.join(", ") || "none"}`;
                       className="flex-1 rounded-xl py-2.5 text-sm font-bold border-2 transition-all"
                       style={{
                         borderColor: decisions.quality === q ? "#5DB7C4" : "#E0EFF1",
-                        background: decisions.quality === q ? "#EAF7F9" : "#F7F9FA",
+                        background: decisions.quality === q ? "#EAF7F9" : "#FFFFFF",
                         color: decisions.quality === q ? "#5DB7C4" : "#9BBFC3",
                       }}
                     >
@@ -857,40 +996,106 @@ Marketing actions used: ${decisions.marketing.join(", ") || "none"}`;
                   ))}
                 </div>
               </div>
-            </div>
 
-            {/* Pricing section */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-2">
-              <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Pricing</p>
-              <label className="text-sm font-bold text-[#2B2B2B]">
-                What's your selling price?
-              </label>
-              <div className="flex items-center border-2 border-[#E0EFF1] focus-within:border-[#5DB7C4] rounded-xl px-3 py-2.5 bg-[#F7F9FA] transition-colors">
-                <span className="text-[#5DB7C4] font-bold text-lg mr-2">$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.25}
-                  value={decisions.sellingPrice}
-                  onChange={e => setDecisions(prev => ({ ...prev, sellingPrice: Math.max(0, Number(e.target.value) || 0) }))}
-                  className="bg-transparent flex-1 outline-none text-[#2B2B2B] font-bold text-lg"
-                />
+              <div className="rounded-xl border border-[#E7EFF1] bg-[#F8FBFC] px-3 py-2.5 flex items-center justify-between gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-[#2B2B2B]">Hire a helper?</p>
+                  <p className="text-[11px] text-[#7B9EA3] mt-0.5">
+                    Costs $20 and raises weekly cap by 50%.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleHelper}
+                  className="w-12 h-6 rounded-full transition-all duration-200 flex-shrink-0 relative"
+                  style={{ background: decisions.hireHelper ? "#5DB7C4" : "#D1D5DB" }}
+                >
+                  <div
+                    className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200"
+                    style={{ left: decisions.hireHelper ? "calc(100% - 22px)" : "2px" }}
+                  />
+                </button>
               </div>
-              {decisions.sellingPrice !== originalPrice && originalPrice > 0 && (
-                <p className="text-xs text-[#F36C3D] font-semibold">
-                  Original price was ${originalPrice.toFixed(2)} —
-                  {decisions.sellingPrice < originalPrice ? " lower price may boost demand" : " higher price may reduce demand"}
-                </p>
-              )}
             </div>
 
-            {/* Marketing section */}
+            {/* Pricing decisions */}
+            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
+              <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Pricing decisions</p>
+              <div className="rounded-xl border border-[#E7EFF1] bg-[#F8FBFC] px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-[#2B2B2B]">Selling price</label>
+                  <span className="text-xs font-extrabold text-[#5DB7C4]">${decisions.sellingPrice.toFixed(2)}</span>
+                </div>
+                <div className="mt-1.5 flex items-center border-2 border-[#E0EFF1] focus-within:border-[#5DB7C4] rounded-xl px-3 py-2 bg-white transition-colors">
+                  <span className="text-[#5DB7C4] font-bold text-base mr-2">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={priceStep}
+                    value={decisions.sellingPrice}
+                    onChange={e =>
+                      setDecisions(prev => ({
+                        ...prev,
+                        sellingPrice: Math.max(0, Number(e.target.value) || 0),
+                      }))
+                    }
+                    onBlur={e =>
+                      setDecisions(prev => ({
+                        ...prev,
+                        sellingPrice: Math.max(0, roundToStep(Number(e.target.value) || 0, priceStep)),
+                      }))
+                    }
+                    className="bg-transparent flex-1 outline-none text-[#2B2B2B] font-bold"
+                  />
+                </div>
+                <DecisionSlider
+                  value={decisions.sellingPrice}
+                  min={priceMin}
+                  max={priceMax}
+                  step={priceStep}
+                  accent="#F36C3D"
+                  ariaLabel="Selling price slider"
+                  onChange={(value) =>
+                    setDecisions(prev => ({
+                      ...prev,
+                      sellingPrice: Math.max(0, roundToStep(value, priceStep)),
+                    }))
+                  }
+                />
+                <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#9BBFC3]">
+                  <span>${priceMin.toFixed(2)}</span>
+                  <span>${priceMax.toFixed(2)}</span>
+                </div>
+                {decisions.marketing.includes("sale") ? (
+                  <p className="text-[11px] text-[#5DB7C4] font-semibold mt-1">
+                    Sale active: customers pay ${effectiveSalePrice.toFixed(2)} this week.
+                  </p>
+                ) : decisions.sellingPrice !== originalPrice && originalPrice > 0 ? (
+                  <p className="text-[11px] text-[#F36C3D] font-semibold mt-1">
+                    Original ${originalPrice.toFixed(2)}: lower price can boost demand, higher price can reduce it.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-[#9BBFC3] font-semibold mt-1">
+                    Keep price near your market sweet spot to balance demand and profit.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Marketing decisions */}
             <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Marketing</p>
-                <span className="text-[10px] font-bold text-[#C8D8DC] uppercase tracking-wider">
-                  {decisions.marketing.length}/2 selected
-                </span>
+                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Marketing decisions</p>
+                <div className="flex items-center gap-2">
+                  {simState.wordOfMouthStack > 0 && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF7F9] text-[#5DB7C4]">
+                      💬 Stack x{Math.min(simState.wordOfMouthStack, 6)}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold text-[#C8D8DC] uppercase tracking-wider">
+                    {decisions.marketing.length}/2 chosen
+                  </span>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {(Object.keys(MARKETING_META) as MarketingKey[]).map(key => {
@@ -922,45 +1127,71 @@ Marketing actions used: ${decisions.marketing.join(", ") || "none"}`;
               </div>
             </div>
 
-            {/* Staff section */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex items-center justify-between gap-4">
-              <div className="flex-1">
-                <p className="text-sm font-bold text-[#2B2B2B]">Hire a helper this week?</p>
-                <p className="text-xs text-[#9BBFC3] mt-0.5">
-                  Costs $20 · lets you produce {Math.floor(maxWeeklyUnits * 1.5)} units max (50% more)
+            {/* Pre-start projection */}
+            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Projected outcome</p>
+                <span
+                  className="text-xs font-extrabold"
+                  style={{ color: proj.profit >= 0 ? "#16a34a" : "#ef4444" }}
+                >
+                  {proj.profit >= 0 ? "+" : "-"}{fd(proj.profit)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-[#F7F9FA] rounded-xl px-3 py-2">
+                  <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">Est. demand</p>
+                  <p className="font-extrabold text-sm mt-0.5 text-[#2B2B2B]">~{proj.finalDemand}</p>
+                </div>
+                <div className="bg-[#F7F9FA] rounded-xl px-3 py-2">
+                  <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">Your supply</p>
+                  <p className="font-extrabold text-sm mt-0.5 text-[#2B2B2B]">{proj.supply}</p>
+                </div>
+                <div className="bg-[#F7F9FA] rounded-xl px-3 py-2">
+                  <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">Est. revenue</p>
+                  <p className="font-extrabold text-sm mt-0.5 text-[#16a34a]">+{fd(proj.revenue)}</p>
+                </div>
+                <div className="bg-[#F7F9FA] rounded-xl px-3 py-2">
+                  <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">Est. costs</p>
+                  <p className="font-extrabold text-sm mt-0.5 text-[#F36C3D]">-{fd(proj.totalCost)}</p>
+                </div>
+              </div>
+              <div
+                className="rounded-xl px-3 py-2.5 flex items-center justify-between"
+                style={{ background: proj.projectedCash >= 0 ? "#F0FFF4" : "#FFF5F5" }}
+              >
+                <p className="text-sm font-bold text-[#2B2B2B]">Projected cash after week</p>
+                <p className="text-lg font-extrabold" style={{ color: projectedCashColor }}>
+                  ${proj.projectedCash.toFixed(2)}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={toggleHelper}
-                className="w-12 h-6 rounded-full transition-all duration-200 flex-shrink-0 relative"
-                style={{ background: decisions.hireHelper ? "#5DB7C4" : "#D1D5DB" }}
-              >
-                <div
-                  className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200"
-                  style={{ left: decisions.hireHelper ? "calc(100% - 22px)" : "2px" }}
-                />
-              </button>
+              {proj.finalDemand > proj.supply && (
+                <p className="text-xs text-[#F36C3D] font-semibold">
+                  You may run out of stock ({proj.finalDemand - proj.supply} units short).
+                </p>
+              )}
+              {proj.productionCost > simState.cash && (
+                <p className="text-xs text-[#F36C3D] font-semibold">
+                  You cannot afford this production plan right now.
+                </p>
+              )}
             </div>
 
             {/* Start Week */}
             <div className="flex flex-col items-center gap-2">
-              {proj.productionCost > simState.cash && (
-                <p className="text-xs text-[#F36C3D] font-semibold text-center">
-                  ⚠️ You can't afford to produce {decisions.unitsToProduce} units (costs {fd(proj.productionCost)}, you have ${simState.cash.toFixed(2)})
-                </p>
-              )}
-              <ChronicleButton
-                text={isStartingWeek ? "Running Week..." : "Start Week →"}
-                onClick={handleStartWeek}
-                hoverColor="#F36C3D"
-                customBackground="#5DB7C4"
-                customForeground="#ffffff"
-                hoverForeground="#ffffff"
-                width="100%"
-                borderRadius="12px"
-                disabled={!canStart}
-              />
+              <div className={canStart ? "priceit-btn-ready w-full" : "w-full"}>
+                <ChronicleButton
+                  text={isStartingWeek ? "Running Week..." : "Start Week →"}
+                  onClick={handleStartWeek}
+                  hoverColor="#F36C3D"
+                  customBackground="#5DB7C4"
+                  customForeground="#ffffff"
+                  hoverForeground="#ffffff"
+                  width="100%"
+                  borderRadius="12px"
+                  disabled={!canStart}
+                />
+              </div>
             </div>
           </div>
 
@@ -969,25 +1200,59 @@ Marketing actions used: ${decisions.marketing.join(", ") || "none"}`;
           ══════════════════════════════════════════════════════════════ */}
           <div className="flex flex-col gap-3">
 
-            {/* Week progress */}
+            {/* Week tracker strip */}
             <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Progress</p>
-                <p className="text-xs font-bold text-[#5DB7C4]">Week {simState.week} of {TOTAL_WEEKS}</p>
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Week {simState.week} of {TOTAL_WEEKS}</p>
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    let streak = 0;
+                    for (let i = simState.cashHistory.length - 1; i >= 0; i--) {
+                      if (simState.cashHistory[i] > 0) streak++;
+                      else break;
+                    }
+                    return streak >= 2 ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF7ED] text-[#EA580C]">
+                        🔥 {streak}-week streak!
+                      </span>
+                    ) : null;
+                  })()}
+                  <p className="text-xs font-bold text-[#5DB7C4]">
+                    {TOTAL_WEEKS - simState.week + 1} left
+                  </p>
+                </div>
               </div>
-              <div className="h-2.5 rounded-full bg-[#E0EFF1] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[#5DB7C4] transition-all duration-500"
-                  style={{ width: `${((simState.week - 1) / TOTAL_WEEKS) * 100}%` }}
-                />
+              <div className="flex gap-1">
+                {Array.from({ length: TOTAL_WEEKS }, (_, i) => {
+                  const weekNum = i + 1;
+                  const result = simState.weeklyResults[i];
+                  const isActive = weekNum === simState.week;
+                  const isDone = weekNum < simState.week;
+                  const profit = result?.profit ?? 0;
+                  return (
+                    <div
+                      key={i}
+                      className="flex-1 flex flex-col items-center gap-0.5"
+                      title={isDone ? `Week ${weekNum}: ${profit >= 0 ? "+" : ""}$${profit.toFixed(2)}` : `Week ${weekNum}`}
+                    >
+                      <div
+                        className="w-full h-5 rounded-md text-[9px] font-extrabold flex items-center justify-center transition-all"
+                        style={{
+                          background: isActive ? "#5DB7C4" : isDone ? (profit >= 0 ? "#dcfce7" : "#fee2e2") : "#F0F4F5",
+                          color: isActive ? "#fff" : isDone ? (profit >= 0 ? "#16a34a" : "#dc2626") : "#C8D8DC",
+                          boxShadow: isActive ? "0 0 0 2px #5DB7C4" : "none",
+                        }}
+                      >
+                        {isActive ? "▶" : isDone ? (profit >= 0 ? "+" : "-") : ""}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <p className="text-[10px] text-[#9BBFC3] mt-1.5 text-right">
-                {TOTAL_WEEKS - simState.week + 1} week{TOTAL_WEEKS - simState.week + 1 !== 1 ? "s" : ""} remaining
-              </p>
             </div>
 
             {/* Key stats */}
-            <div className="grid grid-cols-3 gap-2">
+            <div key={simState.week} className="grid grid-cols-3 gap-2 priceit-row-enter">
               {[
                 { label: "Cash Balance", val: `$${simState.cash.toFixed(2)}`, color: simState.cash >= 0 ? "#5DB7C4" : "#ef4444" },
                 { label: "In Stock",     val: `${simState.inventory} units`,   color: "#F36C3D" },
@@ -1020,18 +1285,33 @@ Marketing actions used: ${decisions.marketing.join(", ") || "none"}`;
               </div>
 
               {/* Projected profit — full width */}
-              <div
-                className="rounded-xl px-4 py-3 flex items-center justify-between"
-                style={{ background: proj.profit >= 0 ? "#EAF7F9" : "#FFF5F0" }}
-              >
-                <span className="text-sm font-bold text-[#2B2B2B]">Est. Profit</span>
-                <span
-                  className="text-xl font-extrabold"
-                  style={{ color: proj.profit >= 0 ? "#5DB7C4" : "#ef4444" }}
-                >
-                  {proj.profit >= 0 ? "+" : "-"}{fd(proj.profit)}
-                </span>
-              </div>
+              {(() => {
+                const lastWeekProfit = simState.weeklyResults.length > 0
+                  ? simState.weeklyResults[simState.weeklyResults.length - 1].profit
+                  : null;
+                const delta = lastWeekProfit !== null ? proj.profit - lastWeekProfit : null;
+                return (
+                  <div
+                    className="rounded-xl px-4 py-3 flex items-center justify-between"
+                    style={{ background: proj.profit >= 0 ? "#EAF7F9" : "#FFF5F0" }}
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-[#2B2B2B]">Est. Profit</span>
+                      {delta !== null && (
+                        <span className="text-[10px] font-semibold" style={{ color: delta >= 0 ? "#16a34a" : "#ef4444" }}>
+                          {delta >= 0 ? "▲" : "▼"} {delta >= 0 ? "+" : "-"}${Math.abs(delta).toFixed(2)} vs last week
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className="text-xl font-extrabold"
+                      style={{ color: proj.profit >= 0 ? "#5DB7C4" : "#ef4444" }}
+                    >
+                      {proj.profit >= 0 ? "+" : "-"}{fd(proj.profit)}
+                    </span>
+                  </div>
+                );
+              })()}
 
               {proj.finalDemand > proj.supply && (
                 <p className="text-xs text-[#F36C3D] font-semibold text-center">

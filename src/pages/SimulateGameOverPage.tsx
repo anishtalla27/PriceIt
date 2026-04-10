@@ -32,27 +32,27 @@ function generateLessons(results: PassedResult[], satisfaction: number): string[
   const totalRevenue = results.reduce((s, r) => s + r.revenue, 0);
   const totalCost = results.reduce((s, r) => s + r.totalCost, 0);
 
-  // Lesson 1: production / supply
+  // Lesson 1: production vs demand
   if (stockoutWeeks > results.length * 0.5) {
-    lessons.push("You ran out of stock often — try producing more units each week to keep up with demand.");
+    lessons.push("You kept running out of stock! Next time, try making a few extra units each week so more customers can buy.");
   } else if (lossWeeks > results.length * 0.6) {
-    lessons.push("You had a lot of losing weeks — try producing less to keep material costs down, or raise your price.");
+    lessons.push("Most weeks ended in a loss. Try making fewer items so your costs stay low, or bump up your selling price a little.");
   } else {
-    lessons.push("Match your production to demand — too much wastes money, too little loses sales.");
+    lessons.push("Getting production just right is tricky. Too much wastes money, too little loses sales. Keep practicing!");
   }
 
   // Lesson 2: revenue vs cost
   if (totalCost > totalRevenue) {
-    lessons.push("Your costs were higher than your revenue — try raising your selling price or cutting material costs.");
+    lessons.push("Your costs ended up higher than your income. A small price increase or cheaper materials can make a big difference.");
   } else {
-    lessons.push("Marketing can boost demand a lot — even $5 flyers or free word-of-mouth can bring in more customers.");
+    lessons.push("Marketing can really help. Even free stuff like word of mouth or a small flyer budget can bring in a lot more customers.");
   }
 
   // Lesson 3: satisfaction
   if (satisfaction < 50) {
-    lessons.push("Customer satisfaction got really low — keeping items in stock and using quality materials keeps customers coming back.");
+    lessons.push("Customer happiness got pretty low. Keeping items in stock and using good materials helps people come back for more.");
   } else {
-    lessons.push("Build customer trust over time — the longer they're happy, the more they tell their friends!");
+    lessons.push("Happy customers are your best tool. Keep them satisfied and they will tell their friends about you!");
   }
 
   return lessons;

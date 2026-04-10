@@ -263,16 +263,16 @@ export default function SetupPage() {
           : "Type your answer here..."
       }
     >
-      <div className="priceit-fade-in">
+      <div className="-mb-3 sm:-mb-2">
         <ProgressSteps currentStep={1} />
       </div>
       {flowNotice && (
-        <div className="mb-3 rounded-xl border border-[#A9DDE3] bg-white px-4 py-2 text-sm font-semibold text-[#2B2B2B]">
+        <div className="mb-2 rounded-xl border border-[#A9DDE3] bg-white px-4 py-2 text-sm font-semibold text-[#2B2B2B]">
           {flowNotice}
         </div>
       )}
       {/* Chat messages */}
-      <div className={`flex flex-col gap-3 max-h-[28rem] overflow-y-auto px-1 py-2 scroll-smooth rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-2" : ""}`}>
+      <div className={`flex flex-col gap-3 min-h-[17rem] max-h-[27rem] overflow-y-auto px-2 py-2.5 scroll-smooth rounded-2xl border border-[#D6E6EA] bg-[#FCFEFF] ${assistantHighlight ? "priceit-agent-highlight p-2" : ""}`}>
         {messages.map((msg, i) => (
           <Bubble key={i} msg={msg} />
         ))}

@@ -75,6 +75,10 @@ function NumInput({
   onBlur,
   placeholder,
   prefix,
+  min = 0,
+  step = "any",
+  showStepper = false,
+  stepAmount = 1,
   invalid = false,
 }: {
   value: number | "";
@@ -82,8 +86,14 @@ function NumInput({
   onBlur?: () => void;
   placeholder?: string;
   prefix?: string;
+  min?: number;
+  step?: number | "any";
+  showStepper?: boolean;
+  stepAmount?: number;
   invalid?: boolean;
 }) {
+  const numericValue = value === "" ? 0 : Number(value);
+
   return (
     <div className="relative">
       {prefix && (
@@ -92,12 +102,18 @@ function NumInput({
         </span>
       )}
       <input
-        className="bauhaus-field-input"
+        className={`bauhaus-field-input ${showStepper ? "pr-[5.25rem]" : ""}`}
         type="number"
-        min="0"
-        step="any"
+        min={min}
+        step={step}
         value={value}
-        onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        onChange={(e) => {
+          if (e.target.value === "") {
+            onChange("");
+            return;
+          }
+          onChange(Number(e.target.value));
+        }}
         onBlur={onBlur}
         placeholder={placeholder ?? "0"}
         style={{
@@ -105,6 +121,26 @@ function NumInput({
           ...(invalid ? { borderColor: "#F36C3D", background: "#FFF5F0" } : {}),
         }}
       />
+      {showStepper && (
+        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(min, Number((numericValue - stepAmount).toFixed(4))))}
+            className="h-7 w-7 rounded-md border border-[#D5E3E6] bg-white text-[#7B9EA3] text-sm font-extrabold hover:border-[#5DB7C4] hover:text-[#5DB7C4] transition-colors"
+            aria-label="Decrease value"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(Number((numericValue + stepAmount).toFixed(4)))}
+            className="h-7 w-7 rounded-md border border-[#D5E3E6] bg-white text-[#7B9EA3] text-sm font-extrabold hover:border-[#5DB7C4] hover:text-[#5DB7C4] transition-colors"
+            aria-label="Increase value"
+          >
+            +
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -171,40 +207,70 @@ function CompactCard({
 
   return (
     <CardShell compact>
-      <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
-        <span className="text-2xl select-none leading-none">{categoryEmoji(item.category)}</span>
-        <div className="flex-1 min-w-0">
-          <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#B0C4C7]"}`}>
-            {item.name || "Unnamed input"}
-          </p>
-          <p className="text-[11px] text-[#7B9EA3] mt-0.5 truncate">
-            {item.category}
-            {item.unitsPerProduct !== "" ? ` · ${item.unitsPerProduct} per product` : ""}
-          </p>
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 sm:gap-3 items-center">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xl select-none leading-none">{categoryEmoji(item.category)}</span>
+            <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#B0C4C7]"}`}>
+              {item.name || "Unnamed input"}
+            </p>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-[#EEF6F8] text-[#5DB7C4]">{item.category}</span>
+            {item.unitsPerProduct !== "" && (
+              <span className="px-2 py-0.5 rounded-full bg-[#FFF5F0] text-[#F36C3D]">
+                {item.unitsPerProduct} used/product
+              </span>
+            )}
+            {item.unitsPerPack !== "" && (
+              <span className="px-2 py-0.5 rounded-full bg-[#F7F9FA] text-[#7B9EA3]">
+                {item.unitsPerPack} per pack
+              </span>
+            )}
+          </div>
         </div>
-        <div className="shrink-0 text-right mr-1">
-          <p className="font-extrabold text-[#F36C3D] text-sm leading-tight">
+
+        <div className="shrink-0 text-left sm:text-right">
+          <p className="font-extrabold text-[#F36C3D] text-base leading-tight">
             {cpp > 0 ? `$${cpp.toFixed(3)}` : "—"}
           </p>
-          <p className="text-[10px] text-[#9BBFC3] font-semibold">/product</p>
+          <p className="text-[10px] text-[#9BBFC3] font-semibold">cost per product</p>
         </div>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="shrink-0 min-h-11 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#EEF6F8] text-[#5DB7C4] hover:bg-[#5DB7C4] hover:text-white transition-colors"
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="shrink-0 min-h-11 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-sm font-bold px-3"
-          aria-label="Delete"
-        >
-          {confirmingDelete ? "Sure?" : "Delete"}
-        </button>
+
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="min-h-10 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#EEF6F8] text-[#5DB7C4] hover:bg-[#5DB7C4] hover:text-white transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="min-h-10 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
+            aria-label="Delete"
+          >
+            {confirmingDelete ? "Sure?" : "Delete"}
+          </button>
+        </div>
       </div>
     </CardShell>
+  );
+}
+
+function SectionTitle({
+  title,
+  hint,
+}: {
+  title: string;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-xl border border-[#E7EFF1] bg-[#F9FCFC] px-3 py-1.5 mb-2">
+      <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#6F8A91]">{title}</p>
+      <p className="text-[11px] text-[#8EA8AE]">{hint}</p>
+    </div>
   );
 }
 
@@ -239,9 +305,13 @@ function EditCard({
 
   return (
     <CardShell accentColor={cpp > 0 ? "#F36C3D" : "#5DB7C4"}>
-      {/* Row 1: Name + category + delete */}
-      <div className="flex flex-col sm:flex-row gap-2 items-start mb-3">
-        <div className="flex-1">
+      <SectionTitle
+        title="What This Item Is"
+        hint="Name the input and choose a category."
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_11rem_auto] gap-2 items-end mb-2.5">
+        <div className="min-w-0">
           <label className="bauhaus-field-label">Input name</label>
           <input
             className="bauhaus-field-input"
@@ -259,7 +329,7 @@ function EditCard({
             </p>
           )}
         </div>
-        <div className="w-full sm:w-36 shrink-0">
+        <div className="w-full">
           <label className="bauhaus-field-label">Category</label>
           <select
             className="bauhaus-field-input"
@@ -283,15 +353,19 @@ function EditCard({
         <button
           type="button"
           onClick={onDelete}
-          className="mt-1 sm:mt-6 min-h-11 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-sm font-bold px-3"
+          className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete"
         >
           {confirmingDelete ? "Sure?" : "Delete"}
         </button>
       </div>
 
-      {/* Row 2: Pack math */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+      <SectionTitle
+        title="Pack Math"
+        hint="Fill these three values to calculate cost per product."
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2.5">
         <div>
           <label className="bauhaus-field-label flex items-center">
             Price per pack
@@ -308,6 +382,7 @@ function EditCard({
             }}
             placeholder="3.99"
             prefix="$"
+            step="any"
             invalid={priceError}
           />
           {priceError && (
@@ -316,6 +391,7 @@ function EditCard({
             </p>
           )}
         </div>
+
         <div>
           <label className="bauhaus-field-label flex items-center">
             Units in pack
@@ -326,6 +402,9 @@ function EditCard({
             onChange={(v) => onUpdate({ unitsPerPack: v === "" ? "" : Math.max(0, Number(v)) })}
             onBlur={() => setTouched((prev) => ({ ...prev, unitsPerPack: true }))}
             placeholder="4"
+            step="any"
+            showStepper
+            stepAmount={1}
             invalid={perPackError}
           />
           {perPackError && (
@@ -334,10 +413,11 @@ function EditCard({
             </p>
           )}
         </div>
+
         <div>
           <label className="bauhaus-field-label">
             <div className="inline-flex items-center gap-1">
-              <span className="whitespace-nowrap">USED PER PRODUCT</span>
+              <span className="whitespace-nowrap">Used per product</span>
               <Tip text="How many of this do you use to make one finished product? e.g. 2 batteries per toy." />
             </div>
           </label>
@@ -346,6 +426,9 @@ function EditCard({
             onChange={(v) => onUpdate({ unitsPerProduct: v === "" ? "" : Math.max(0, Number(v)) })}
             onBlur={() => setTouched((prev) => ({ ...prev, unitsPerProduct: true }))}
             placeholder="2"
+            step="any"
+            showStepper
+            stepAmount={0.5}
             invalid={unitsPerProductError}
           />
           {unitsPerProductError && (
@@ -356,39 +439,37 @@ function EditCard({
         </div>
       </div>
 
-      {/* Live calc callout */}
       <div
-        className={`rounded-xl px-4 py-3 mb-3 transition-colors ${
+        className={`rounded-xl px-3 py-2.5 mb-2.5 transition-colors ${
           cpp > 0
             ? "bg-[#FFF0EA] border border-[#F36C3D]/25"
             : "bg-[#F7F9FA] border border-[#E0EFF1]"
         }`}
       >
         {cpp > 0 ? (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
             <p className="text-xs text-[#F36C3D] font-semibold">
               (${Number(item.pricePerPack).toFixed(2)} ÷ {item.unitsPerPack}) × {item.unitsPerProduct}
             </p>
-            <p className="text-lg font-extrabold text-[#F36C3D]">
-              = ${cpp.toFixed(3)} per product
+            <p className="text-base sm:text-lg font-extrabold text-[#F36C3D]">
+              ${cpp.toFixed(3)} per product
             </p>
           </div>
         ) : (
           <p className="text-xs text-[#B0C4C7] font-semibold text-center">
-            Fill in the three fields above to see the cost per product
+            Fill all three pack math fields to see the cost per product.
           </p>
         )}
       </div>
 
-      {/* Footer: Done */}
-      <div className="pt-2.5 border-t border-[#E0EFF1] flex items-center justify-between">
+      <div className="pt-2 border-t border-[#E0EFF1] flex items-center justify-between">
         <span className="text-xs font-semibold text-[#9BBFC3]">
           {categoryEmoji(item.category)} {item.category}
         </span>
         <button
           type="button"
           onClick={onDone}
-          className="min-h-11 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#5DB7C4] text-white hover:bg-[#4aa8b5] transition-colors"
+          className="min-h-10 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#5DB7C4] text-white hover:bg-[#4aa8b5] transition-colors"
         >
           ✓ Done
         </button>
@@ -477,7 +558,7 @@ export default function VariableCostsPage() {
   return (
     <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="flex items-center justify-between px-6 py-3 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup/costs")}
           className="min-h-11 px-3 flex items-center gap-2 text-[#5DB7C4] font-semibold text-sm hover:text-[#F36C3D] transition-colors"
@@ -488,11 +569,11 @@ export default function VariableCostsPage() {
         <div className="w-16" />
       </header>
 
-      <main className="flex-1 flex flex-col items-center px-4 py-8">
+      <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5">
         <div className="w-full max-w-lg">
           <ProgressSteps currentStep={3} />
 
-          <div className="mb-5 text-center">
+          <div className="mb-4 text-center">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
               What goes into each product?
             </h1>
@@ -502,9 +583,9 @@ export default function VariableCostsPage() {
           </div>
 
           {/* Item cards */}
-          <div className={`flex flex-col gap-3 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
+          <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
             {variableCosts.length === 0 && (
-              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-10 text-center">
+              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-8 text-center">
                 <p className="text-3xl mb-2">🧩</p>
                 <p className="text-[#7B9EA3] font-semibold text-sm">No inputs yet! Hit "Add Input" to get started 💸</p>
                 <p className="text-[#B0C4C7] text-xs mt-0.5">
@@ -550,7 +631,7 @@ export default function VariableCostsPage() {
 
           {/* Running total */}
           {variableCosts.length > 0 && (
-            <div className="mt-4 rounded-2xl bg-white border border-[#E0EFF1] px-5 py-4 flex items-center justify-between shadow-sm">
+            <div className="mt-3 rounded-2xl bg-white border border-[#E0EFF1] px-4 py-3 flex items-center justify-between shadow-sm">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-[#7B9EA3]">
                   Total Variable Cost
@@ -567,7 +648,7 @@ export default function VariableCostsPage() {
           )}
 
           {/* Navigation */}
-          <div className="mt-7 flex items-center justify-between gap-2">
+          <div className="mt-4 flex items-center justify-between gap-2">
             <ChronicleButton
               text="Back"
               onClick={() => navigate("/setup/costs")}

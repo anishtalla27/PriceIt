@@ -120,7 +120,7 @@ function computeBadges(results: PassedResult[], cashHistory: number[]): Badge[] 
 
   // Default badge if none earned
   if (badges.length === 0) {
-    badges.push({ emoji: "🌱", name: "First Timer", description: "Completed your first full simulation — now you know the ropes!" });
+    badges.push({ emoji: "🌱", name: "First Timer", description: "You finished your first full simulation. Now you know the ropes!" });
   }
 
   return badges.slice(0, 3);
@@ -134,25 +134,25 @@ function generateLessons(results: PassedResult[], satisfaction: number): string[
   const stockoutWeeks = results.filter(r => r.finalDemand > r.unitsSold).length;
 
   if (profitWeeks === 12) {
-    lessons.push("You stayed profitable all 12 weeks — incredible consistency! Real businesses dream of this.");
+    lessons.push("You were profitable every single week. That is incredibly rare. Real businesses try really hard to do this!");
   } else if (profitWeeks >= 8) {
-    lessons.push(`${profitWeeks} out of 12 profitable weeks is great work. Keep refining your timing and you'll nail that perfect run!`);
+    lessons.push(`${profitWeeks} out of 12 profitable weeks is solid work. A few small tweaks to your pricing or production could get you even higher next time.`);
   } else {
-    lessons.push("Every week you ran taught you something new — the more you play, the better your strategy gets!");
+    lessons.push("Every week you ran taught you something useful. The more you practice, the better your instincts get.");
   }
 
   if (stockoutWeeks === 0) {
-    lessons.push("You always had stock ready for every customer — great demand planning skills!");
+    lessons.push("You always had enough stock for every customer. That kind of planning keeps people happy and coming back.");
   } else if (stockoutWeeks <= 3) {
-    lessons.push(`You stocked out ${stockoutWeeks} times. A small inventory buffer would have captured those extra sales.`);
+    lessons.push(`You ran out of stock ${stockoutWeeks} time${stockoutWeeks > 1 ? "s" : ""}. Making just a few extra units each week would have captured those missed sales.`);
   } else {
-    lessons.push("Stock management is one of the trickiest parts of business — you're learning it faster than most!");
+    lessons.push("Stock management is one of the hardest parts of running a business. You are already learning skills that real CEOs use.");
   }
 
   if (satisfaction >= 70) {
-    lessons.push("Your customers stayed happy throughout — in a real business, that loyalty is worth more than any marketing campaign!");
+    lessons.push("Your customers stayed happy the whole time. In a real business, a loyal customer is worth way more than any ad.");
   } else {
-    lessons.push("Customer satisfaction dipped at times. In a real business, happy customers are your best free marketing tool!");
+    lessons.push("Customer happiness dropped a bit. Keeping shelves stocked and quality consistent is the best way to keep people smiling.");
   }
 
   return lessons;

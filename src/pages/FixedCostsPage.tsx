@@ -101,51 +101,52 @@ function CompactCard({
 
   return (
     <CardShell accentColor="#5DB7C4" compact>
-      <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
-        {/* Emoji */}
-        <span className="text-2xl select-none leading-none">{categoryEmoji(item.category)}</span>
-
-        {/* Name + subtitle */}
-        <div className="flex-1 min-w-0">
-          <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#B0C4C7]"}`}>
-            {item.name || "Unnamed item"}
-          </p>
-          <p className="text-[11px] text-[#7B9EA3] mt-0.5 truncate">
-            {item.category}
-            {item.type === "one-time" && item.monthsOfUse
-              ? ` · One-Time · ${item.monthsOfUse} mo`
-              : item.type === "monthly"
-              ? " · Monthly"
-              : ""}
-          </p>
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 sm:gap-3 items-center">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xl select-none leading-none">{categoryEmoji(item.category)}</span>
+            <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#B0C4C7]"}`}>
+              {item.name || "Unnamed item"}
+            </p>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-[#EEF6F8] text-[#5DB7C4]">{item.category}</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#F7F9FA] text-[#7B9EA3]">
+              {item.type === "monthly" ? "Monthly" : "One-Time"}
+            </span>
+            {item.type === "one-time" && item.monthsOfUse && (
+              <span className="px-2 py-0.5 rounded-full bg-[#FFF5F0] text-[#F36C3D]">
+                {item.monthsOfUse} mo
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Monthly cost */}
-        <div className="shrink-0 text-right mr-1">
-          <p className="font-extrabold text-[#5DB7C4] text-sm leading-tight">
+        <div className="shrink-0 text-left sm:text-right">
+          <p className="font-extrabold text-[#5DB7C4] text-base leading-tight">
             {monthly > 0 ? `$${monthly.toFixed(2)}` : "—"}
           </p>
-          <p className="text-[10px] text-[#9BBFC3] font-semibold">/mo</p>
+          <p className="text-[10px] text-[#9BBFC3] font-semibold">monthly portion</p>
         </div>
 
-        {/* Edit button */}
+        <div className="shrink-0 flex items-center gap-2">
         <button
           type="button"
           onClick={onEdit}
-          className="shrink-0 min-h-11 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#EEF6F8] text-[#5DB7C4] hover:bg-[#5DB7C4] hover:text-white transition-colors"
+          className="min-h-10 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#EEF6F8] text-[#5DB7C4] hover:bg-[#5DB7C4] hover:text-white transition-colors"
         >
           Edit
         </button>
 
-        {/* Delete button */}
         <button
           type="button"
           onClick={onDelete}
-          className="shrink-0 min-h-11 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-sm font-bold px-3"
+          className="min-h-10 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete"
         >
           {confirmingDelete ? "Sure?" : "Delete"}
         </button>
+        </div>
       </div>
     </CardShell>
   );
@@ -178,12 +179,17 @@ function EditCard({
     item.type === "one-time" &&
     touched.monthsOfUse &&
     (item.monthsOfUse === "" || Number(item.monthsOfUse) <= 0);
+  const monthsSliderMin = 1;
+  const monthsSliderMax = Math.min(120, Math.max(36, Number(item.monthsOfUse) || 0));
+  const monthsSliderValue =
+    item.monthsOfUse === ""
+      ? monthsSliderMin
+      : Math.min(monthsSliderMax, Math.max(monthsSliderMin, Math.round(Number(item.monthsOfUse))));
 
   return (
     <CardShell accentColor="#5DB7C4">
-      {/* Row 1: Name + category + delete */}
-      <div className="flex flex-col sm:flex-row gap-2 items-start mb-3">
-        <div className="flex-1">
+      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_11rem_auto] gap-2 items-end mb-2.5">
+        <div className="min-w-0">
           <label className="bauhaus-field-label">Cost item name</label>
           <input
             className="bauhaus-field-input"
@@ -201,7 +207,7 @@ function EditCard({
             </p>
           )}
         </div>
-        <div className="w-full sm:w-36 shrink-0">
+        <div className="w-full">
           <label className="bauhaus-field-label">Category</label>
           <select
             className="bauhaus-field-input"
@@ -225,15 +231,14 @@ function EditCard({
         <button
           type="button"
           onClick={onDelete}
-          className="mt-1 sm:mt-6 min-h-11 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-sm font-bold px-3"
+          className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete cost item"
         >
           {confirmingDelete ? "Sure?" : "Delete"}
         </button>
       </div>
 
-      {/* Row 2: Total cost + type toggle */}
-      <div className="flex flex-col sm:flex-row gap-3 items-end mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-end mb-2.5">
         <div className="flex-1">
           <label className="bauhaus-field-label">Total cost</label>
           <div className="relative">
@@ -275,13 +280,13 @@ function EditCard({
           )}
         </div>
 
-        <div className="flex-1 w-full">
+        <div className="w-full">
           <label className="bauhaus-field-label">Type</label>
-          <div className="flex rounded-xl overflow-hidden border-2 border-[#E0EFF1] min-h-11">
+          <div className="flex rounded-xl overflow-hidden border-2 border-[#E0EFF1] min-h-10">
             <button
               type="button"
               onClick={() => onUpdate({ type: "one-time" })}
-              className={`flex-1 min-h-11 text-xs font-bold transition-colors ${
+              className={`flex-1 min-h-10 text-xs font-bold transition-colors ${
                 item.type === "one-time"
                   ? "bg-[#5DB7C4] text-white"
                   : "bg-[#E8ECEE] text-[#7B9EA3] hover:bg-[#dce5e8]"
@@ -292,7 +297,7 @@ function EditCard({
             <button
               type="button"
               onClick={() => onUpdate({ type: "monthly" })}
-              className={`flex-1 min-h-11 text-xs font-bold transition-colors ${
+              className={`flex-1 min-h-10 text-xs font-bold transition-colors ${
                 item.type === "monthly"
                   ? "bg-[#5DB7C4] text-white"
                   : "bg-[#E8ECEE] text-[#7B9EA3] hover:bg-[#dce5e8]"
@@ -304,10 +309,9 @@ function EditCard({
         </div>
       </div>
 
-      {/* Row 3: Months of use (one-time only) + live calc */}
       {item.type === "one-time" && (
-        <div className="flex flex-col sm:flex-row gap-3 items-end mb-3">
-          <div className="w-full sm:w-32 shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-[12rem_minmax(0,1fr)] gap-2.5 items-end mb-2.5">
+          <div className="w-full">
             <label className="bauhaus-field-label">Months of use</label>
             <input
               className="bauhaus-field-input"
@@ -333,19 +337,44 @@ function EditCard({
               placeholder="12"
               style={monthsError ? { borderColor: "#F36C3D", background: "#FFF5F0" } : undefined}
             />
+            <input
+              type="range"
+              className="priceit-range mt-2"
+              min={monthsSliderMin}
+              max={monthsSliderMax}
+              step={1}
+              value={monthsSliderValue}
+              onChange={(e) => {
+                setTouched((prev) => ({ ...prev, monthsOfUse: true }));
+                onUpdate({ monthsOfUse: Number(e.target.value) });
+              }}
+              aria-label="Months of use slider"
+              style={{
+                "--range-accent": "#F36C3D",
+              } as React.CSSProperties}
+            />
+            <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#9BBFC3]">
+              <span>{monthsSliderMin} mo</span>
+              <span>{monthsSliderMax} mo</span>
+            </div>
             {monthsError && (
               <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
                 Enter at least 1 month.
               </p>
             )}
+            {!monthsError && (
+              <p className="mt-1 text-[11px] text-[#7B9EA3]">
+                Drag to spread this one-time cost over months.
+              </p>
+            )}
           </div>
           {monthly > 0 && (
-            <div className="flex-1 rounded-xl bg-[#FFF0EA] border border-[#F36C3D]/20 px-3 py-2">
+            <div className="rounded-xl bg-[#FFF0EA] border border-[#F36C3D]/20 px-3 py-2">
               <p className="text-xs font-bold text-[#F36C3D] leading-snug">
                 ${Number(item.totalCost).toFixed(2)} over {item.monthsOfUse}{" "}
                 month{Number(item.monthsOfUse) !== 1 ? "s" : ""}
               </p>
-              <p className="text-base font-extrabold text-[#F36C3D]">
+              <p className="text-sm sm:text-base font-extrabold text-[#F36C3D]">
                 = ${monthly.toFixed(2)}/month
               </p>
             </div>
@@ -353,15 +382,14 @@ function EditCard({
         </div>
       )}
 
-      {/* Footer: Done button */}
-      <div className="mt-2 pt-3 border-t border-[#E0EFF1] flex items-center justify-between">
+      <div className="mt-1 pt-2 border-t border-[#E0EFF1] flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-[#9BBFC3]">
           {monthly > 0 ? `Monthly portion: $${monthly.toFixed(2)}/mo` : "Monthly portion: —"}
         </span>
         <button
           type="button"
           onClick={onDone}
-          className="min-h-11 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#5DB7C4] text-white hover:bg-[#4aa8b5] transition-colors"
+          className="min-h-10 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#5DB7C4] text-white hover:bg-[#4aa8b5] transition-colors"
         >
           ✓ Done
         </button>
@@ -454,7 +482,7 @@ export default function FixedCostsPage() {
   return (
     <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="flex items-center justify-between px-6 py-3 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup")}
           className="min-h-11 px-3 flex items-center gap-2 text-[#5DB7C4] font-semibold text-sm hover:text-[#F36C3D] transition-colors"
@@ -465,12 +493,12 @@ export default function FixedCostsPage() {
         <div className="w-16" />
       </header>
 
-      <main className="flex-1 flex flex-col items-center px-4 py-8">
+      <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5">
         <div className="w-full max-w-lg">
           <ProgressSteps currentStep={2} />
 
           {/* Page title */}
-          <div className="mb-5 text-center">
+          <div className="mb-4 text-center">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
               What are your fixed costs?
             </h1>
@@ -480,9 +508,9 @@ export default function FixedCostsPage() {
           </div>
 
           {/* Cost item cards */}
-          <div className={`flex flex-col gap-3 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
+          <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
             {fixedCosts.length === 0 && (
-              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-10 text-center">
+              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-8 text-center">
                 <p className="text-3xl mb-2">🏷️</p>
                 <p className="text-[#7B9EA3] font-semibold text-sm">No costs yet! Hit "Add Fixed Cost" to get started 💸</p>
                 <p className="text-[#B0C4C7] text-xs mt-0.5">
@@ -529,7 +557,7 @@ export default function FixedCostsPage() {
 
           {/* Running total */}
           {fixedCosts.length > 0 && (
-            <div className="mt-4 rounded-2xl bg-white border border-[#E0EFF1] px-5 py-4 flex items-center justify-between shadow-sm">
+            <div className="mt-3 rounded-2xl bg-white border border-[#E0EFF1] px-4 py-3 flex items-center justify-between shadow-sm">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-[#7B9EA3]">
                   Total Monthly Fixed Costs
@@ -546,7 +574,7 @@ export default function FixedCostsPage() {
           )}
 
           {/* Navigation */}
-          <div className="mt-7 flex items-center justify-between gap-2">
+          <div className="mt-4 flex items-center justify-between gap-2">
             <ChronicleButton
               text="Back"
               onClick={() => navigate("/setup")}
