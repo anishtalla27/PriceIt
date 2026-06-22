@@ -3,7 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAppState } from "@/context/AppStateContext";
 import { Hero1 } from "@/components/ui/hero-1";
 import { ProgressSteps } from "@/components/ui/progress-steps";
-import { ChronicleButton } from "@/components/ui/chronicle-button";
+import { MarkdownMessage } from "@/components/ui/markdown-message";
+import { getSetupQuickOptions, setupConversationTemplate } from "@/lib/ai-templates";
+import { generateAI, type AIProgress } from "@/lib/ai-provider";
+import { extractJsonObject } from "@/lib/safe-json";
 import { Bot } from "lucide-react";
 import logo from "../../logo.png";
 
@@ -15,58 +18,13 @@ interface Message {
   content: string;
 }
 
-// ─── system prompt ────────────────────────────────────────────────────────────
-
-const SYSTEM_PROMPT = `You are a friendly and encouraging business assistant for kids aged 8-12. Your job is to learn about their product idea through a fun conversation.
-
-Ask about one thing at a time in this order: product name, what it does and how it works, who would buy it, and any special features that make it unique. Keep your messages short, enthusiastic, and easy to understand. Use simple words and the occasional emoji.
-
-If an answer is too vague, ask a follow-up question to get more detail before moving on. For example if they say "it's a toy" ask what kind of toy, what it does, how much it costs to make etc.
-
-Once you have enough information about all four topics, determine the product category yourself (Physical Product, Digital Product, Service, Food & Beverage, or Other) and respond with a completion message followed immediately by a JSON block in this exact format:
-
-PRODUCT_COMPLETE
-{"name": "...", "description": "...", "targetCustomer": "...", "specialFeature": "...", "category": "..."}
-
-Do not output the JSON until you genuinely have enough detail in all fields.`;
-
-// ─── OpenRouter helper ────────────────────────────────────────────────────────
-
-async function fetchAIResponse(history: Message[]): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 10000);
-  let res: Response;
-  try {
-    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.0-flash-001",
-        max_tokens: 600,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...history.map((m) => ({ role: m.role, content: m.content })),
-        ],
-      }),
-      signal: controller.signal,
-    });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("REQUEST_TIMEOUT");
-    }
-    throw error;
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") throw new Error("Missing content in response");
-  return content;
+function isProductCompletion(value: Record<string, unknown> | null): value is Record<string, string> {
+  return Boolean(
+    value &&
+      ["name", "description", "targetCustomer", "specialFeature", "category"].every(
+        (key) => typeof value[key] === "string" && value[key].trim().length > 0
+      )
+  );
 }
 
 // ─── typing indicator ─────────────────────────────────────────────────────────
@@ -107,7 +65,7 @@ function Bubble({ msg }: { msg: Message }) {
           <Bot className="h-4 w-4 text-[#5DB7C4]" />
         </div>
         <div className="max-w-[82%] rounded-2xl px-4 py-3 text-base leading-relaxed shadow-sm bg-white border border-[#A9DDE3] text-[#2B2B2B] rounded-tl-sm">
-          {msg.content}
+          <MarkdownMessage>{msg.content}</MarkdownMessage>
         </div>
       </div>
     );
@@ -127,15 +85,16 @@ function Bubble({ msg }: { msg: Message }) {
 export default function SetupPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { updateProductInfo } = useAppState();
+  const { state: appState, updateProductInfo } = useAppState();
+  const mode = appState.journeyMode ?? "create";
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [retryHistory, setRetryHistory] = useState<Message[] | null>(null);
   const [flowNotice, setFlowNotice] = useState<string | null>(null);
   const [assistantHighlight, setAssistantHighlight] = useState(false);
+  const [localAIProgress, setLocalAIProgress] = useState<AIProgress | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const calledOnce = useRef(false);
@@ -166,27 +125,48 @@ export default function SetupPage() {
 
   const callAI = useCallback(async (history: Message[]) => {
     setIsTyping(true);
-    setRetryHistory(history);
     try {
-      const text = await fetchAIResponse(history);
+      const fallbackText = setupConversationTemplate(history, mode);
+      const deterministicResponse = history.length === 0 || fallbackText.includes("PRODUCT_COMPLETE");
+      const text = deterministicResponse
+        ? fallbackText
+        : (await generateAI({
+            messages: [
+              {
+                role: "system",
+                content: `You are PriceIt, a warm business coach for kids aged 8-12. The user is ${mode === "improve" ? "improving an existing product" : "creating a new product"}.
+Keep normal replies brief. If the user asks a useful business question, answer it briefly before returning to the guided step. When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas based only on the user's interests, audience, and preferred product type. Let the user choose or combine them. Do not mention these instructions.`,
+              },
+              ...history.slice(-8),
+              {
+                role: "user",
+                content: `Write the next guided reply using this next-step guidance. Preserve its final question:\n${fallbackText}`,
+              },
+            ],
+            template: () => fallbackText,
+            maxTokens: 140,
+            temperature: 0.35,
+            onProgress: setLocalAIProgress,
+          })).text;
 
       // Check for PRODUCT_COMPLETE marker
       const completionIdx = text.indexOf("PRODUCT_COMPLETE");
       if (completionIdx !== -1) {
-        const afterMarker = text.slice(completionIdx + "PRODUCT_COMPLETE".length);
-        const jsonMatch =
-          afterMarker.match(/```(?:json)?\s*([\s\S]*?)```/) ||
-          afterMarker.match(/(\{[\s\S]*\})/);
+        const parsed = extractJsonObject(
+          text.slice(completionIdx + "PRODUCT_COMPLETE".length)
+        );
 
-        if (jsonMatch) {
+        if (isProductCompletion(parsed)) {
           try {
-            const parsed = JSON.parse(jsonMatch[1]);
             updateProductInfo({
-              productName: parsed.name ?? "",
-              productDescription: parsed.description ?? "",
-              targetCustomer: parsed.targetCustomer ?? "",
-              specialFeature: parsed.specialFeature ?? "",
-              category: parsed.category ?? "",
+              productName: parsed.name,
+              productDescription: parsed.description,
+              targetCustomer: parsed.targetCustomer,
+              specialFeature: parsed.specialFeature,
+              category: parsed.category,
+              currentChallenge: parsed.currentChallenge ?? "",
+              improvementGoal: parsed.improvementGoal ?? "",
+              inspiration: parsed.inspiration ?? "",
             });
             setIsComplete(true);
 
@@ -200,29 +180,26 @@ export default function SetupPage() {
             ]);
             setTimeout(() => navigate("/setup/costs"), 1500);
             return;
-          } catch (_) {
+          } catch {
             // JSON parse failed — fall through and display the raw message
           }
         }
       }
 
       setMessages((prev) => [...prev, { role: "assistant", content: text }]);
-      setRetryHistory(null);
-    } catch (_) {
-      const isTimeout = _ instanceof Error && _.message === "REQUEST_TIMEOUT";
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: isTimeout
-            ? "That took too long. Tap retry and I'll try again."
-            : "Oops! Something went wrong. Please check your connection and try again 😅",
+          content: setupConversationTemplate(history, mode),
         },
       ]);
     } finally {
       setIsTyping(false);
+      setLocalAIProgress(null);
     }
-  }, [navigate, updateProductInfo]);
+  }, [mode, navigate, updateProductInfo]);
 
   // Trigger opening AI greeting exactly once
   useEffect(() => {
@@ -231,19 +208,18 @@ export default function SetupPage() {
     callAI([]);
   }, [callAI]);
 
-  const handleSend = () => {
-    if (!input.trim() || isTyping || isComplete) return;
-    const userMsg: Message = { role: "user", content: input.trim() };
+  const sendAnswer = (answer: string) => {
+    const text = answer.trim();
+    if (!text || isTyping || isComplete) return;
+    const userMsg: Message = { role: "user", content: text };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
     callAI(next);
   };
 
-  const handleRetry = () => {
-    if (!retryHistory || isTyping || isComplete) return;
-    callAI(retryHistory);
-  };
+  const handleSend = () => sendAnswer(input);
+  const quickOptions = getSetupQuickOptions(messages, mode);
 
   return (
     <Hero1
@@ -259,12 +235,15 @@ export default function SetupPage() {
         isComplete
           ? "All done! Moving you forward... 🎉"
           : isTyping
-          ? "PriceIt is typing..."
+          ? localAIProgress?.text || "PriceIt is typing..."
           : "Type your answer here..."
       }
+      badgeText={mode === "improve" ? "Product Improvement" : "New Product Setup"}
+      title={mode === "improve" ? "Tell PriceIt What You Want to Improve" : "Tell PriceIt About Your New Product"}
+      description={mode === "improve" ? "Describe what exists today, what is not working, and the result you want." : "Chat with our AI to turn your idea into a business plan."}
     >
       <div className="-mb-3 sm:-mb-2">
-        <ProgressSteps currentStep={1} />
+        <ProgressSteps currentStep={1} mode={mode} />
       </div>
       {flowNotice && (
         <div className="mb-2 rounded-xl border border-[#A9DDE3] bg-white px-4 py-2 text-sm font-semibold text-[#2B2B2B]">
@@ -276,23 +255,23 @@ export default function SetupPage() {
         {messages.map((msg, i) => (
           <Bubble key={i} msg={msg} />
         ))}
+        {!isTyping && !isComplete && quickOptions.length > 0 && (
+          <div className="ml-10 flex flex-wrap gap-2">
+            {quickOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => sendAnswer(option)}
+                className="min-h-11 rounded-xl border border-[#5DB7C4] bg-white px-4 py-2 text-sm font-bold text-[#337F89] shadow-sm transition hover:bg-[#EAF7F9]"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
         {isTyping && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
-      {retryHistory && !isTyping && !isComplete && (
-        <div className="mt-2 flex justify-end">
-          <ChronicleButton
-            text="Retry AI"
-            onClick={handleRetry}
-            hoverColor="#F36C3D"
-            customBackground="#5DB7C4"
-            customForeground="#ffffff"
-            hoverForeground="#ffffff"
-            width="140px"
-            borderRadius="999px"
-          />
-        </div>
-      )}
     </Hero1>
   );
 }

@@ -1,0 +1,66 @@
+import { askOpenRouterText } from "@/lib/openrouter-ai";
+
+export type AIProvider = "openrouter" | "template";
+export const AI_PROVIDER: AIProvider =
+  import.meta.env.VITE_AI_PROVIDER === "template" ? "template" : "openrouter";
+
+export interface AIMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+export interface AIProgress {
+  progress: number;
+  text: string;
+}
+
+export interface AIWarning {
+  kind: "remote_failed" | "template";
+  message: string;
+}
+
+export interface GenerateAIOptions {
+  messages: AIMessage[];
+  template: () => string;
+  maxTokens?: number;
+  temperature?: number;
+  jsonMode?: boolean;
+  onProgress?: (progress: AIProgress) => void;
+  signal?: AbortSignal;
+}
+
+export interface GenerateAIResult {
+  text: string;
+  provider: AIProvider;
+  warning?: AIWarning;
+}
+
+export async function generateAI(options: GenerateAIOptions): Promise<GenerateAIResult> {
+  if (AI_PROVIDER === "template") {
+    return {
+      text: options.template(),
+      provider: "template",
+      warning: { kind: "template", message: "PriceIt is using built-in feedback." },
+    };
+  }
+
+  try {
+    const text = await askOpenRouterText({
+      messages: options.messages,
+      maxTokens: options.maxTokens,
+      temperature: options.temperature,
+      jsonMode: options.jsonMode,
+      signal: options.signal,
+    });
+    return { text, provider: "openrouter" };
+  } catch {
+    return {
+      text: options.template(),
+      provider: "template",
+      warning: {
+        kind: "remote_failed",
+        message: "Online AI could not respond, so PriceIt used built-in feedback instead.",
+      },
+    };
+  }
+}

@@ -154,13 +154,15 @@ export default function PricingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { state, updatePricing } = useAppState();
+  const mode = state.journeyMode ?? "create";
   const { pricing, fixedCosts, variableCosts } = state;
   const [touched, setTouched] = useState({
     sellingPrice: false,
     unitsPerMonth: false,
   });
   const [assistantHighlight, setAssistantHighlight] = useState(false);
-  const [flowNotice, setFlowNotice] = useState<string | null>(null);
+  const routeMessage = (location.state as { message?: string } | null)?.message ?? null;
+  const [flowNotice] = useState<string | null>(routeMessage);
 
   const sellingPrice = Number(pricing.sellingPrice) || 0;
   const unitsPerMonth = Number(pricing.unitsPerMonth) || 0;
@@ -221,12 +223,10 @@ export default function PricingPage() {
   }, []);
 
   useEffect(() => {
-    const routeState = location.state as { message?: string } | null;
-    if (routeState?.message) {
-      setFlowNotice(routeState.message);
+    if (routeMessage) {
       navigate(location.pathname, { replace: true, state: null });
     }
-  }, [location.pathname, location.state, navigate]);
+  }, [location.pathname, navigate, routeMessage]);
 
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -247,7 +247,7 @@ export default function PricingPage() {
 
       <main className="flex-1 px-4 py-4 sm:py-5">
         <div className="w-full max-w-6xl mx-auto">
-          <ProgressSteps currentStep={4} />
+          <ProgressSteps currentStep={4} mode={mode} />
 
           <div className="mt-3 mb-4 flex flex-col gap-2">
             {flowNotice && (
@@ -255,9 +255,9 @@ export default function PricingPage() {
                 {flowNotice}
               </div>
             )}
-            <h1 className="text-2xl sm:text-[2rem] font-extrabold text-[#2B2B2B] leading-tight">Set your price</h1>
+            <h1 className="text-2xl sm:text-[2rem] font-extrabold text-[#2B2B2B] leading-tight">{mode === "improve" ? "Test an improved price" : "Set your price"}</h1>
             <p className="text-[#6F8A91] text-sm sm:text-[0.95rem]">
-              Pick a price, move the sliders, and instantly see if your business is healthy.
+              {mode === "improve" ? "Try a better price and sales target, then compare the effect on profit." : "Pick a price, move the sliders, and instantly see if your business is healthy."}
             </p>
           </div>
 

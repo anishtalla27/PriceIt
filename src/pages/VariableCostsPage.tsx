@@ -483,6 +483,7 @@ function EditCard({
 export default function VariableCostsPage() {
   const navigate = useNavigate();
   const { state, addVariableCost, updateVariableCost, deleteVariableCost } = useAppState();
+  const mode = state.journeyMode ?? "create";
   const { variableCosts } = state;
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -553,7 +554,7 @@ export default function VariableCostsPage() {
   }, []);
 
   const total = variableCosts.reduce((sum, item) => sum + costPerProduct(item), 0);
-  const canProceed = variableCosts.length > 0 && variableCosts.every(isRowComplete);
+  const canProceed = variableCosts.every(isRowComplete);
 
   return (
     <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
@@ -571,26 +572,37 @@ export default function VariableCostsPage() {
 
       <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5">
         <div className="w-full max-w-lg">
-          <ProgressSteps currentStep={3} />
+          <ProgressSteps currentStep={3} mode={mode} />
 
           <div className="mb-4 text-center">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
-              What goes into each product?
+              {mode === "improve" ? "Review what goes into each product or session" : "What goes into each product or session?"}
             </h1>
             <p className="mt-1 text-[#7B9EA3] text-sm">
-              Add every material or ingredient you use to make one.
+              {mode === "improve"
+                ? "Enter today's inputs so PriceIt can spot where changes may help."
+                : "Add every material, ingredient, or supply you use per product or service session. Pure service businesses (tutoring, consulting, etc.) with no per-session costs can skip this step."}
             </p>
           </div>
 
           {/* Item cards */}
           <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
             {variableCosts.length === 0 && (
-              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-8 text-center">
-                <p className="text-3xl mb-2">🧩</p>
-                <p className="text-[#7B9EA3] font-semibold text-sm">No inputs yet! Hit "Add Input" to get started 💸</p>
-                <p className="text-[#B0C4C7] text-xs mt-0.5">
-                  Add each material or ingredient you use per product.
-                </p>
+              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-8 px-5 text-center flex flex-col items-center gap-3">
+                <p className="text-3xl">🧩</p>
+                <div>
+                  <p className="text-[#7B9EA3] font-semibold text-sm">No variable costs added yet.</p>
+                  <p className="text-[#B0C4C7] text-xs mt-0.5">
+                    Add materials or supplies per product — or skip if you're a service business with no per-session costs.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/setup/pricing")}
+                  className="mt-1 rounded-xl border-2 border-[#C8E0E4] bg-white px-5 py-2.5 text-sm font-bold text-[#5DB7C4] hover:border-[#5DB7C4] hover:bg-[#EAF7F9] transition-colors"
+                >
+                  I have no variable costs — skip this step →
+                </button>
               </div>
             )}
 

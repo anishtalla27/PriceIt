@@ -16,6 +16,9 @@ interface Hero1Props {
   onInputSubmit?: () => void;
   inputDisabled?: boolean;
   inputPlaceholder?: string;
+  badgeText?: string;
+  title?: string;
+  description?: string;
 }
 
 const Hero1 = ({
@@ -29,10 +32,23 @@ const Hero1 = ({
   onInputSubmit,
   inputDisabled = false,
   inputPlaceholder = "Tip: Be specific for more accurate AI results.",
+  badgeText = "Product Info Setup",
+  title = "Tell PriceIt About Your Product",
+  description = "Chat with our AI to describe your idea.",
 }: Hero1Props) => {
   const [internalText, setInternalText] = React.useState("");
   const controlled = onInputChange !== undefined;
   const value = controlled ? (inputValue ?? "") : internalText;
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const prevDisabled = React.useRef(inputDisabled);
+
+  // Re-focus input when AI finishes responding (inputDisabled flips false)
+  React.useEffect(() => {
+    if (prevDisabled.current && !inputDisabled) {
+      inputRef.current?.focus();
+    }
+    prevDisabled.current = inputDisabled;
+  }, [inputDisabled]);
 
   const handleChange = (v: string) => {
     if (controlled) onInputChange(v);
@@ -87,17 +103,17 @@ const Hero1 = ({
                 <span className="bg-[#F36C3D] p-1 rounded-full text-white">
                   <Sparkles className="w-3 h-3" />
                 </span>
-                Product Info Setup
+                {badgeText}
               </span>
             </div>
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[0.97] tracking-tight">
-            Tell PriceIt About Your Product
+            {title}
           </h1>
 
           <p className="text-base sm:text-xl text-[#5B7780]">
-            Chat with our AI to describe your idea.
+            {description}
           </p>
 
           <div className="w-full max-w-3xl mx-auto text-left rounded-3xl border border-[#DCEAED] bg-white/70 backdrop-blur-sm px-3 py-3 sm:px-4 sm:py-4 shadow-[0_12px_30px_rgba(93,183,196,0.09)]">
@@ -120,6 +136,7 @@ const Hero1 = ({
                     <Sparkles className="w-4 h-4" />
                   </button>
                   <input
+                    ref={inputRef}
                     type="text"
                     value={value}
                     onChange={(e) => handleChange(e.target.value)}
@@ -128,6 +145,9 @@ const Hero1 = ({
                     }}
                     disabled={inputDisabled}
                     placeholder={inputPlaceholder}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="bg-transparent flex-1 outline-none text-[#2B2B2B] placeholder-[#7B9EA3] pl-3 pr-2 text-[15px]"
                   />
                   {controlled && (

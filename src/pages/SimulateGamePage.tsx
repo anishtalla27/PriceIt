@@ -1,12 +1,17 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppState } from "@/context/AppStateContext";
-import type { StartingQuality, FixedCostItem, VariableCostItem } from "@/context/AppStateContext";
+import type { FixedCostItem, StartingQuality, VariableCostItem } from "@/context/AppStateContext";
 import { ChronicleButton } from "@/components/ui/chronicle-button";
+import { generateAI, type AIProgress, type AIWarning } from "@/lib/ai-provider";
+import { simulationEventTemplate } from "@/lib/ai-templates";
+ 
+import { extractJsonObject } from "@/lib/safe-json";
 import logo from "../../logo.png";
+import stand from "../../stand2.png";
 
-// ─── cost helpers (same as other pages) ──────────────────────────────────────
+// ─── Cost helpers ──────────────────────────────────────────────────────────────
 
 function fixedMonthly(item: FixedCostItem): number {
   if (item.totalCost === "" || Number(item.totalCost) <= 0) return 0;
@@ -23,9 +28,11 @@ function variableCPP(item: VariableCostItem): number {
   return (p / pp) * u;
 }
 
-// ─── types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
-type MarketingKey = "flyers" | "social" | "wom" | "sale";
+type PromotionType = "none" | "friends" | "posters" | "social" | "deal";
+type DealType = "bundle" | "dollarOff" | "freeExtra";
+type Mood = "Happy" | "Okay" | "Worried";
 
 interface RandomEvent {
   id: string;
@@ -64,7 +71,8 @@ interface Decisions {
   unitsToProduce: number;
   sellingPrice: number;
   quality: StartingQuality;
-  marketing: MarketingKey[];
+  promotionType: PromotionType;
+  dealType: DealType | null;
   hireHelper: boolean;
 }
 
@@ -84,23 +92,87 @@ interface PersistedSimSnapshot {
   };
 }
 
-// ─── constants ────────────────────────────────────────────────────────────────
+interface Computed {
+  effectivePrice: number;
+  finalDemand: number;
+  supply: number;
+  unitsSold: number;
+  unsold: number;
+  productionCost: number;
+  promotionCost: number;
+  totalCost: number;
+  revenue: number;
+  profit: number;
+  projectedCash: number;
+}
+
+interface PendingWeek {
+  result: WeeklyResult;
+  newSat: number;
+  newInventory: number;
+  lesson: string;
+}
+
+interface DealOption {
+  id: DealType;
+  label: string;
+  description: string;
+  demandBoost: number;
+  priceDrop: number;
+  extraUnitCost: number;
+}
+
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
 const TOTAL_WEEKS = 12;
 const SIM_GAME_STORAGE_KEY = "priceit_sim_game_v1";
 
 const RANDOM_EVENTS: RandomEvent[] = [
-  { id: "fair",    name: "School fair nearby this weekend! 🎪", description: "A big crowd is coming to your area!", modifier: 1.4,  modifierLabel: "Demand up 40%" },
-  { id: "rain",    name: "Rainy week, fewer shoppers ☔",        description: "People are staying home this week.", modifier: 0.8,  modifierLabel: "Demand down 20%" },
-  { id: "viral",   name: "Your product got shared online! 📱",   description: "Someone posted about it and everyone wants one!", modifier: 1.3,  modifierLabel: "Demand up 30%" },
-  { id: "comp",    name: "A competitor launched nearby 😬",       description: "Someone else started selling something similar.", modifier: 0.75, modifierLabel: "Demand down 25%" },
-  { id: "news",    name: "Local news featured kid entrepreneurs! 📰", description: "Everyone loves a good kid business story!", modifier: 1.2,  modifierLabel: "Demand up 20%" },
-  { id: "holiday", name: "Holiday weekend coming up 🎉",          description: "People are in a spending mood!", modifier: 1.35, modifierLabel: "Demand up 35%" },
-  { id: "slow",    name: "Slow week, nothing special 😐",         description: "Just a regular week. Stay the course!", modifier: 1.0,  modifierLabel: "Normal demand" },
-  { id: "supply",  name: "Supply costs spiked this week 📦",      description: "Materials cost more than usual.", modifier: 0.9,  modifierLabel: "Demand -10% · Costs +20%", materialCostModifier: 1.2 },
-  { id: "loyal",   name: "Your regular customers came back 💛",    description: "Your biggest fans showed up for you!", modifier: 1.15, modifierLabel: "Demand up 15%" },
-  { id: "sunny",   name: "Weather was perfect for shopping ☀️",   description: "A beautiful day brought out the crowds.", modifier: 1.1,  modifierLabel: "Demand up 10%" },
+  { id: "fair", name: "School fair this weekend", description: "Lots of families may be out shopping.", modifier: 1.4, modifierLabel: "More customers" },
+  { id: "rain", name: "Rainy week", description: "Fewer people may come out this week.", modifier: 0.8, modifierLabel: "Fewer customers" },
+  { id: "viral", name: "A friend shared your product", description: "People are talking about what you sell!", modifier: 1.3, modifierLabel: "More customers" },
+  { id: "comp", name: "Another seller showed up", description: "You now have a little competition nearby.", modifier: 0.75, modifierLabel: "Fewer customers" },
+  { id: "news", name: "Local community spotlight", description: "People are excited to support kid businesses.", modifier: 1.2, modifierLabel: "More customers" },
+  { id: "holiday", name: "Holiday weekend", description: "People may spend more on fun treats and gifts.", modifier: 1.35, modifierLabel: "More customers" },
+  { id: "slow", name: "Regular week", description: "No big surprises this week.", modifier: 1.0, modifierLabel: "Normal week" },
+  { id: "supply", name: "Supplies cost more this week", description: "Materials are pricier than usual right now.", modifier: 0.9, modifierLabel: "Costs up", materialCostModifier: 1.2 },
+  { id: "loyal", name: "Repeat customers came back", description: "People who liked your product returned.", modifier: 1.15, modifierLabel: "More customers" },
+  { id: "sunny", name: "Perfect weather for selling", description: "More people are out and about this week.", modifier: 1.1, modifierLabel: "More customers" },
 ];
+
+const RUN_FEEDBACK_STEPS = ["Getting ready...", "Customers are arriving...", "Checking this week's results..."];
+
+const MOOD_COPY: Record<Mood, string[]> = {
+  Happy: ["Happy", "Very happy", "Excited"],
+  Okay: ["Okay", "Mixed", "Neutral"],
+  Worried: ["Not happy", "Unsure", "Worried"],
+};
+
+const QUALITY_DEMAND: Record<StartingQuality, number> = {
+  Standard: 0.88,
+  Premium: 1.0,
+  Deluxe: 1.15,
+};
+
+const QUALITY_COST_MULT: Record<StartingQuality, number> = {
+  Standard: 1.0,
+  Premium: 1.25,
+  Deluxe: 1.5,
+};
+
+const QUALITY_LABEL: Record<StartingQuality, string> = {
+  Standard: "Standard",
+  Premium: "Better",
+  Deluxe: "Best",
+};
+
+const QUALITY_NOTE: Record<StartingQuality, string> = {
+  Standard: "Lower cost, easier to sell",
+  Premium: "Balanced choice",
+  Deluxe: "Higher cost, happier buyers",
+};
+
+// ─── Utility functions ─────────────────────────────────────────────────────────
 
 function pickRandomEvent(): RandomEvent {
   return RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
@@ -124,144 +196,523 @@ function writeSimSnapshot(snapshot: PersistedSimSnapshot) {
   window.localStorage.setItem(SIM_GAME_STORAGE_KEY, JSON.stringify(snapshot));
 }
 
-// ─── OpenRouter helper ────────────────────────────────────────────────────────
-
-async function callOpenRouter(
-  prompt: string,
-  maxTokens: number,
-  _timeoutMs: number,
-  signal?: AbortSignal
-): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-2.0-flash-001",
-      max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }],
-    }),
-    signal,
-  });
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json();
-  return data.choices[0].message.content as string;
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
-function extractJson(text: string): Record<string, unknown> {
-  const m = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
-  if (!m) throw new Error("No JSON");
-  return JSON.parse(m[1]) as Record<string, unknown>;
+function roundToStep(value: number, step: number): number {
+  if (step <= 0) return value;
+  return Math.round(value / step) * step;
 }
 
-const QUALITY_DEMAND: Record<StartingQuality, number> = {
-  Standard: 0.85,
-  Premium: 1.0,
-  Deluxe: 1.2,
-};
-const QUALITY_COST_MULT: Record<StartingQuality, number> = {
-  Standard: 1.0,
-  Premium: 1.3,
-  Deluxe: 1.6,
-};
-const QUALITY_SAT_DELTA: Record<StartingQuality, number> = {
-  Standard: -5,
-  Premium: 0,
-  Deluxe: 5,
-};
-
-const MARKETING_META: Record<MarketingKey, { label: string; cost: number; emoji: string; note: string }> = {
-  flyers: { label: "Put up flyers",       cost: 5,  emoji: "📌", note: "+10% demand · costs $5" },
-  social: { label: "Post on social media", cost: 15, emoji: "📱", note: "+20% demand · costs $15" },
-  wom:    { label: "Word of mouth",        cost: 0,  emoji: "💬", note: "Cumulative +5%/week · free" },
-  sale:   { label: "Run a sale",           cost: 0,  emoji: "🏷️", note: "+30% demand · −15% price" },
-};
-
-// ─── core simulation (pure) ───────────────────────────────────────────────────
-
-interface Computed {
-  effectiveMax: number;
-  effectivePrice: number;
-  finalDemand: number;
-  supply: number;
-  unitsSold: number;
-  unsold: number;
-  productionCost: number;
-  marketingCost: number;
-  helperCost: number;
-  totalCost: number;
-  revenue: number;
-  profit: number;
-  projectedCash: number;
+function floorToStep(value: number, step: number): number {
+  if (step <= 0) return value;
+  return Math.floor(value / step) * step;
 }
 
-function computeWeek(
-  d: Decisions,
-  s: Pick<SimGameState, "cash" | "inventory" | "satisfaction" | "wordOfMouthStack">,
-  event: RandomEvent,
-  opts: { variableCostPerUnit: number; weeklyFixed: number; originalPrice: number; maxWeeklyUnits: number }
-): Computed {
-  const { variableCostPerUnit, weeklyFixed, originalPrice, maxWeeklyUnits } = opts;
+function ceilToStep(value: number, step: number): number {
+  if (step <= 0) return value;
+  return Math.ceil(value / step) * step;
+}
 
-  const effectiveMax = d.hireHelper ? Math.floor(maxWeeklyUnits * 1.5) : maxWeeklyUnits;
-  const unitsToProduce = Math.min(Math.max(0, d.unitsToProduce || 0), effectiveMax);
+function money(value: number): string {
+  return `$${Math.abs(value).toFixed(2)}`;
+}
 
-  const saleOn = d.marketing.includes("sale");
-  const effectivePrice = saleOn ? d.sellingPrice * 0.85 : d.sellingPrice;
+function eventTag(event: RandomEvent): string {
+  if ((event.materialCostModifier ?? 1) > 1) return "Supplies cost more";
+  if (event.modifier >= 1.2) return "Busy week";
+  if (event.modifier >= 1.05) return "Good buzz";
+  if (event.modifier <= 0.85) return "Fewer customers";
+  return "Regular week";
+}
 
-  const priceFactor = originalPrice > 0 ? 1 - ((effectivePrice - originalPrice) / originalPrice) * 0.8 : 1;
-  const qualityFactor = QUALITY_DEMAND[d.quality];
+function cleanLabel(label: string): string {
+  return label
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  let mktFactor = 1.0;
-  if (d.marketing.includes("flyers")) mktFactor += 0.10;
-  if (d.marketing.includes("social")) mktFactor += 0.20;
-  // Word-of-mouth stacks but caps at 6 weeks of use (+30% max)
-  if (d.marketing.includes("wom"))    mktFactor += Math.min(s.wordOfMouthStack + 1, 6) * 0.05;
-  if (saleOn)                          mktFactor += 0.30;
-
-  const satFactor = (s.satisfaction / 100) * 0.3 + 0.7;
-
-  const rawDemand = maxWeeklyUnits * Math.max(0, priceFactor) * qualityFactor * mktFactor * satFactor * event.modifier;
-  const finalDemand = isFinite(rawDemand) ? Math.max(0, Math.round(rawDemand)) : 0;
-
-  const supply = unitsToProduce + s.inventory;
-  const unitsSold = Math.min(supply, finalDemand);
-  const unsold = supply - unitsSold;
-
-  const matMult = QUALITY_COST_MULT[d.quality] * (event.materialCostModifier ?? 1);
-  const productionCost = unitsToProduce * variableCostPerUnit * matMult;
-
-  let marketingCost = 0;
-  if (d.marketing.includes("flyers")) marketingCost += 5;
-  if (d.marketing.includes("social")) marketingCost += 15;
-  const helperCost = d.hireHelper ? 20 : 0;
-  const totalCost = productionCost + marketingCost + helperCost + weeklyFixed;
-
-  const revenue = unitsSold * effectivePrice;
-  const profit = revenue - totalCost;
-
+function getStoryVisual(event: RandomEvent): {
+  border: string;
+  background: string;
+  chipBackground: string;
+  chipBorder: string;
+  iconColor: string;
+  iconBackground: string;
+} {
+  if ((event.materialCostModifier ?? 1) > 1) {
+    return {
+      border: "#F2C8B3",
+      background: "linear-gradient(180deg, #ffffff 0%, #FFF7F2 100%)",
+      chipBackground: "#FFF2EA",
+      chipBorder: "#F3D8C8",
+      iconColor: "#C65A2E",
+      iconBackground: "#FFE8DC",
+    };
+  }
+  if (event.modifier >= 1.2) {
+    return {
+      border: "#A9DDB4",
+      background: "linear-gradient(180deg, #ffffff 0%, #F4FBF6 100%)",
+      chipBackground: "#EFF9F2",
+      chipBorder: "#D2EED8",
+      iconColor: "#1D8D3C",
+      iconBackground: "#DFF4E5",
+    };
+  }
+  if (event.modifier <= 0.85) {
+    return {
+      border: "#F1D8BE",
+      background: "linear-gradient(180deg, #ffffff 0%, #FFF9F3 100%)",
+      chipBackground: "#FFF4E8",
+      chipBorder: "#F2DFC9",
+      iconColor: "#B36A1F",
+      iconBackground: "#FFEBD5",
+    };
+  }
   return {
-    effectiveMax, effectivePrice, finalDemand, supply,
-    unitsSold, unsold, productionCost, marketingCost, helperCost,
-    totalCost, revenue, profit, projectedCash: s.cash + profit,
+    border: "#A9DDE3",
+    background: "linear-gradient(180deg, #ffffff 0%, #F1FAFB 100%)",
+    chipBackground: "#F0FAFB",
+    chipBorder: "#D4EBEE",
+    iconColor: "#1E6470",
+    iconBackground: "#E4F4F6",
   };
 }
 
-// ─── tiny helpers ─────────────────────────────────────────────────────────────
+function moodFromScore(score: number): Mood {
+  if (score >= 75) return "Happy";
+  if (score >= 45) return "Okay";
+  return "Worried";
+}
 
-const fd = (n: number) => "$" + Math.abs(n).toFixed(2);
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-const roundToStep = (value: number, step: number) =>
-  step > 0 ? Math.round(value / step) * step : value;
+function lessonForWeek(result: WeeklyResult, mood: Mood): string {
+  if (result.finalDemand > result.unitsSold) {
+    return "You sold out. Try making a few more items next week.";
+  }
+  if (result.profit < 0) {
+    return "You spent more than you earned. Try a lower cost plan or a small price bump.";
+  }
+  if (mood === "Happy") {
+    return "Great week. Happy customers can help bring repeat sales.";
+  }
+  return "Nice effort. Small weekly changes can improve your results.";
+}
 
-// ─── sub-components ───────────────────────────────────────────────────────────
+function productWord(productName: string): string {
+  const trimmed = productName.trim();
+  if (!trimmed) return "item";
+  const tokens = trimmed.split(/\s+/);
+  const last = tokens[tokens.length - 1] ?? trimmed;
+  return last.toLowerCase();
+}
+
+function buildDealOptions(productName: string, price: number): DealOption[] {
+  const unitWord = productWord(productName);
+  const bundlePrice = Math.max(1, Math.round((price * 2 - Math.max(1, price * 0.2)) * 4) / 4);
+  const itemOff = Math.max(0.5, Math.min(2, Math.round(Math.max(0.5, price * 0.15) * 4) / 4));
+
+  return [
+    {
+      id: "bundle",
+      label: `Buy 2 for ${money(bundlePrice)}`,
+      description: `A small bundle deal for your ${unitWord}s.`,
+      demandBoost: 1.22,
+      priceDrop: Math.max(0.5, price * 0.12),
+      extraUnitCost: 0,
+    },
+    {
+      id: "dollarOff",
+      label: `${money(itemOff)} off each item`,
+      description: "A simple discount that can attract more buyers.",
+      demandBoost: 1.18,
+      priceDrop: Math.min(itemOff, price * 0.25),
+      extraUnitCost: 0,
+    },
+    {
+      id: "freeExtra",
+      label: `Free mini extra with each ${unitWord}`,
+      description: "Adds value for buyers, but your cost goes up.",
+      demandBoost: 1.15,
+      priceDrop: 0,
+      extraUnitCost: 0.3,
+    },
+  ];
+}
+
+function applyDemandVariance(
+  computed: Computed,
+  varianceFactor: number,
+  weeklyFixed: number,
+  cash: number
+): Computed {
+  const variedDemand = Math.max(0, Math.round(computed.finalDemand * varianceFactor));
+  const unitsSold = Math.min(computed.supply, variedDemand);
+  const unsold = computed.supply - unitsSold;
+
+  const baseDealCost = Math.max(
+    0,
+    computed.totalCost - (computed.productionCost + computed.promotionCost + weeklyFixed)
+  );
+  const variedDealCost =
+    computed.unitsSold > 0 ? baseDealCost * (unitsSold / computed.unitsSold) : 0;
+
+  const totalCost = computed.productionCost + computed.promotionCost + weeklyFixed + variedDealCost;
+  const revenue = unitsSold * computed.effectivePrice;
+  const profit = revenue - totalCost;
+
+  return {
+    ...computed,
+    finalDemand: variedDemand,
+    unitsSold,
+    unsold,
+    totalCost,
+    revenue,
+    profit,
+    projectedCash: cash + profit,
+  };
+}
+
+function computeSatisfactionDelta(
+  quality: StartingQuality,
+  computed: Computed,
+  promoted: boolean
+): number {
+  let delta = quality === "Standard" ? -4 : quality === "Premium" ? 1 : 5;
+  if (computed.unitsSold >= computed.finalDemand && computed.finalDemand > 0) delta += 8;
+  if (computed.finalDemand > computed.supply) delta -= 12;
+  if (promoted) delta += 2;
+  return delta;
+}
+
+function computeWeek(
+  decisions: Decisions,
+  sim: Pick<SimGameState, "cash" | "inventory" | "satisfaction">,
+  event: RandomEvent,
+  opts: { variableCostPerUnit: number; weeklyFixed: number; maxWeeklyUnits: number; originalPrice: number }
+): Computed {
+  const unitsToProduce = clamp(Math.round(decisions.unitsToProduce || 0), 0, opts.maxWeeklyUnits);
+  const basePrice = Math.max(0, decisions.sellingPrice || 0);
+
+  let promoFactor = 1;
+  let promotionCost = 0;
+  let dealPriceDrop = 0;
+  let dealExtraUnitCost = 0;
+
+  if (decisions.promotionType === "friends") {
+    promoFactor = 1.08;
+  } else if (decisions.promotionType === "posters") {
+    promoFactor = 1.16;
+    promotionCost = 5;
+  } else if (decisions.promotionType === "social") {
+    promoFactor = 1.26;
+    promotionCost = 10;
+  } else if (decisions.promotionType === "deal") {
+    if (decisions.dealType === "bundle") {
+      promoFactor = 1.22;
+      dealPriceDrop = Math.max(0.5, basePrice * 0.12);
+    } else if (decisions.dealType === "dollarOff") {
+      promoFactor = 1.18;
+      dealPriceDrop = Math.max(0.5, Math.min(2, Math.round(Math.max(0.5, basePrice * 0.15) * 4) / 4));
+    } else if (decisions.dealType === "freeExtra") {
+      promoFactor = 1.15;
+      dealExtraUnitCost = opts.variableCostPerUnit * 0.3;
+    }
+  }
+
+  const effectivePrice = Math.max(0, basePrice - dealPriceDrop);
+
+  const priceFactor =
+    opts.originalPrice > 0
+      ? 1 - ((effectivePrice - opts.originalPrice) / opts.originalPrice) * 0.8
+      : 1;
+  const qualityFactor = QUALITY_DEMAND[decisions.quality];
+  const satFactor = (sim.satisfaction / 100) * 0.3 + 0.7;
+
+  const rawDemand =
+    opts.maxWeeklyUnits *
+    Math.max(0, priceFactor) *
+    qualityFactor *
+    promoFactor *
+    satFactor *
+    event.modifier;
+  const finalDemand = isFinite(rawDemand) ? Math.max(0, Math.round(rawDemand)) : 0;
+
+  const supply = unitsToProduce + sim.inventory;
+  const unitsSold = Math.min(supply, finalDemand);
+  const unsold = supply - unitsSold;
+
+  const materialMult = QUALITY_COST_MULT[decisions.quality] * (event.materialCostModifier ?? 1);
+  const productionCost = unitsToProduce * opts.variableCostPerUnit * materialMult;
+  const dealCost = unitsSold * dealExtraUnitCost;
+  const totalCost = productionCost + promotionCost + opts.weeklyFixed;
+  const adjustedTotalCost = totalCost + dealCost;
+
+  const revenue = unitsSold * effectivePrice;
+  const profit = revenue - adjustedTotalCost;
+
+  return {
+    effectivePrice,
+    finalDemand,
+    supply,
+    unitsSold,
+    unsold,
+    productionCost,
+    promotionCost,
+    totalCost: adjustedTotalCost,
+    revenue,
+    profit,
+    projectedCash: sim.cash + profit,
+  };
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
+type SectionKey = "production" | "price" | "quality" | "promotion";
+type DecisionTheme = {
+  accent: string;
+  border: string;
+  soft: string;
+  label: string;
+  muted: string;
+};
+
+const DECISION_THEMES: Record<SectionKey, DecisionTheme> = {
+  production: {
+    accent: "#5DB7C4",
+    border: "#A9DDE3",
+    soft: "#EAF7F9",
+    label: "#86B2BA",
+    muted: "#B0C8CC",
+  },
+  price: {
+    accent: "#5E8FC7",
+    border: "#BED5EE",
+    soft: "#F1F6FD",
+    label: "#8EA9CB",
+    muted: "#B2C3DA",
+  },
+  quality: {
+    accent: "#4E9B78",
+    border: "#BFE2D2",
+    soft: "#EFF9F4",
+    label: "#7DAC99",
+    muted: "#AFC9BD",
+  },
+  promotion: {
+    accent: "#C47A5A",
+    border: "#E8C8B8",
+    soft: "#FCF3EE",
+    label: "#BB9B8B",
+    muted: "#D2BBB0",
+  },
+};
+type IconKind =
+  | "story"
+  | "production"
+  | "price"
+  | "quality"
+  | "promotion"
+  | "moodHappy"
+  | "moodOkay"
+  | "moodWorried";
+
+function SectionIcon({
+  kind,
+  color = "#1E6470",
+  background = "#EAF7F9",
+  borderColor = "#D5ECEF",
+}: {
+  kind: IconKind;
+  color?: string;
+  background?: string;
+  borderColor?: string;
+}) {
+  return (
+    <span
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md border flex-shrink-0"
+      style={{ background, borderColor }}
+      aria-hidden="true"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {kind === "story" && (
+          <>
+            <path d="M5 4h10l4 4v12H5z" />
+            <path d="M15 4v4h4" />
+            <path d="M8 13h8" />
+          </>
+        )}
+        {kind === "production" && (
+          <>
+            <path d="M3 8l9-5 9 5-9 5-9-5z" />
+            <path d="M3 8v8l9 5 9-5V8" />
+          </>
+        )}
+        {kind === "price" && (
+          <>
+            <path d="M3 12l7-7h7l4 4v7l-7 7-11-11z" />
+            <circle cx="15.5" cy="8.5" r="1.2" />
+          </>
+        )}
+        {kind === "quality" && (
+          <path d="M12 3l2.8 5.6 6.2.9-4.5 4.4 1 6.1L12 17l-5.5 3 1-6.1L3 9.5l6.2-.9L12 3z" />
+        )}
+        {kind === "promotion" && (
+          <>
+            <path d="M3 11l12-5v12l-12-5z" />
+            <path d="M15 10h4" />
+            <path d="M7 14l1.4 5" />
+          </>
+        )}
+        {kind === "moodHappy" && (
+          <>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M8.5 13.5c.9 1.3 2.1 2 3.5 2s2.6-.7 3.5-2" />
+            <path d="M9.5 10.2h.01M14.5 10.2h.01" />
+          </>
+        )}
+        {kind === "moodOkay" && (
+          <>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M8.5 14h7" />
+            <path d="M9.5 10.2h.01M14.5 10.2h.01" />
+          </>
+        )}
+        {kind === "moodWorried" && (
+          <>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M8.5 15.2c.9-1.3 2.1-2 3.5-2s2.6.7 3.5 2" />
+            <path d="M9.5 10.2h.01M14.5 10.2h.01" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true">
+      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open, color }: { open: boolean; color: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+      style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+    >
+      <path d="M4 6L8 10L12 6" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DecisionTile({
+  icon,
+  title,
+  summary,
+  isSet,
+  isRequired,
+  highlightMissing,
+  isOpen,
+  onToggle,
+  theme,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  summary: string;
+  isSet: boolean;
+  isRequired: boolean;
+  highlightMissing: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  theme: DecisionTheme;
+  children: React.ReactNode;
+}) {
+  const isMissing = isRequired && highlightMissing && !isSet;
+
+  return (
+    <div
+      className="rounded-lg bg-white overflow-hidden transition-all duration-200 transform-gpu hover:-translate-y-[1px]"
+      style={{
+        border: `1.5px solid ${isOpen ? theme.accent : isMissing ? "#F36C3D" : isSet ? theme.border : "#E0EFF1"}`,
+        background: isOpen ? `linear-gradient(180deg, #ffffff 0%, ${theme.soft} 150%)` : "#ffffff",
+        boxShadow: isOpen
+          ? "rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px"
+          : "rgba(23,23,23,0.06) 0px 3px 6px",
+      }}
+    >
+      <button
+        type="button"
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+      >
+        {icon}
+        <div className="flex-1 min-w-0">
+          <p
+            className="text-[10px] font-bold uppercase tracking-wider"
+            style={{ color: isMissing ? "#F36C3D" : theme.label }}
+          >
+            {title}
+            {isRequired && (
+              <span style={{ color: isMissing ? "#F36C3D" : "#D0E8EC" }}> •</span>
+            )}
+          </p>
+          <p className="text-sm font-semibold text-[#061b31] mt-0.5 truncate">{summary}</p>
+        </div>
+
+        {isSet && !isOpen && (
+          <span
+            className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background: theme.accent }}
+          >
+            <CheckIcon />
+          </span>
+        )}
+        {!isSet && (
+          <span
+            className="text-[10px] font-bold flex-shrink-0 whitespace-nowrap"
+            style={{ color: isMissing ? "#F36C3D" : theme.muted }}
+          >
+            {isMissing ? "Required" : "Tap to set"}
+          </span>
+        )}
+
+        <ChevronIcon open={isOpen} color={theme.label} />
+      </button>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div
+            className="px-4 border-t border-[#E8F4F6] transition-[padding,opacity] duration-200"
+            style={{ paddingBottom: isOpen ? "1rem" : "0", opacity: isOpen ? 1 : 0.25 }}
+          >
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DecisionSlider({
   value,
   min,
   max,
   step,
-  accent,
   ariaLabel,
   onChange,
 }: {
@@ -269,18 +720,17 @@ function DecisionSlider({
   min: number;
   max: number;
   step: number;
-  accent: string;
   ariaLabel: string;
   onChange: (value: number) => void;
 }) {
   const safeMax = Math.max(max, min + step);
-  const safeValue = Math.min(safeMax, Math.max(min, value));
+  const safeValue = clamp(value, min, safeMax);
   const pct = safeMax > min ? ((safeValue - min) / (safeMax - min)) * 100 : 0;
 
   return (
     <input
       type="range"
-      className="priceit-range mt-2"
+      className="priceit-range mt-2 w-full transition-[background,filter] duration-150 ease-out"
       min={min}
       max={safeMax}
       step={step}
@@ -289,196 +739,72 @@ function DecisionSlider({
       aria-label={ariaLabel}
       style={
         {
-          "--range-accent": accent,
-          background: `linear-gradient(90deg, ${accent} 0%, ${accent} ${pct}%, #D8E4E6 ${pct}%, #D8E4E6 100%)`,
+          "--range-accent": "#5DB7C4",
+          background: `linear-gradient(90deg, #5DB7C4 0%, #5DB7C4 ${pct}%, #D8E4E6 ${pct}%, #D8E4E6 100%)`,
+          transition: "background 160ms ease-out",
         } as CSSProperties
       }
     />
   );
 }
 
-function EventCard({ event, week }: { event: RandomEvent; week: number }) {
-  const good = event.modifier >= 1.0;
-  return (
-    <div
-      className="rounded-2xl px-4 py-3 flex items-start gap-3"
-      style={{ background: good ? "#EAF7F9" : "#FFF5F0", border: `1.5px solid ${good ? "#A9DDE3" : "#FCCBB0"}` }}
-    >
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-extrabold flex-shrink-0"
-        style={{ background: good ? "#D7EEF2" : "#FFE3D2", color: good ? "#1E6470" : "#9A3412" }}
-      >
-        W{week}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: good ? "#5DB7C4" : "#F36C3D" }}>
-          Week event
-        </p>
-        <p className="font-extrabold text-sm text-[#2B2B2B] leading-snug">{event.name}</p>
-        <p className="text-xs text-[#7B9EA3] mt-0.5">{event.description}</p>
-        {event.modifierLabel && (
-          <span
-            className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{ background: good ? "#A9DDE3" : "#FCCBB0", color: good ? "#1E6470" : "#9A3412" }}
-          >
-            {event.modifierLabel}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SatisfactionBar({ score }: { score: number }) {
-  const color = score >= 61 ? "#22c55e" : score >= 31 ? "#f59e0b" : "#ef4444";
-  const label = score >= 61 ? "Customers love you! 😊" : score >= 31 ? "Pretty happy 😐" : "Not happy 😟";
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex justify-between items-center">
-        <span className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Customer Satisfaction</span>
-        <span className="text-xs font-bold" style={{ color }}>{score}/100 · {label}</span>
-      </div>
-      <div className="h-3 rounded-full bg-[#E0EFF1] overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${score}%`, background: color }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function WeekHistoryBar({ history }: { history: number[] }) {
-  const max = Math.max(...history.map(Math.abs), 1);
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Cash History (12 weeks)</span>
-      <div className="flex gap-1 items-end h-10">
-        {Array.from({ length: TOTAL_WEEKS }, (_, i) => {
-          const profit = history[i];
-          const done = i < history.length;
-          const positive = (profit ?? 0) >= 0;
-          const pct = done ? Math.max(8, (Math.abs(profit) / max) * 100) : 0;
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full">
-              {done ? (
-                <div
-                  className="w-full rounded-sm"
-                  style={{ height: `${pct}%`, background: positive ? "#22c55e" : "#ef4444", minHeight: 4 }}
-                  title={`Week ${i + 1}: ${positive ? "+" : "-"}${fd(profit)}`}
-                />
-              ) : (
-                <div className="w-full rounded-sm border border-dashed border-[#D1D5DB] h-1" />
-              )}
-              <span className="text-[8px] text-[#C8D8DC] font-bold">{i + 1}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function SummaryModal({
-  result,
+function WeekResultModal({
   week,
+  result,
+  lesson,
   onNext,
-  tip,
 }: {
-  result: WeeklyResult;
   week: number;
+  result: WeeklyResult;
+  lesson: string;
   onNext: () => void;
-  tip: string | null;
 }) {
-  const pos = result.profit >= 0;
-  const bigWin = result.profit > 0 && result.unitsSold >= result.finalDemand && result.finalDemand > 0;
-  const stockout = result.finalDemand > result.unitsSold && result.finalDemand > 0;
-  const lastWeek = week === TOTAL_WEEKS;
-
-  const headingEmoji = bigWin ? "🚀" : pos ? "🎉" : "💪";
-  const headingText = bigWin ? "Nailed it!" : pos ? "Nice work!" : "Tough week!";
+  const positive = result.profit >= 0;
+  const isLast = week >= TOTAL_WEEKS;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-      <div
-        className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl"
-        style={{ border: `2px solid ${bigWin ? "#5DB7C4" : pos ? "#86efac" : "#FCCBB0"}` }}
-      >
-        <div className="text-center mb-4">
-          <div className="text-4xl mb-2">{headingEmoji}</div>
-          <h2 className="text-xl font-extrabold text-[#2B2B2B]">{headingText}</h2>
-          <p className="text-xs text-[#9BBFC3] mt-1">Week {result.week} done</p>
-        </div>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-3xl border border-[#E0EFF1] bg-white p-5 shadow-[rgba(50,50,93,0.25)_0px_30px_45px_-30px,rgba(0,0,0,0.1)_0px_18px_36px_-18px]">
+        <p className="text-[11px] uppercase tracking-wider font-bold text-[#7B9EA3]">Week {result.week} recap</p>
+        <h2 className="mt-1 text-2xl font-extrabold text-[#061b31]">{positive ? "Nice work!" : "Keep going!"}</h2>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          {[
-            { label: "Sold",     val: `${result.unitsSold} of ${result.finalDemand}`,              color: "#2B2B2B" },
-            { label: "Revenue",  val: `+${fd(result.revenue)}`,                                     color: "#16a34a" },
-            { label: "Costs",    val: `-${fd(result.totalCost)}`,                                   color: "#F36C3D" },
-            { label: "Profit",   val: `${result.profit >= 0 ? "+" : "-"}${fd(result.profit)}`,      color: pos ? "#16a34a" : "#ef4444" },
-          ].map(({ label, val, color }) => (
-            <div key={label} className="bg-[#F7F9FA] rounded-xl px-3 py-2 text-center">
-              <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">{label}</p>
-              <p className="font-extrabold text-sm mt-0.5" style={{ color }}>{val}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Event that affected this week */}
-        {(() => {
-          const good = result.event.modifier >= 1.0;
-          return (
-            <div
-              className="rounded-xl px-3 py-2 mb-3 flex items-center gap-2"
-              style={{ background: good ? "#EAF7F9" : "#FFF5F0", border: `1px solid ${good ? "#A9DDE3" : "#FCCBB0"}` }}
-            >
-              <span className="text-base flex-shrink-0">{good ? "📈" : "📉"}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: good ? "#5DB7C4" : "#F36C3D" }}>
-                  This week's event
-                </p>
-                <p className="text-xs font-extrabold text-[#2B2B2B] leading-snug">{result.event.name}</p>
-              </div>
-              {result.event.modifierLabel && (
-                <span
-                  className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: good ? "#A9DDE3" : "#FCCBB0", color: good ? "#1E6470" : "#9A3412" }}
-                >
-                  {result.event.modifierLabel}
-                </span>
-              )}
-            </div>
-          );
-        })()}
-
-        {stockout && (
-          <div className="bg-[#FFF5F0] border border-[#FCCBB0] rounded-xl px-3 py-2 mb-3 text-xs text-[#F36C3D] font-semibold text-center">
-            Out of stock! {result.finalDemand - result.unitsSold} customers walked away. Make more next week!
-          </div>
-        )}
-
-        <div
-          className="rounded-xl px-4 py-3 text-center mb-3"
-          style={{ background: result.endCash >= 0 ? "#EAF7F9" : "#FFF5F0" }}
-        >
-          <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Cash Balance</p>
-          <p className="text-2xl font-extrabold" style={{ color: result.endCash >= 0 ? "#5DB7C4" : "#ef4444" }}>
-            ${result.endCash.toFixed(2)}
+        <div className="mt-3 rounded-2xl border border-[#A9DDE3] bg-[#F0FAFB] px-3 py-2.5">
+          <p className="text-[10px] uppercase tracking-wider font-bold text-[#5DB7C4] flex items-center gap-1.5">
+            <SectionIcon kind="story" />
+            This week&apos;s story
           </p>
+          <p className="text-sm font-bold text-[#061b31] mt-0.5">{cleanLabel(result.event.name)}</p>
         </div>
 
-        {tip && (
-          <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-xl px-3 py-2.5 mb-4 flex items-start gap-2">
-            <span className="text-base flex-shrink-0 mt-0.5">💡</span>
-            <p className="text-xs text-[#78716C] font-semibold leading-relaxed">{tip}</p>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="rounded-xl border border-[#E0EFF1] bg-white px-3 py-2 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">Sold</p>
+            <p className="text-sm font-extrabold text-[#061b31] mt-0.5">{result.unitsSold}</p>
           </div>
-        )}
+          <div className="rounded-xl border border-[#E0EFF1] bg-white px-3 py-2 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">Profit</p>
+            <p className="text-sm font-extrabold mt-0.5" style={{ color: positive ? "#16a34a" : "#dc2626" }}>
+              {positive ? "+" : "-"}{money(result.profit)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-[#E0EFF1] bg-white px-3 py-2 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">Cash</p>
+            <p className="text-sm font-extrabold mt-0.5" style={{ color: result.endCash >= 0 ? "#5DB7C4" : "#dc2626" }}>
+              ${result.endCash.toFixed(2)}
+            </p>
+          </div>
+        </div>
 
-        <div className="flex justify-center">
+        <div className="mt-3 rounded-xl border border-[#E0EFF1] bg-[#F7F9FA] px-3 py-2.5">
+          <p className="text-[10px] uppercase tracking-wider font-bold text-[#9BBFC3]">Lesson</p>
+          <p className="text-sm text-[#5B7780] mt-0.5">{lesson}</p>
+        </div>
+
+        <div className="mt-4 flex justify-center">
           <ChronicleButton
-            text={lastWeek ? "See Final Results →" : "Next Week →"}
+            text={isLast ? "See Final Results" : "Next Week"}
             onClick={onNext}
-            hoverColor="#F36C3D"
+            hoverColor="#4AA8B5"
             customBackground="#5DB7C4"
             customForeground="#ffffff"
             hoverForeground="#ffffff"
@@ -491,13 +817,15 @@ function SummaryModal({
   );
 }
 
-// ─── page ─────────────────────────────────────────────────────────────────────
+// ─── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SimulateGamePage() {
   const navigate = useNavigate();
   const { state } = useAppState();
   const { fixedCosts, variableCosts, pricing, simConfig, productInfo } = state;
+
   const savedSnapshot = useMemo(() => readSimSnapshot(), []);
+
   const hasCoreSetup =
     productInfo.productName.trim() !== "" &&
     Number(pricing.sellingPrice) > 0 &&
@@ -507,17 +835,17 @@ export default function SimulateGamePage() {
     Number(simConfig.startingCash) >= 50 &&
     simConfig.maxWeeklyUnits !== "" &&
     Number(simConfig.maxWeeklyUnits) >= 1;
+
   const canResumeSavedGame = savedSnapshot !== null;
   const shouldRedirectToSetup = !canResumeSavedGame && !hasCoreSetup;
   const shouldRedirectToSimSetup = !canResumeSavedGame && hasCoreSetup && !hasSimConfig;
 
-  // ── derived constants (stable for whole game) ──────────────────────────
   const variableCostPerUnit = canResumeSavedGame
     ? savedSnapshot.base.variableCostPerUnit
-    : variableCosts.reduce((s, i) => s + variableCPP(i), 0);
+    : variableCosts.reduce((sum, item) => sum + variableCPP(item), 0);
   const weeklyFixed = canResumeSavedGame
     ? savedSnapshot.base.weeklyFixed
-    : fixedCosts.reduce((s, i) => s + fixedMonthly(i), 0) / 4;
+    : fixedCosts.reduce((sum, item) => sum + fixedMonthly(item), 0) / 4;
   const originalPrice = canResumeSavedGame
     ? savedSnapshot.base.originalPrice
     : Number(pricing.sellingPrice) || 0;
@@ -527,14 +855,18 @@ export default function SimulateGamePage() {
   const startingCash = canResumeSavedGame
     ? savedSnapshot.base.startingCash
     : Math.max(50, Number(simConfig.startingCash) || 200);
-  const productNameForAI = productInfo.productName || savedSnapshot?.base.productName || "your product";
-  const productCategoryForAI = productInfo.category || savedSnapshot?.base.category || "General";
-  const targetCustomerForAI = productInfo.targetCustomer || savedSnapshot?.base.targetCustomer || "kids and families";
   const startingQuality = canResumeSavedGame
     ? savedSnapshot.base.startingQuality
     : simConfig.startingQuality;
 
-  const opts = { variableCostPerUnit, weeklyFixed, originalPrice, maxWeeklyUnits };
+  const productNameForAI = productInfo.productName || savedSnapshot?.base.productName || "your product";
+  const productCategoryForAI = productInfo.category || savedSnapshot?.base.category || "General";
+  const targetCustomerForAI = productInfo.targetCustomer || savedSnapshot?.base.targetCustomer || "kids and families";
+
+  const computeOpts = useMemo(
+    () => ({ variableCostPerUnit, weeklyFixed, maxWeeklyUnits, originalPrice }),
+    [variableCostPerUnit, weeklyFixed, maxWeeklyUnits, originalPrice]
+  );
 
   useEffect(() => {
     if (shouldRedirectToSetup) {
@@ -552,11 +884,8 @@ export default function SimulateGamePage() {
     }
   }, [shouldRedirectToSetup, shouldRedirectToSimSetup, navigate]);
 
-  if (shouldRedirectToSetup || shouldRedirectToSimSetup) {
-    return null;
-  }
+  // ─── Game state ──────────────────────────────────────────────────────────────
 
-  // ── game state ────────────────────────────────────────────────────────
   const [simState, setSimState] = useState<SimGameState>(() => ({
     ...(savedSnapshot?.simState ?? {
       week: 1,
@@ -572,23 +901,80 @@ export default function SimulateGamePage() {
     }),
   }));
 
-  // ── weekly decisions ──────────────────────────────────────────────────
-  const [decisions, setDecisions] = useState<Decisions>(() => ({
-    ...(savedSnapshot?.decisions ?? {
-      unitsToProduce: maxWeeklyUnits,
-      sellingPrice: originalPrice,
-      quality: startingQuality,
-      marketing: [],
-      hireHelper: false,
-    }),
-  }));
-  const [isStartingWeek, setIsStartingWeek] = useState(false);
+  const [decisions, setDecisions] = useState<Decisions>(() => {
+    const saved = savedSnapshot?.decisions as (Decisions & { marketing?: string[] }) | undefined;
+    const q = saved?.quality;
+    const quality: StartingQuality =
+      q === "Standard" || q === "Premium" || q === "Deluxe" ? q : startingQuality;
+    const unitsToProduce = clamp(Math.round(Number(saved?.unitsToProduce ?? maxWeeklyUnits)), 0, maxWeeklyUnits);
+    const sellingPrice = Math.max(0, Number(saved?.sellingPrice ?? originalPrice));
+    const legacyPromoted = Array.isArray(saved?.marketing) && saved.marketing.includes("social");
+    const savedPromotion = saved?.promotionType;
+    const promotionType: PromotionType =
+      savedPromotion === "friends" ||
+      savedPromotion === "posters" ||
+      savedPromotion === "social" ||
+      savedPromotion === "deal" ||
+      savedPromotion === "none"
+        ? savedPromotion
+        : legacyPromoted
+          ? "social"
+          : "none";
+    const savedDeal = saved?.dealType;
+    const dealType: DealType | null =
+      savedDeal === "bundle" || savedDeal === "dollarOff" || savedDeal === "freeExtra"
+        ? savedDeal
+        : null;
 
-  // ── AI: weekly tip ────────────────────────────────────────────────────
-  const [weeklyTip, setWeeklyTip] = useState<string | null>(null);
-  const tipAbortRef = useRef<AbortController | null>(null);
-  const tipAbortTimerRef = useRef<number | null>(null);
-  const startWeekTimerRef = useRef<number | null>(null);
+    return {
+      unitsToProduce,
+      sellingPrice,
+      quality,
+      promotionType,
+      dealType: promotionType === "deal" ? dealType ?? "bundle" : null,
+      hireHelper: false,
+    };
+  });
+
+  // ─── Dashboard UI state ──────────────────────────────────────────────────────
+
+  const [openSection, setOpenSection] = useState<SectionKey | null>(null);
+  // Initialize all three as touched since decisions always have valid defaults on load
+  const [touched, setTouched] = useState(new Set<"production" | "price" | "quality">(["production", "price", "quality"]));
+  const [showValidation, setShowValidation] = useState(false);
+  const [priceDraft, setPriceDraft] = useState<string | null>(null);
+
+  const [isRunningWeek, setIsRunningWeek] = useState(false);
+  const [runFeedbackStep, setRunFeedbackStep] = useState(0);
+  const [pendingWeek, setPendingWeek] = useState<PendingWeek | null>(null);
+  const runTimerRef = useRef<number | null>(null);
+  const runFeedbackTimersRef = useRef<number[]>([]);
+  const prevProfitRef = useRef<number | null>(null);
+  const [profitPulse, setProfitPulse] = useState(false);
+  const [aiWarning, setAIWarning] = useState<AIWarning | null>(null);
+  const [localAIProgress, setLocalAIProgress] = useState<AIProgress | null>(null);
+  const aiRetryNonce = 0;
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+  const toggleSection = (section: SectionKey) => {
+    setOpenSection((prev) => (prev === section ? null : section));
+  };
+
+  const markTouched = (section: "production" | "price" | "quality") => {
+    setTouched((prev) => new Set([...prev, section]));
+    if (showValidation) setShowValidation(false);
+  };
+
+  // Gate on actual decision values, not on user-interaction tracking
+  const allRequiredSet = decisions.sellingPrice > 0 && decisions.unitsToProduce >= 0;
+
+  const missingLabels = [
+    decisions.unitsToProduce < 0 && "Production",
+    decisions.sellingPrice <= 0 && "Price",
+  ].filter(Boolean) as string[];
+
+  // ─── Persistence ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
     writeSimSnapshot({
@@ -620,729 +1006,996 @@ export default function SimulateGamePage() {
     targetCustomerForAI,
   ]);
 
-  // ── AI: event generation (fires once per week number change) ──────────
+  // ─── AI event fetching ────────────────────────────────────────────────────────
+
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 6000);
 
     async function fetchEvent() {
       try {
-        const prompt = `You are generating a random business event for a kids business simulation game.
-The kid is selling: ${productNameForAI} (${productCategoryForAI})
-Their target customer is: ${targetCustomerForAI}
+        const prompt = `You are generating one weekly event for a kid business simulation.
+Product: ${productNameForAI} (${productCategoryForAI})
+Customer: ${targetCustomerForAI}
 
-Generate one realistic random event that could affect their sales this week.
 Return JSON only in this exact format:
-{"headline": "short headline with an emoji, max 8 words", "description": "one sentence explaining what happened, kid-friendly", "modifier": <number between 0.7 and 1.5>, "modifierLabel": "e.g. Demand up 30% or Demand down 20%"}
+{"headline": "short headline, max 8 words", "description": "one short kid-friendly sentence", "modifier": <number between 0.7 and 1.5>, "modifierLabel": "short label like More customers or Fewer customers"}`;
 
-Make it specific to their product, not generic. Be creative and fun.`;
-
-        const text = await callOpenRouter(prompt, 120, 6000, controller.signal);
-        clearTimeout(timer);
+        const fallback = simulationEventTemplate(simState.week, productNameForAI);
+        const result = await generateAI({
+          messages: [{ role: "user", content: prompt }],
+          template: () => JSON.stringify(fallback),
+          maxTokens: 120,
+          temperature: 0.5,
+          jsonMode: true,
+          onProgress: setLocalAIProgress,
+          signal: controller.signal,
+        });
         if (cancelled) return;
-        const json = extractJson(text);
-        const mod = Math.max(0.7, Math.min(1.5, Number(json.modifier) || 1.0));
+
+        setAIWarning(result.warning ?? null);
+        const json = extractJsonObject(result.text) ?? fallback;
+        const modifier = Math.max(0.7, Math.min(1.5, Number(json.modifier) || 1));
         const aiEvent: RandomEvent = {
           id: `ai-week-${simState.week}`,
-          name: String(json.headline ?? "Something happened this week"),
-          description: String(json.description ?? ""),
-          modifier: mod,
-          modifierLabel: String(json.modifierLabel ?? ""),
+          name:
+            cleanLabel(String(json.headline ?? "Something happened this week")) ||
+            "Something happened this week",
+          description: cleanLabel(String(json.description ?? "")),
+          modifier,
+          modifierLabel: cleanLabel(String(json.modifierLabel ?? "")),
         };
-        setSimState(prev =>
+
+        setSimState((prev) =>
           prev.week === simState.week ? { ...prev, currentEvent: aiEvent } : prev
         );
       } catch {
-        clearTimeout(timer);
-        // Silently keep the fallback hardcoded event
+        // keep fallback event
+      } finally {
+        if (!cancelled) setLocalAIProgress(null);
+        window.clearTimeout(timeoutId);
       }
     }
 
     fetchEvent();
+
     return () => {
       cancelled = true;
       controller.abort();
-      clearTimeout(timer);
+      window.clearTimeout(timeoutId);
     };
-  }, [simState.week, productNameForAI, productCategoryForAI, targetCustomerForAI]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [simState.week, productNameForAI, productCategoryForAI, targetCustomerForAI, aiRetryNonce]);
 
-  // ── modal ─────────────────────────────────────────────────────────────
-  const [pendingResult, setPendingResult] = useState<{
-    result: WeeklyResult;
-    newSat: number;
-    newWomStack: number;
-    newInventory: number;
-  } | null>(null);
+  useEffect(() => {
+    return () => {
+      if (runTimerRef.current) window.clearTimeout(runTimerRef.current);
+      runFeedbackTimersRef.current.forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
 
-  // ── live projections (updates as decisions change) ────────────────────
-  const proj = useMemo(
-    () => computeWeek(decisions, simState, simState.currentEvent, opts),
-    [decisions, simState, opts] // eslint-disable-line react-hooks/exhaustive-deps
+  // ─── Preview computations ─────────────────────────────────────────────────────
+
+  const projection = useMemo(
+    () => computeWeek(decisions, simState, simState.currentEvent, computeOpts),
+    [decisions, simState, computeOpts]
   );
 
-  const effectiveMax = decisions.hireHelper ? Math.floor(maxWeeklyUnits * 1.5) : maxWeeklyUnits;
+  const promoted = decisions.promotionType !== "none";
+  const satDelta = computeSatisfactionDelta(decisions.quality, projection, promoted);
+  const projectedSat = clamp(simState.satisfaction + satDelta, 0, 100);
+  const mood = moodFromScore(projectedSat);
+  const storyVisual = useMemo(() => getStoryVisual(simState.currentEvent), [simState.currentEvent]);
+  const eventHeadline = cleanLabel(simState.currentEvent.name) || "Something happened this week";
+  const eventDescription = cleanLabel(simState.currentEvent.description);
+  const variantIndex = Math.abs(
+    Math.round(decisions.sellingPrice * 4) + decisions.unitsToProduce + simState.week * 3
+  );
+
+  const moodColor =
+    mood === "Happy" ? "#16a34a" : mood === "Okay" ? "#b45309" : "#dc2626";
+  const moodLabel = MOOD_COPY[mood][variantIndex % MOOD_COPY[mood].length];
+  const moodIconKind: IconKind =
+    mood === "Happy" ? "moodHappy" : mood === "Okay" ? "moodOkay" : "moodWorried";
+
+  const profitColor =
+    projection.profit >= 20
+      ? "#16a34a"
+      : projection.profit >= 0
+        ? "#1E6470"
+        : projection.profit >= -10
+          ? "#b45309"
+          : "#dc2626";
+
+  const previewSuggestionOptions = (() => {
+    if (projection.productionCost > simState.cash) {
+      return [
+        "Try making fewer items so you can afford this week.",
+        "This plan costs too much right now. Lower production a little.",
+      ];
+    }
+    if (projection.finalDemand > projection.supply) {
+      return [
+        "Try making a few more items.",
+        "Demand looks strong. A few extra items could help.",
+      ];
+    }
+    if (projection.profit < 0) {
+      return decisions.sellingPrice < originalPrice
+        ? [
+            "A small price increase might help.",
+            "Try raising the price a little to protect profit.",
+          ]
+        : [
+            "Lowering your price might help.",
+            "Try a small price drop to boost sales.",
+          ];
+    }
+    if (projection.profit >= 20 && projectedSat >= 70) {
+      return [
+        "This looks like a great plan!",
+        "Strong plan. You are in a good spot this week.",
+      ];
+    }
+    return [
+      "This plan looks solid for this week.",
+      "Steady plan. Small tweaks can make it even better.",
+    ];
+  })();
+
+  const previewSuggestion = previewSuggestionOptions[variantIndex % previewSuggestionOptions.length];
+
+  const previewFlavorMessages = (() => {
+    const messages: string[] = [];
+    if (projection.unitsSold >= projection.supply && projection.supply > 0) {
+      messages.push("You could sell out early this week.");
+    }
+    if (projection.unsold > 0) {
+      messages.push("A few items may still be left by week end.");
+    }
+    if (decisions.promotionType !== "none") {
+      messages.push("More people may hear about your product.");
+    }
+    if (projection.finalDemand > projection.unitsSold) {
+      messages.push("Interest may be a bit higher than your supply.");
+    }
+    if (messages.length === 0) {
+      messages.push("This week looks steady and predictable.");
+    }
+    return messages;
+  })();
+  const previewFlavor = previewFlavorMessages[variantIndex % previewFlavorMessages.length];
+
+  const previewSuggestionColor =
+    projection.productionCost > simState.cash
+      ? "#dc2626"
+      : projection.profit < 0
+        ? "#b45309"
+        : "#16a34a";
+
+  useEffect(() => {
+    if (prevProfitRef.current === null) {
+      prevProfitRef.current = projection.profit;
+      return;
+    }
+    if (Math.abs(prevProfitRef.current - projection.profit) < 0.01) return;
+    prevProfitRef.current = projection.profit;
+    setProfitPulse(true);
+    const pulseTimer = window.setTimeout(() => setProfitPulse(false), 240);
+    return () => window.clearTimeout(pulseTimer);
+  }, [projection.profit]);
+
   const priceStep = 0.25;
-  const priceMin = 0.25;
-  const priceMax = Math.max(
-    8,
-    Math.ceil(
-      Math.max(
-        originalPrice * 2,
-        decisions.sellingPrice * 1.25,
-        variableCostPerUnit * 4,
-        originalPrice + 10
-      ) / priceStep
-    ) * priceStep
+  const estimatedCostPerItem = useMemo(() => {
+    const fixedPerItemAtCap = weeklyFixed / Math.max(1, maxWeeklyUnits);
+    return Math.max(0.25, variableCostPerUnit + fixedPerItemAtCap);
+  }, [variableCostPerUnit, weeklyFixed, maxWeeklyUnits]);
+
+  const priceMin = useMemo(
+    () => Math.max(0.25, floorToStep(Math.max(estimatedCostPerItem * 0.4, originalPrice * 0.4), priceStep)),
+    [estimatedCostPerItem, originalPrice]
   );
-  const effectiveSalePrice = decisions.marketing.includes("sale")
-    ? decisions.sellingPrice * 0.85
-    : decisions.sellingPrice;
-  const projectedCashColor = proj.projectedCash >= 0 ? "#16a34a" : "#ef4444";
-  const canStart =
-    simState.gameStatus === "active" &&
-    proj.productionCost <= simState.cash &&
-    !isStartingWeek;
 
-  // ── decision handlers ─────────────────────────────────────────────────
-  const toggleMarketing = (key: MarketingKey) => {
-    setDecisions(prev => {
-      const sel = prev.marketing;
-      if (sel.includes(key)) return { ...prev, marketing: sel.filter(k => k !== key) };
-      if (sel.length >= 2) return prev;
-      return { ...prev, marketing: [...sel, key] };
-    });
-  };
+  const priceMax = useMemo(
+    () =>
+      Math.max(
+        priceMin + priceStep,
+        ceilToStep(Math.max(estimatedCostPerItem * 2, originalPrice * 2), priceStep)
+      ),
+    [estimatedCostPerItem, originalPrice, priceMin]
+  );
 
-  const toggleHelper = () => {
-    setDecisions(prev => {
-      const newHelper = !prev.hireHelper;
-      const newMax = newHelper ? Math.floor(maxWeeklyUnits * 1.5) : maxWeeklyUnits;
-      return { ...prev, hireHelper: newHelper, unitsToProduce: Math.min(prev.unitsToProduce, newMax) };
-    });
-  };
+  useEffect(() => {
+    setDecisions((prev) => ({
+      ...prev,
+      sellingPrice: clamp(prev.sellingPrice, priceMin, priceMax),
+    }));
+  }, [priceMin, priceMax]);
 
-  // ── start week ────────────────────────────────────────────────────────
-  const handleStartWeek = () => {
-    if (!canStart) return;
-    setIsStartingWeek(true);
+  const dealOptions = useMemo(
+    () => buildDealOptions(productNameForAI, decisions.sellingPrice),
+    [productNameForAI, decisions.sellingPrice]
+  );
 
-    const c = computeWeek(decisions, simState, simState.currentEvent, opts);
+  const selectedDeal =
+    decisions.dealType
+      ? dealOptions.find((option) => option.id === decisions.dealType) ?? dealOptions[0]
+      : dealOptions[0];
 
-    // Satisfaction delta
-    let satDelta = QUALITY_SAT_DELTA[decisions.quality];
-    if (c.unitsSold >= c.finalDemand && c.finalDemand > 0) satDelta += 10;
-    if (c.finalDemand > c.supply) satDelta -= 15;
-    if (decisions.marketing.includes("sale")) satDelta += 5;
-    const newSat = clamp(simState.satisfaction + satDelta, 0, 100);
+  const promotionSummary = (() => {
+    if (decisions.promotionType === "none") return "No promotion";
+    if (decisions.promotionType === "friends") return "Tell friends (free)";
+    if (decisions.promotionType === "posters") return "Posters this week (-$5)";
+    if (decisions.promotionType === "social") return "Social post this week (-$10)";
+    return selectedDeal ? `Deal: ${selectedDeal.label}` : "Run a deal";
+  })();
 
-    const newWomStack = decisions.marketing.includes("wom") ? simState.wordOfMouthStack + 1 : 0;
+  const canAfford = projection.productionCost <= simState.cash;
+
+  // ─── Week actions ─────────────────────────────────────────────────────────────
+
+  const handleRunWeek = () => {
+    if (simState.gameStatus !== "active" || isRunningWeek) return;
+
+    if (!allRequiredSet) {
+      setShowValidation(true);
+      return;
+    }
+
+    if (!canAfford) return;
+
+    if (runTimerRef.current) window.clearTimeout(runTimerRef.current);
+    runFeedbackTimersRef.current.forEach((id) => window.clearTimeout(id));
+    runFeedbackTimersRef.current = [];
+
+    setIsRunningWeek(true);
+    setRunFeedbackStep(0);
+
+    const baseComputed = computeWeek(decisions, simState, simState.currentEvent, computeOpts);
+    const demandVariance = 0.9 + Math.random() * 0.2;
+    const computed = applyDemandVariance(baseComputed, demandVariance, weeklyFixed, simState.cash);
+    const nextSat = clamp(
+      simState.satisfaction + computeSatisfactionDelta(decisions.quality, computed, promoted),
+      0,
+      100
+    );
 
     const result: WeeklyResult = {
       week: simState.week,
       event: simState.currentEvent,
-      unitsSold: c.unitsSold,
-      finalDemand: c.finalDemand,
-      revenue: c.revenue,
-      totalCost: c.totalCost,
-      profit: c.profit,
-      endCash: c.projectedCash,
+      unitsSold: computed.unitsSold,
+      finalDemand: computed.finalDemand,
+      revenue: computed.revenue,
+      totalCost: computed.totalCost,
+      profit: computed.profit,
+      endCash: computed.projectedCash,
     };
 
-    if (startWeekTimerRef.current) {
-      window.clearTimeout(startWeekTimerRef.current);
-    }
-    startWeekTimerRef.current = window.setTimeout(() => {
-      setPendingResult({ result, newSat, newWomStack, newInventory: c.unsold });
-      setIsStartingWeek(false);
+    const lesson = lessonForWeek(result, moodFromScore(nextSat));
 
-      // Kick off AI tip — non-blocking, 3s hard timeout
-      tipAbortRef.current?.abort();
-      const tipController = new AbortController();
-      tipAbortRef.current = tipController;
-      setWeeklyTip(null);
-      if (tipAbortTimerRef.current) window.clearTimeout(tipAbortTimerRef.current);
-      tipAbortTimerRef.current = window.setTimeout(() => tipController.abort(), 3000);
+    const runDelay = 1000 + Math.floor(Math.random() * 500);
+    const stepOne = window.setTimeout(() => setRunFeedbackStep(1), Math.round(runDelay * 0.34));
+    const stepTwo = window.setTimeout(() => setRunFeedbackStep(2), Math.round(runDelay * 0.68));
+    runFeedbackTimersRef.current = [stepOne, stepTwo];
 
-      const tipPrompt = `You are a friendly business coach for kids aged 8-12.
-Based on these weekly results, give exactly one short encouraging tip (max 20 words) that helps them do better next week.
-Be specific to the numbers, not generic.
-
-Product: ${productNameForAI}
-Week: ${simState.week}
-Units produced: ${decisions.unitsToProduce}
-Units sold: ${c.unitsSold}
-Revenue: $${c.revenue.toFixed(2)}
-Profit: $${c.profit.toFixed(2)}
-Customer satisfaction: ${newSat}/100
-Marketing actions used: ${decisions.marketing.join(", ") || "none"}`;
-
-      callOpenRouter(tipPrompt, 60, 3000, tipController.signal)
-        .then(text => {
-          if (!tipController.signal.aborted) {
-            setWeeklyTip(text.trim().replace(/^["']|["']$/g, ""));
-          }
-        })
-        .catch(() => {/* silently skip */});
-    }, 450);
+    runTimerRef.current = window.setTimeout(() => {
+      setPendingWeek({ result, newSat: nextSat, newInventory: computed.unsold, lesson });
+      setIsRunningWeek(false);
+      setRunFeedbackStep(0);
+    }, runDelay);
   };
 
-  // ── next week (after modal) ───────────────────────────────────────────
   const handleNextWeek = () => {
-    if (!pendingResult) return;
-    tipAbortRef.current?.abort();
-    setWeeklyTip(null);
-    const { result, newSat, newWomStack, newInventory } = pendingResult;
+    if (!pendingWeek) return;
+    const { result, newSat, newInventory } = pendingWeek;
 
     const newCash = result.endCash;
-    const newWeek = simState.week + 1;
-
     const newHistory = [...simState.cashHistory, result.profit];
 
-    // Check end conditions
     if (newCash <= 0) {
-      setSimState(prev => ({
+      setSimState((prev) => ({
         ...prev,
         cash: newCash,
         cashHistory: newHistory,
         gameStatus: "gameover",
         weeklyResults: [...prev.weeklyResults, result],
       }));
-      setPendingResult(null);
+      setPendingWeek(null);
       window.localStorage.removeItem(SIM_GAME_STORAGE_KEY);
-      navigate("/simulate/gameover", { state: {
-        week: simState.week, cash: newCash, cashHistory: newHistory,
-        satisfaction: newSat, weeklyResults: [...simState.weeklyResults, result],
-      }});
+      navigate("/simulate/gameover", {
+        state: {
+          week: simState.week,
+          cash: newCash,
+          cashHistory: newHistory,
+          satisfaction: newSat,
+          weeklyResults: [...simState.weeklyResults, result],
+        },
+      });
       return;
     }
 
     if (simState.week >= TOTAL_WEEKS) {
-      setSimState(prev => ({
+      setSimState((prev) => ({
         ...prev,
-        cash: newCash, cashHistory: newHistory, gameStatus: "complete",
+        cash: newCash,
+        cashHistory: newHistory,
+        gameStatus: "complete",
         weeklyResults: [...prev.weeklyResults, result],
       }));
-      setPendingResult(null);
+      setPendingWeek(null);
       window.localStorage.removeItem(SIM_GAME_STORAGE_KEY);
-      navigate("/simulate/results", { state: {
-        week: simState.week, cash: newCash, cashHistory: newHistory,
-        satisfaction: newSat, weeklyResults: [...simState.weeklyResults, result],
-      }});
+      navigate("/simulate/results", {
+        state: {
+          week: simState.week,
+          cash: newCash,
+          cashHistory: newHistory,
+          satisfaction: newSat,
+          weeklyResults: [...simState.weeklyResults, result],
+        },
+      });
       return;
     }
 
-    // Advance to next week
-    setSimState(prev => ({
+    setSimState((prev) => ({
       ...prev,
-      week: newWeek,
+      week: prev.week + 1,
       cash: newCash,
       cashHistory: newHistory,
       inventory: newInventory,
       satisfaction: newSat,
-      helpers: decisions.hireHelper ? 1 : 0,
-      wordOfMouthStack: newWomStack,
       weeklyResults: [...prev.weeklyResults, result],
       currentEvent: pickRandomEvent(),
     }));
 
-    // Reset marketing + helper each week, keep price/quality/units
-    setDecisions(prev => ({ ...prev, marketing: [], hireHelper: false }));
-    setPendingResult(null);
+    setDecisions((prev) => ({ ...prev, promotionType: "none", dealType: null, hireHelper: false }));
+    setPendingWeek(null);
+    setPriceDraft(null);
+
+    // Carry forward touched state — production/price/quality values persist into the next week
+    setTouched(new Set(["production", "price", "quality"] as const));
+    setOpenSection(null);
+    setShowValidation(false);
   };
 
-  useEffect(() => {
-    return () => {
-      tipAbortRef.current?.abort();
-      if (tipAbortTimerRef.current) window.clearTimeout(tipAbortTimerRef.current);
-      if (startWeekTimerRef.current) {
-        window.clearTimeout(startWeekTimerRef.current);
-      }
-    };
-  }, []);
+  if (shouldRedirectToSetup || shouldRedirectToSimSetup) return null;
 
-  // ─────────────────────────────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div
       className="min-h-screen flex flex-col priceit-fade-in"
-      style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}
+      style={{
+        background:
+          "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)",
+      }}
     >
       {/* Header */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20 gap-2">
-        <button
-          onClick={() => navigate("/simulate")}
-          className="min-h-11 px-3 text-[#5DB7C4] font-semibold text-sm hover:text-[#F36C3D] transition-colors whitespace-nowrap"
-        >
-          ← Back
-        </button>
-        <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-center">
-          <img src={logo} alt="PriceIt logo" className="h-7 w-auto" />
-          <span className="text-xs font-bold text-[#2B2B2B] bg-[#EAF7F9] px-3 py-1 rounded-full">
-            Week {simState.week} of {TOTAL_WEEKS}
-          </span>
-          <span
-            className="text-xs font-bold px-3 py-1 rounded-full"
-            style={{
-              background: simState.cash >= 0 ? "#EAF7F9" : "#FFF5F0",
-              color: simState.cash >= 0 ? "#5DB7C4" : "#ef4444",
-            }}
+      <header className="sticky top-0 z-20 border-b border-[#E0EFF1] bg-white/85 backdrop-blur-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
+          <button
+            onClick={() => navigate("/simulate")}
+            className="min-h-11 px-3 text-[#5DB7C4] font-semibold text-sm hover:text-[#4AA8B5] transition-colors"
           >
-            ${simState.cash.toFixed(2)} cash
-          </span>
+            ← Back
+          </button>
+
+          <img src={logo} alt="PriceIt logo" className="h-8 w-auto" />
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#2B2B2B] bg-[#EAF7F9] px-2.5 py-1 rounded-full whitespace-nowrap">
+              Week {simState.week}/{TOTAL_WEEKS}
+            </span>
+            <span
+              className="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap"
+              style={{
+                background: simState.cash >= 0 ? "#EAF7F9" : "#FFF5F5",
+                color: simState.cash >= 0 ? "#5DB7C4" : "#dc2626",
+              }}
+            >
+              ${simState.cash.toFixed(2)}
+            </span>
+          </div>
         </div>
-        <div className="w-16" />
       </header>
 
-      <main className="flex-1 p-4 sm:p-6">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* ══════════════════════════════════════════════════════════════
-              LEFT: Decision Panel
-          ══════════════════════════════════════════════════════════════ */}
-          <div className="flex flex-col gap-3">
-
-            {/* Event card */}
-            <EventCard event={simState.currentEvent} week={simState.week} />
-
-            {/* Production decisions */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Production decisions</p>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF7F9] text-[#5DB7C4]">
-                  Cap {effectiveMax}
-                </span>
-              </div>
-
-              <div className="rounded-xl border border-[#E7EFF1] bg-[#F8FBFC] px-3 py-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold text-[#2B2B2B]">Units to produce</label>
-                  <span className="text-xs font-extrabold text-[#5DB7C4]">{decisions.unitsToProduce} units</span>
-                </div>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={0}
-                    max={effectiveMax}
-                    step={1}
-                    value={decisions.unitsToProduce}
-                    onChange={e =>
-                      setDecisions(prev => ({
-                        ...prev,
-                        unitsToProduce: Math.min(effectiveMax, Math.max(0, Number(e.target.value) || 0)),
-                      }))
-                    }
-                    onBlur={e =>
-                      setDecisions(prev => ({
-                        ...prev,
-                        unitsToProduce: Math.min(effectiveMax, Math.max(0, Math.round(Number(e.target.value) || 0))),
-                      }))
-                    }
-                    className="flex-1 border-2 border-[#E0EFF1] focus:border-[#5DB7C4] rounded-xl px-3 py-2 text-[#2B2B2B] font-bold bg-white outline-none transition-colors"
-                  />
-                  <span className="text-xs text-[#9BBFC3] font-semibold whitespace-nowrap">units</span>
-                </div>
-                <DecisionSlider
-                  value={decisions.unitsToProduce}
-                  min={0}
-                  max={effectiveMax}
-                  step={1}
-                  accent="#5DB7C4"
-                  ariaLabel="Units to produce slider"
-                  onChange={(value) =>
-                    setDecisions(prev => ({
-                      ...prev,
-                      unitsToProduce: Math.min(effectiveMax, Math.max(0, Math.round(value))),
-                    }))
-                  }
-                />
-                <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#9BBFC3]">
-                  <span>0</span>
-                  <span>{effectiveMax}</span>
-                </div>
-                {simState.inventory > 0 ? (
-                  <p className="text-[11px] text-[#5DB7C4] font-semibold mt-1">
-                    +{simState.inventory} in stock, so your total supply is {proj.supply}.
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-[#9BBFC3] font-semibold mt-1">
-                    More production can raise sales, but also raises costs.
-                  </p>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-[#E7EFF1] bg-[#F8FBFC] px-3 py-2.5">
-                <label className="text-sm font-bold text-[#2B2B2B]">Material quality</label>
-                <p className="text-[11px] text-[#7B9EA3] mt-0.5">
-                  Better quality can lift demand, but materials cost more.
-                </p>
-                <div className="mt-2 flex gap-2">
-                  {(["Standard", "Premium", "Deluxe"] as StartingQuality[]).map(q => (
-                    <button
-                      key={q}
-                      type="button"
-                      onClick={() => setDecisions(prev => ({ ...prev, quality: q }))}
-                      className="flex-1 rounded-xl py-2.5 text-sm font-bold border-2 transition-all"
-                      style={{
-                        borderColor: decisions.quality === q ? "#5DB7C4" : "#E0EFF1",
-                        background: decisions.quality === q ? "#EAF7F9" : "#FFFFFF",
-                        color: decisions.quality === q ? "#5DB7C4" : "#9BBFC3",
-                      }}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-[#E7EFF1] bg-[#F8FBFC] px-3 py-2.5 flex items-center justify-between gap-3">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-[#2B2B2B]">Hire a helper?</p>
-                  <p className="text-[11px] text-[#7B9EA3] mt-0.5">
-                    Costs $20 and raises weekly cap by 50%.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={toggleHelper}
-                  className="w-12 h-6 rounded-full transition-all duration-200 flex-shrink-0 relative"
-                  style={{ background: decisions.hireHelper ? "#5DB7C4" : "#D1D5DB" }}
-                >
-                  <div
-                    className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200"
-                    style={{ left: decisions.hireHelper ? "calc(100% - 22px)" : "2px" }}
-                  />
-                </button>
-              </div>
+      {/* Main content */}
+      <main className="flex-1 px-4 sm:px-6 py-5">
+        <div className="w-full max-w-5xl mx-auto">
+          {(localAIProgress || aiWarning) && (
+            <div className="mb-3 rounded-xl border border-[#A9DDE3] bg-[#F0FAFB] px-4 py-3 text-sm text-[#2B2B2B]">
+              <p className="font-semibold">
+                {localAIProgress
+                  ? `${Math.round(localAIProgress.progress * 100)}% — ${localAIProgress.text}`
+                  : aiWarning?.message}
+              </p>
             </div>
+          )}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_296px] gap-4 items-start">
 
-            {/* Pricing decisions */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
-              <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Pricing decisions</p>
-              <div className="rounded-xl border border-[#E7EFF1] bg-[#F8FBFC] px-3 py-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold text-[#2B2B2B]">Selling price</label>
-                  <span className="text-xs font-extrabold text-[#5DB7C4]">${decisions.sellingPrice.toFixed(2)}</span>
-                </div>
-                <div className="mt-1.5 flex items-center border-2 border-[#E0EFF1] focus-within:border-[#5DB7C4] rounded-xl px-3 py-2 bg-white transition-colors">
-                  <span className="text-[#5DB7C4] font-bold text-base mr-2">$</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step={priceStep}
-                    value={decisions.sellingPrice}
-                    onChange={e =>
-                      setDecisions(prev => ({
-                        ...prev,
-                        sellingPrice: Math.max(0, Number(e.target.value) || 0),
-                      }))
-                    }
-                    onBlur={e =>
-                      setDecisions(prev => ({
-                        ...prev,
-                        sellingPrice: Math.max(0, roundToStep(Number(e.target.value) || 0, priceStep)),
-                      }))
-                    }
-                    className="bg-transparent flex-1 outline-none text-[#2B2B2B] font-bold"
-                  />
-                </div>
-                <DecisionSlider
-                  value={decisions.sellingPrice}
-                  min={priceMin}
-                  max={priceMax}
-                  step={priceStep}
-                  accent="#F36C3D"
-                  ariaLabel="Selling price slider"
-                  onChange={(value) =>
-                    setDecisions(prev => ({
-                      ...prev,
-                      sellingPrice: Math.max(0, roundToStep(value, priceStep)),
-                    }))
-                  }
-                />
-                <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#9BBFC3]">
-                  <span>${priceMin.toFixed(2)}</span>
-                  <span>${priceMax.toFixed(2)}</span>
-                </div>
-                {decisions.marketing.includes("sale") ? (
-                  <p className="text-[11px] text-[#5DB7C4] font-semibold mt-1">
-                    Sale active: customers pay ${effectiveSalePrice.toFixed(2)} this week.
-                  </p>
-                ) : decisions.sellingPrice !== originalPrice && originalPrice > 0 ? (
-                  <p className="text-[11px] text-[#F36C3D] font-semibold mt-1">
-                    Original ${originalPrice.toFixed(2)}: lower price can boost demand, higher price can reduce it.
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-[#9BBFC3] font-semibold mt-1">
-                    Keep price near your market sweet spot to balance demand and profit.
-                  </p>
-                )}
-              </div>
-            </div>
+            {/* ── Left column: event + decision tiles ─────────────────────── */}
+            <div className="flex flex-col gap-3">
 
-            {/* Marketing decisions */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Marketing decisions</p>
-                <div className="flex items-center gap-2">
-                  {simState.wordOfMouthStack > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF7F9] text-[#5DB7C4]">
-                      💬 Stack x{Math.min(simState.wordOfMouthStack, 6)}
-                    </span>
-                  )}
-                  <span className="text-[10px] font-bold text-[#C8D8DC] uppercase tracking-wider">
-                    {decisions.marketing.length}/2 chosen
-                  </span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {(Object.keys(MARKETING_META) as MarketingKey[]).map(key => {
-                  const meta = MARKETING_META[key];
-                  const selected = decisions.marketing.includes(key);
-                  const disabled = !selected && decisions.marketing.length >= 2;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => toggleMarketing(key)}
-                      disabled={disabled}
-                      className="rounded-xl px-3 py-2.5 text-left border-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                      style={{
-                        borderColor: selected ? "#5DB7C4" : "#E0EFF1",
-                        background: selected ? "#EAF7F9" : "#F7F9FA",
-                      }}
-                    >
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-base">{meta.emoji}</span>
-                        <span className="text-xs font-bold" style={{ color: selected ? "#5DB7C4" : "#2B2B2B" }}>
-                          {meta.label}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-[#9BBFC3] font-semibold leading-tight">{meta.note}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Pre-start projection */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Projected outcome</p>
-                <span
-                  className="text-xs font-extrabold"
-                  style={{ color: proj.profit >= 0 ? "#16a34a" : "#ef4444" }}
-                >
-                  {proj.profit >= 0 ? "+" : "-"}{fd(proj.profit)}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-[#F7F9FA] rounded-xl px-3 py-2">
-                  <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">Est. demand</p>
-                  <p className="font-extrabold text-sm mt-0.5 text-[#2B2B2B]">~{proj.finalDemand}</p>
-                </div>
-                <div className="bg-[#F7F9FA] rounded-xl px-3 py-2">
-                  <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">Your supply</p>
-                  <p className="font-extrabold text-sm mt-0.5 text-[#2B2B2B]">{proj.supply}</p>
-                </div>
-                <div className="bg-[#F7F9FA] rounded-xl px-3 py-2">
-                  <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">Est. revenue</p>
-                  <p className="font-extrabold text-sm mt-0.5 text-[#16a34a]">+{fd(proj.revenue)}</p>
-                </div>
-                <div className="bg-[#F7F9FA] rounded-xl px-3 py-2">
-                  <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">Est. costs</p>
-                  <p className="font-extrabold text-sm mt-0.5 text-[#F36C3D]">-{fd(proj.totalCost)}</p>
-                </div>
-              </div>
+              {/* This Week's Story */}
               <div
-                className="rounded-xl px-3 py-2.5 flex items-center justify-between"
-                style={{ background: proj.projectedCash >= 0 ? "#F0FFF4" : "#FFF5F5" }}
+                className="rounded-lg px-4 py-4 shadow-[rgba(23,23,23,0.06)_0px_3px_6px] transition-all duration-200 transform-gpu hover:-translate-y-[1px]"
+                style={{
+                  border: `1.5px solid ${storyVisual.border}`,
+                  background: storyVisual.background,
+                }}
               >
-                <p className="text-sm font-bold text-[#2B2B2B]">Projected cash after week</p>
-                <p className="text-lg font-extrabold" style={{ color: projectedCashColor }}>
-                  ${proj.projectedCash.toFixed(2)}
-                </p>
-              </div>
-              {proj.finalDemand > proj.supply && (
-                <p className="text-xs text-[#F36C3D] font-semibold">
-                  You may run out of stock ({proj.finalDemand - proj.supply} units short).
-                </p>
-              )}
-              {proj.productionCost > simState.cash && (
-                <p className="text-xs text-[#F36C3D] font-semibold">
-                  You cannot afford this production plan right now.
-                </p>
-              )}
-            </div>
-
-            {/* Start Week */}
-            <div className="flex flex-col items-center gap-2">
-              <div className={canStart ? "priceit-btn-ready w-full" : "w-full"}>
-                <ChronicleButton
-                  text={isStartingWeek ? "Running Week..." : "Start Week →"}
-                  onClick={handleStartWeek}
-                  hoverColor="#F36C3D"
-                  customBackground="#5DB7C4"
-                  customForeground="#ffffff"
-                  hoverForeground="#ffffff"
-                  width="100%"
-                  borderRadius="12px"
-                  disabled={!canStart}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* ══════════════════════════════════════════════════════════════
-              RIGHT: Dashboard
-          ══════════════════════════════════════════════════════════════ */}
-          <div className="flex flex-col gap-3">
-
-            {/* Week tracker strip */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-3">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">Week {simState.week} of {TOTAL_WEEKS}</p>
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    let streak = 0;
-                    for (let i = simState.cashHistory.length - 1; i >= 0; i--) {
-                      if (simState.cashHistory[i] > 0) streak++;
-                      else break;
-                    }
-                    return streak >= 2 ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF7ED] text-[#EA580C]">
-                        🔥 {streak}-week streak!
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#5DB7C4] flex items-center gap-1.5">
+                      <SectionIcon
+                        kind="story"
+                        color={storyVisual.iconColor}
+                        background={storyVisual.iconBackground}
+                      />
+                      This Week&apos;s Story
+                    </p>
+                    <p className="mt-1 text-base font-semibold text-[#061b31] leading-snug">
+                      {eventHeadline}
+                    </p>
+                    <p className="mt-1 text-sm text-[#5B7780] leading-relaxed">
+                      {eventDescription}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                    <span
+                      className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold text-[#1E6470] whitespace-nowrap"
+                      style={{
+                        background: storyVisual.chipBackground,
+                        border: `1px solid ${storyVisual.chipBorder}`,
+                      }}
+                    >
+                      {eventTag(simState.currentEvent)}
+                    </span>
+                    {simState.currentEvent.modifierLabel && (
+                      <span
+                        className="inline-flex items-center rounded-md border border-[#E0EFF1] bg-[#F7F9FA] px-2 py-0.5 text-[11px] font-bold text-[#7B9EA3] whitespace-nowrap"
+                      >
+                        {cleanLabel(simState.currentEvent.modifierLabel)}
                       </span>
-                    ) : null;
-                  })()}
-                  <p className="text-xs font-bold text-[#5DB7C4]">
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Production tile */}
+              <DecisionTile
+                icon={
+                  <SectionIcon
+                    kind="production"
+                    color={DECISION_THEMES.production.accent}
+                    background={DECISION_THEMES.production.soft}
+                    borderColor={DECISION_THEMES.production.border}
+                  />
+                }
+                title="Production"
+                summary={
+                  touched.has("production")
+                    ? `${decisions.unitsToProduce} item${decisions.unitsToProduce !== 1 ? "s" : ""} this week`
+                    : "How many will you make?"
+                }
+                isSet={touched.has("production")}
+                isRequired
+                highlightMissing={showValidation}
+                isOpen={openSection === "production"}
+                onToggle={() => toggleSection("production")}
+                theme={DECISION_THEMES.production}
+              >
+                <div className="mt-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-[#061b31]">Items to make this week</p>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        max={maxWeeklyUnits}
+                        step={1}
+                        value={decisions.unitsToProduce}
+                        onChange={(e) => {
+                          markTouched("production");
+                          setDecisions((prev) => ({
+                            ...prev,
+                            unitsToProduce: clamp(Number(e.target.value) || 0, 0, maxWeeklyUnits),
+                          }));
+                        }}
+                        onBlur={(e) =>
+                          setDecisions((prev) => ({
+                            ...prev,
+                            unitsToProduce: clamp(Math.round(Number(e.target.value) || 0), 0, maxWeeklyUnits),
+                          }))
+                        }
+                        className="w-20 border border-[#E0EFF1] focus:border-[#5DB7C4] rounded-md px-2.5 py-2 text-[#061b31] font-semibold bg-white outline-none text-sm"
+                      />
+                      <span className="text-xs font-semibold text-[#7B9EA3]">items</span>
+                    </div>
+                  </div>
+                  <DecisionSlider
+                    value={decisions.unitsToProduce}
+                    min={0}
+                    max={maxWeeklyUnits}
+                    step={1}
+                    ariaLabel="Units to produce"
+                    onChange={(value) => {
+                      markTouched("production");
+                      setDecisions((prev) => ({
+                        ...prev,
+                        unitsToProduce: clamp(Math.round(value), 0, maxWeeklyUnits),
+                      }));
+                    }}
+                  />
+                  <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#9BBFC3]">
+                    <span>0</span>
+                    <span>{maxWeeklyUnits} max</span>
+                  </div>
+                  {simState.inventory > 0 && (
+                    <p className="mt-2 text-[11px] text-[#5B7780]">
+                      You have {simState.inventory} unsold item{simState.inventory !== 1 ? "s" : ""} from last week too.
+                    </p>
+                  )}
+                </div>
+              </DecisionTile>
+
+              {/* Price tile */}
+              <DecisionTile
+                icon={
+                  <SectionIcon
+                    kind="price"
+                    color={DECISION_THEMES.price.accent}
+                    background={DECISION_THEMES.price.soft}
+                    borderColor={DECISION_THEMES.price.border}
+                  />
+                }
+                title="Price"
+                summary={
+                  touched.has("price")
+                    ? `$${decisions.sellingPrice.toFixed(2)} each`
+                    : "What will you charge?"
+                }
+                isSet={touched.has("price")}
+                isRequired
+                highlightMissing={showValidation}
+                isOpen={openSection === "price"}
+                onToggle={() => toggleSection("price")}
+                theme={DECISION_THEMES.price}
+              >
+                <div className="mt-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-[#061b31]">Selling price per item</p>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[#5DB7C4] font-semibold text-sm">$</span>
+                      <input
+                        type="number"
+                        min={priceMin}
+                        max={priceMax}
+                        step={priceStep}
+                        value={priceDraft !== null ? priceDraft : decisions.sellingPrice.toFixed(2)}
+                        onChange={(e) => {
+                          setPriceDraft(e.target.value);
+                          markTouched("price");
+                          const n = parseFloat(e.target.value);
+                          if (isFinite(n) && n > 0) {
+                            setDecisions((prev) => ({
+                              ...prev,
+                              sellingPrice: clamp(n, priceMin, priceMax),
+                            }));
+                          }
+                        }}
+                        onBlur={() => {
+                          const n = priceDraft !== null ? parseFloat(priceDraft) : decisions.sellingPrice;
+                          setDecisions((prev) => ({
+                            ...prev,
+                            sellingPrice: clamp(
+                              roundToStep(isFinite(n) && n > 0 ? n : prev.sellingPrice, priceStep),
+                              priceMin,
+                              priceMax
+                            ),
+                          }));
+                          setPriceDraft(null);
+                        }}
+                        className="w-20 border border-[#E0EFF1] focus:border-[#5DB7C4] rounded-md px-2.5 py-2 text-[#061b31] font-semibold bg-white outline-none text-sm"
+                      />
+                    </div>
+                  </div>
+                  <DecisionSlider
+                    value={decisions.sellingPrice}
+                    min={priceMin}
+                    max={priceMax}
+                    step={priceStep}
+                    ariaLabel="Selling price"
+                    onChange={(value) => {
+                      markTouched("price");
+                      setDecisions((prev) => ({
+                        ...prev,
+                        sellingPrice: clamp(roundToStep(value, priceStep), priceMin, priceMax),
+                      }));
+                    }}
+                  />
+                  <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#9BBFC3]">
+                    <span>${priceMin.toFixed(2)}</span>
+                    <span>${priceMax.toFixed(2)}</span>
+                  </div>
+                </div>
+              </DecisionTile>
+
+              {/* Quality tile */}
+              <DecisionTile
+                icon={
+                  <SectionIcon
+                    kind="quality"
+                    color={DECISION_THEMES.quality.accent}
+                    background={DECISION_THEMES.quality.soft}
+                    borderColor={DECISION_THEMES.quality.border}
+                  />
+                }
+                title="Quality"
+                summary={
+                  touched.has("quality")
+                    ? QUALITY_LABEL[decisions.quality]
+                    : "Which quality level?"
+                }
+                isSet={touched.has("quality")}
+                isRequired
+                highlightMissing={showValidation}
+                isOpen={openSection === "quality"}
+                onToggle={() => toggleSection("quality")}
+                theme={DECISION_THEMES.quality}
+              >
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {(["Standard", "Premium", "Deluxe"] as StartingQuality[]).map((quality) => {
+                    const selected = decisions.quality === quality;
+                    return (
+                      <button
+                        key={quality}
+                        type="button"
+                        onClick={() => {
+                          markTouched("quality");
+                          setDecisions((prev) => ({ ...prev, quality }));
+                        }}
+                        className="rounded-md border px-2 py-2.5 text-center transition-colors"
+                        style={{
+                          borderColor: selected ? "#5DB7C4" : "#E0EFF1",
+                          background: selected ? "#EAF7F9" : "#ffffff",
+                        }}
+                      >
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: selected ? "#1E6470" : "#2B2B2B" }}
+                        >
+                          {QUALITY_LABEL[quality]}
+                        </p>
+                        <p
+                          className="text-[10px] mt-0.5"
+                          style={{ color: selected ? "#1E6470" : "#7B9EA3" }}
+                        >
+                          {QUALITY_NOTE[quality]}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </DecisionTile>
+
+              {/* Promotion tile (optional) */}
+              <DecisionTile
+                icon={
+                  <SectionIcon
+                    kind="promotion"
+                    color={DECISION_THEMES.promotion.accent}
+                    background={DECISION_THEMES.promotion.soft}
+                    borderColor={DECISION_THEMES.promotion.border}
+                  />
+                }
+                title="Promotion"
+                summary={promotionSummary}
+                isSet={false}
+                isRequired={false}
+                highlightMissing={false}
+                isOpen={openSection === "promotion"}
+                onToggle={() => toggleSection("promotion")}
+                theme={DECISION_THEMES.promotion}
+              >
+                <div className="mt-3 space-y-2">
+                  <p className="text-[11px] text-[#7B9EA3]">
+                    Pick one way to spread the word this week.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      {
+                        id: "none" as PromotionType,
+                        title: "No promotion",
+                        note: "Save your money this week.",
+                      },
+                      {
+                        id: "friends" as PromotionType,
+                        title: "Tell Friends (Free)",
+                        note: "Small boost in demand.",
+                      },
+                      {
+                        id: "posters" as PromotionType,
+                        title: "Put Up Posters ($5)",
+                        note: "Medium demand boost.",
+                      },
+                      {
+                        id: "social" as PromotionType,
+                        title: "Post on Social Media ($10)",
+                        note: "Biggest reach this week.",
+                      },
+                      {
+                        id: "deal" as PromotionType,
+                        title: "Run a Deal (Special)",
+                        note: "More buyers, lower profit per item.",
+                      },
+                    ].map((option) => {
+                      const selected = decisions.promotionType === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() =>
+                            setDecisions((prev) => ({
+                              ...prev,
+                              promotionType: option.id,
+                              dealType:
+                                option.id === "deal"
+                                  ? prev.dealType ?? dealOptions[0].id
+                                  : null,
+                            }))
+                          }
+                          className="rounded-md border px-3 py-2 text-left transition-colors"
+                          style={{
+                            borderColor: selected ? "#5DB7C4" : "#E0EFF1",
+                            background: selected ? "#EAF7F9" : "#ffffff",
+                          }}
+                        >
+                          <p
+                            className="text-xs font-semibold"
+                            style={{ color: selected ? "#1E6470" : "#061b31" }}
+                          >
+                            {option.title}
+                          </p>
+                          <p className="text-[10px] mt-0.5 text-[#7B9EA3]">{option.note}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {decisions.promotionType === "deal" && (
+                    <div className="rounded-md border border-[#A9DDE3] bg-[#F0FAFB] p-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#5DB7C4]">
+                        Choose a deal
+                      </p>
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {dealOptions.map((deal) => {
+                          const selected = decisions.dealType === deal.id;
+                          return (
+                            <button
+                              key={deal.id}
+                              type="button"
+                              onClick={() =>
+                                setDecisions((prev) => ({
+                                  ...prev,
+                                  promotionType: "deal",
+                                  dealType: deal.id,
+                                }))
+                              }
+                              className="rounded-md border px-2.5 py-2 text-left transition-colors"
+                              style={{
+                                borderColor: selected ? "#5DB7C4" : "#D3ECEF",
+                                background: selected ? "#EAF7F9" : "#ffffff",
+                              }}
+                            >
+                              <p
+                                className="text-[11px] font-semibold leading-tight"
+                                style={{ color: selected ? "#1E6470" : "#061b31" }}
+                              >
+                                {deal.label}
+                              </p>
+                              <p className="text-[10px] mt-1 text-[#7B9EA3] leading-tight">
+                                {deal.description}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DecisionTile>
+            </div>
+
+            {/* ── Right column: preview + run ──────────────────────────────── */}
+            <div className="flex flex-col gap-3 lg:sticky lg:top-[72px]">
+
+              {/* Preview card */}
+              <div
+                className="rounded-lg bg-white px-4 py-4 transition-all duration-200 transform-gpu hover:-translate-y-[1px]"
+                style={{
+                  border: "1.5px solid #5DB7C4",
+                  boxShadow: "rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px",
+                }}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#5DB7C4]">
+                  This week, you might earn
+                </p>
+                <p
+                  className="mt-1 text-[2rem] leading-none font-semibold transition-transform duration-200"
+                  style={{ color: profitColor, transform: profitPulse ? "scale(1.03)" : "scale(1)" }}
+                >
+                  {projection.profit >= 0 ? "+" : "-"}{money(projection.profit)}
+                </p>
+                <p className="mt-0.5 text-xs text-[#5B7780]">
+                  {projection.profit >= 0 ? "estimated profit" : "estimated loss"}
+                </p>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="rounded-md border border-[#E0EFF1] bg-[#F7F9FA] px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">Might sell</p>
+                    <p className="text-sm font-semibold text-[#061b31] mt-0.5">
+                      {projection.unitsSold} item{projection.unitsSold !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-[#E0EFF1] bg-[#F7F9FA] px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">
+                      Customer mood
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <SectionIcon kind={moodIconKind} color={moodColor} background="#ffffff" />
+                      <p className="text-sm font-semibold" style={{ color: moodColor }}>
+                        {moodLabel}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 rounded-md border border-[#E0EFF1] bg-white px-3 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">Suggestion</p>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color: previewSuggestionColor }}>
+                    {previewSuggestion}
+                  </p>
+                </div>
+
+                <div className="mt-2 rounded-md border border-[#E0EFF1] bg-[#F7F9FA] px-3 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">Week note</p>
+                  <p className="text-xs text-[#5B7780] mt-0.5">{previewFlavor}</p>
+                </div>
+              </div>
+
+              {/* Validation warning */}
+              {showValidation && !allRequiredSet && (
+                <div className="rounded-lg border border-[#F36C3D]/40 bg-[#FFF5F0] px-4 py-3">
+                  <p className="text-sm font-semibold text-[#C0441D]">
+                    Almost ready!
+                  </p>
+                  <p className="text-xs text-[#9B4520] mt-0.5">
+                    Still need to set:{" "}
+                    {missingLabels.map((label, i) => (
+                      <span key={label}>
+                        <strong>{label}</strong>
+                        {i < missingLabels.length - 1 ? ", " : ""}
+                      </span>
+                    ))}
+                  </p>
+                </div>
+              )}
+
+              {/* Can't afford warning */}
+              {allRequiredSet && !canAfford && (
+                <div className="rounded-lg border border-[#F36C3D]/40 bg-[#FFF5F0] px-4 py-3">
+                  <p className="text-xs font-semibold text-[#C0441D]">
+                    You can't afford to make that many. Try reducing your production count.
+                  </p>
+                </div>
+              )}
+
+              {/* Run Week button */}
+              <ChronicleButton
+                text={isRunningWeek ? "Running this week..." : "Run This Week →"}
+                onClick={handleRunWeek}
+                hoverColor="#4AA8B5"
+                customBackground={allRequiredSet && canAfford ? "#5DB7C4" : "#5DB7C4"}
+                customForeground="#ffffff"
+                hoverForeground="#ffffff"
+                width="100%"
+                borderRadius="8px"
+                disabled={isRunningWeek}
+              />
+
+              {isRunningWeek && (
+                <div className="rounded-lg border border-[#A9DDE3] bg-[#F0FAFB] px-4 py-2.5">
+                  <p className="text-sm font-semibold text-[#1E6470] transition-opacity duration-200">
+                    {RUN_FEEDBACK_STEPS[runFeedbackStep]}
+                  </p>
+                </div>
+              )}
+
+              {/* Completion status */}
+              {!allRequiredSet && (
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {(["production", "price", "quality"] as const).map((key) => {
+                    const isDone = touched.has(key);
+                    const labels = { production: "Make", price: "Price", quality: "Quality" };
+                    return (
+                      <span
+                        key={key}
+                        className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{
+                          background: isDone ? "#EAF7F9" : showValidation ? "#FFF5F0" : "#F7F9FA",
+                          color: isDone ? "#1E6470" : showValidation ? "#C0441D" : "#9BBFC3",
+                          border: `1px solid ${isDone ? "#A9DDE3" : showValidation ? "#F36C3D40" : "#E0EFF1"}`,
+                        }}
+                      >
+                        {isDone ? "✓ " : ""}{labels[key]}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Progress bar */}
+              <div className="rounded-lg border border-[#E0EFF1] bg-white px-4 py-3 shadow-[rgba(23,23,23,0.06)_0px_3px_6px]">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">
+                    12-week run
+                  </p>
+                  <p className="text-xs font-semibold text-[#5DB7C4]">
                     {TOTAL_WEEKS - simState.week + 1} left
                   </p>
                 </div>
-              </div>
-              <div className="flex gap-1">
-                {Array.from({ length: TOTAL_WEEKS }, (_, i) => {
-                  const weekNum = i + 1;
-                  const result = simState.weeklyResults[i];
-                  const isActive = weekNum === simState.week;
-                  const isDone = weekNum < simState.week;
-                  const profit = result?.profit ?? 0;
-                  return (
-                    <div
-                      key={i}
-                      className="flex-1 flex flex-col items-center gap-0.5"
-                      title={isDone ? `Week ${weekNum}: ${profit >= 0 ? "+" : ""}$${profit.toFixed(2)}` : `Week ${weekNum}`}
-                    >
+                <div className="grid grid-cols-12 gap-1">
+                  {Array.from({ length: TOTAL_WEEKS }, (_, i) => {
+                    const weekNum = i + 1;
+                    const result = simState.weeklyResults[i];
+                    const isDone = weekNum < simState.week;
+                    const isActive = weekNum === simState.week;
+                    return (
                       <div
-                        className="w-full h-5 rounded-md text-[9px] font-extrabold flex items-center justify-center transition-all"
+                        key={weekNum}
+                        className="h-2 rounded-full"
                         style={{
-                          background: isActive ? "#5DB7C4" : isDone ? (profit >= 0 ? "#dcfce7" : "#fee2e2") : "#F0F4F5",
-                          color: isActive ? "#fff" : isDone ? (profit >= 0 ? "#16a34a" : "#dc2626") : "#C8D8DC",
-                          boxShadow: isActive ? "0 0 0 2px #5DB7C4" : "none",
+                          background: isActive
+                            ? "#5DB7C4"
+                            : isDone
+                              ? result && result.profit >= 0
+                                ? "#86efac"
+                                : "#fecaca"
+                              : "#E8ECEE",
                         }}
-                      >
-                        {isActive ? "▶" : isDone ? (profit >= 0 ? "+" : "-") : ""}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Key stats */}
-            <div key={simState.week} className="grid grid-cols-3 gap-2 priceit-row-enter">
-              {[
-                { label: "Cash Balance", val: `$${simState.cash.toFixed(2)}`, color: simState.cash >= 0 ? "#5DB7C4" : "#ef4444" },
-                { label: "In Stock",     val: `${simState.inventory} units`,   color: "#F36C3D" },
-                { label: "Satisfaction", val: `${simState.satisfaction}/100`,  color: simState.satisfaction >= 61 ? "#22c55e" : simState.satisfaction >= 31 ? "#f59e0b" : "#ef4444" },
-              ].map(({ label, val, color }) => (
-                <div key={label} className="bg-white rounded-2xl border border-[#E0EFF1] px-3 py-3 text-center">
-                  <p className="text-[9px] font-bold text-[#9BBFC3] uppercase tracking-wider leading-tight mb-1">{label}</p>
-                  <p className="font-extrabold text-sm leading-tight" style={{ color }}>{val}</p>
+                        title={
+                          isDone
+                            ? `Week ${weekNum}: ${result && result.profit >= 0 ? "+" : ""}$${(result?.profit ?? 0).toFixed(2)}`
+                            : `Week ${weekNum}`
+                        }
+                      />
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-
-            {/* Live projections */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4 flex flex-col gap-3">
-              <p className="text-xs font-bold text-[#9BBFC3] uppercase tracking-wider">
-                This Week's Projection
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "Est. Demand",  val: `~${proj.finalDemand} units`,   color: "#2B2B2B" },
-                  { label: "Your Supply",  val: `${proj.supply} units`,          color: "#2B2B2B" },
-                  { label: "Est. Revenue", val: `+${fd(proj.revenue)}`,          color: "#16a34a" },
-                  { label: "Est. Costs",   val: `-${fd(proj.totalCost)}`,        color: "#F36C3D" },
-                ].map(({ label, val, color }) => (
-                  <div key={label} className="bg-[#F7F9FA] rounded-xl px-3 py-2">
-                    <p className="text-[10px] font-bold text-[#9BBFC3] uppercase tracking-wider">{label}</p>
-                    <p className="font-extrabold text-sm mt-0.5" style={{ color }}>{val}</p>
-                  </div>
-                ))}
               </div>
-
-              {/* Projected profit — full width */}
-              {(() => {
-                const lastWeekProfit = simState.weeklyResults.length > 0
-                  ? simState.weeklyResults[simState.weeklyResults.length - 1].profit
-                  : null;
-                const delta = lastWeekProfit !== null ? proj.profit - lastWeekProfit : null;
-                return (
-                  <div
-                    className="rounded-xl px-4 py-3 flex items-center justify-between"
-                    style={{ background: proj.profit >= 0 ? "#EAF7F9" : "#FFF5F0" }}
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-[#2B2B2B]">Est. Profit</span>
-                      {delta !== null && (
-                        <span className="text-[10px] font-semibold" style={{ color: delta >= 0 ? "#16a34a" : "#ef4444" }}>
-                          {delta >= 0 ? "▲" : "▼"} {delta >= 0 ? "+" : "-"}${Math.abs(delta).toFixed(2)} vs last week
-                        </span>
-                      )}
-                    </div>
-                    <span
-                      className="text-xl font-extrabold"
-                      style={{ color: proj.profit >= 0 ? "#5DB7C4" : "#ef4444" }}
-                    >
-                      {proj.profit >= 0 ? "+" : "-"}{fd(proj.profit)}
-                    </span>
-                  </div>
-                );
-              })()}
-
-              {proj.finalDemand > proj.supply && (
-                <p className="text-xs text-[#F36C3D] font-semibold text-center">
-                  ⚠️ You might run out! Demand (~{proj.finalDemand}) &gt; your supply ({proj.supply})
-                </p>
-              )}
             </div>
 
-            {/* Satisfaction bar */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4">
-              <SatisfactionBar score={simState.satisfaction} />
-              <p className="text-[10px] text-[#9BBFC3] mt-2 font-semibold">
-                Satisfied customers come back and tell their friends!
-              </p>
-            </div>
-
-            {/* Cash history */}
-            <div className="bg-white rounded-2xl border border-[#E0EFF1] px-4 py-4">
-              <WeekHistoryBar history={simState.cashHistory} />
-            </div>
           </div>
         </div>
       </main>
 
-      {/* Weekly summary modal */}
-      {pendingResult && (
-        <SummaryModal
-          result={pendingResult.result}
+      <div className="px-4 sm:px-6 pb-4 -mt-4">
+        <div className="w-full max-w-5xl mx-auto flex justify-center">
+          <img
+            src={stand}
+            alt="Stand"
+            className="w-full max-w-[640px] h-auto select-none pointer-events-none"
+          />
+        </div>
+      </div>
+
+      {pendingWeek && (
+        <WeekResultModal
           week={simState.week}
+          result={pendingWeek.result}
+          lesson={pendingWeek.lesson}
           onNext={handleNextWeek}
-          tip={weeklyTip}
         />
       )}
     </div>

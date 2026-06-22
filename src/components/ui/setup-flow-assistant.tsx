@@ -2,6 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Bot, MessageCircle, Send, X } from "lucide-react";
 import { useAppState } from "@/context/AppStateContext";
+import { MarkdownMessage } from "@/components/ui/markdown-message";
+import { AI_PROVIDER, generateAI, type AIProgress, type AIWarning } from "@/lib/ai-provider";
+import { setupAssistantTemplate } from "@/lib/ai-templates";
+ 
+import { askOpenRouter } from "@/lib/openrouter-ai";
+import { extractJsonObject } from "@/lib/safe-json";
 import type {
   AppState,
   FixedCostCategory,
@@ -34,19 +40,6 @@ interface ApiMessage {
   tool_call_id?: string;
 }
 
-interface ApiResponse {
-  choices?: Array<{
-    message?: {
-      content?: string;
-      tool_calls?: ToolCall[];
-      function_call?: {
-        name?: string;
-        arguments?: unknown;
-      };
-    };
-  }>;
-}
-
 interface ToastMessage {
   id: string;
   text: string;
@@ -65,8 +58,6 @@ interface ToolOutcomeError {
 
 type ToolOutcome = ToolOutcomeSuccess | ToolOutcomeError;
 
-const MODEL_NAME = "google/gemini-2.0-flash-001";
-const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_AGENT_STEPS = 4;
 const API_TIMEOUT_MS = 10000;
 const FIXED_COST_CATEGORIES: FixedCostCategory[] = [
@@ -87,7 +78,9 @@ Rules you must always follow:
 4. Validate before acting: amounts must be positive numbers, names must not be empty
 5. After every successful tool call, confirm what you changed in one friendly sentence
 6. If the user's message is unclear or missing details, always ask_clarification first
-7. Keep all messages short and friendly, written for kids aged 8-12`;
+7. Keep all messages short and friendly, written for kids aged 8-12
+8. Do not reveal hidden reasoning; return only the requested response or JSON
+/no_think`;
 
 const JS_TOOLS = [
   {
@@ -214,12 +207,16 @@ function formatMoney(value: number): string {
 
 function buildStateSystemNote(state: AppState): string {
   const visibleState = {
+    journeyMode: state.journeyMode,
     productInfo: {
       name: state.productInfo.productName,
       description: state.productInfo.productDescription,
       targetCustomer: state.productInfo.targetCustomer,
       specialFeature: state.productInfo.specialFeature,
       category: state.productInfo.category,
+      currentChallenge: state.productInfo.currentChallenge,
+      improvementGoal: state.productInfo.improvementGoal,
+      inspiration: state.productInfo.inspiration,
     },
     fixedCosts: state.fixedCosts.map((item) => ({
       id: item.id,
@@ -288,12 +285,15 @@ export function SetupFlowAssistant() {
   const [retryInput, setRetryInput] = useState<string | null>(null);
   const [conversation, setConversation] = useState<ChatMessage[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [aiWarning, setAIWarning] = useState<AIWarning | null>(null);
+  const [localAIProgress, setLocalAIProgress] = useState<AIProgress | null>(null);
 
   const stateRef = useRef(state);
   const conversationRef = useRef(conversation);
   const panelOpenRef = useRef(isOpen);
   const toastTimeoutsRef = useRef<number[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastInputRef = useRef("");
 
   useEffect(() => {
     stateRef.current = state;
@@ -345,44 +345,22 @@ export function SetupFlowAssistant() {
   };
 
   const callApi = async (messages: ApiMessage[]) => {
-    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-    if (!apiKey) throw new Error("Missing OpenRouter API key");
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
-    let response: Response;
     try {
-      response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: MODEL_NAME,
-          messages,
-          tools: JS_TOOLS,
-          tool_choice: "auto",
-        }),
+      const message = await askOpenRouter({
+        messages,
+        tools: JS_TOOLS,
+        toolChoice: "auto",
         signal: controller.signal,
       });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        throw new Error("REQUEST_TIMEOUT");
-      }
-      throw error;
+      return {
+        ...message,
+        tool_calls: message.tool_calls as ToolCall[] | undefined,
+      };
     } finally {
       window.clearTimeout(timeoutId);
     }
-
-    if (!response.ok) {
-      throw new Error(`OpenRouter API error ${response.status}`);
-    }
-
-    const data = (await response.json()) as ApiResponse;
-    const message = data.choices?.[0]?.message;
-    if (!message) throw new Error("No assistant response from API");
-    return message;
   };
 
   const executeTool = (toolName: string, args: Record<string, unknown> | null): ToolOutcome => {
@@ -597,7 +575,60 @@ export function SetupFlowAssistant() {
     return { ok: false, error: `Unknown tool: ${toolName}` };
   };
 
+  const runLocalOrTemplateTurn = async (userInput: string, priorHistory: ChatMessage[]) => {
+    const fallback = setupAssistantTemplate(userInput);
+    const prompt = `${SYSTEM_PROMPT}
+
+Instead of calling tools directly, return ONLY one JSON object.
+To make a change: {"tool":"tool_name","args":{...}}
+To ask a question or explain: {"response":"short kid-friendly message"}
+Allowed tools and arguments:
+- update_selling_price: {"price": number}
+- set_product_info: {"field":"name|description|targetCustomer|specialFeature|category","value": string}
+- add_fixed_cost: {"name": string,"amount": number,"type":"one-time|monthly","months": number when one-time,"category":"Equipment|Rent|Supplies|Packaging|Other"}
+- add_variable_cost: {"name": string,"pricePerPack": number,"unitsPerPack": number,"unitsPerProduct": number}
+
+${buildStateSystemNote(stateRef.current)}
+Recent conversation: ${JSON.stringify(priorHistory.slice(-6))}
+User request: ${userInput}`;
+    const result = await generateAI({
+      messages: [{ role: "user", content: prompt }],
+      template: () => JSON.stringify(fallback),
+      maxTokens: 250,
+      temperature: 0.2,
+      jsonMode: true,
+      onProgress: setLocalAIProgress,
+    });
+    setLocalAIProgress(null);
+    setAIWarning(result.warning ?? null);
+
+    const parsed: Record<string, unknown> =
+      extractJsonObject(result.text) ?? (fallback as unknown as Record<string, unknown>);
+    if (typeof parsed.response === "string" && parsed.response.trim()) {
+      return parsed.response.trim();
+    }
+    const toolName = typeof parsed.tool === "string" ? parsed.tool : "";
+    const args = parsed.args && typeof parsed.args === "object" && !Array.isArray(parsed.args)
+      ? (parsed.args as Record<string, unknown>)
+      : null;
+    if (!toolName || !args) {
+      return fallback && "response" in fallback
+        ? fallback.response
+        : "Tell me one change you want to make, and I'll help!";
+    }
+    const outcome = executeTool(toolName, args);
+    if (!outcome.ok) {
+      return `I couldn't make that change yet: ${outcome.error} Please add the missing detail and try again.`;
+    }
+    addToast(outcome.toast);
+    return outcome.result;
+  };
+
   const runAgentTurn = async (userInput: string, priorHistory: ChatMessage[]) => {
+    if (AI_PROVIDER !== "openrouter") {
+      return runLocalOrTemplateTurn(userInput, priorHistory);
+    }
+
     let workingMessages: ApiMessage[] = [
       { role: "system", content: SYSTEM_PROMPT },
       ...priorHistory.map((message) => ({
@@ -698,19 +729,21 @@ export function SetupFlowAssistant() {
     const userMessage: ChatMessage = { role: "user", content: text };
     setConversation((prev) => [...prev, userMessage]);
     setInputValue("");
+    lastInputRef.current = text;
     setRetryInput(null);
     setIsResponding(true);
 
     try {
       const assistantText = await runAgentTurn(text, priorHistory);
       addAssistantMessage(assistantText);
-    } catch (error) {
-      if (error instanceof Error && error.message === "REQUEST_TIMEOUT") {
-        addAssistantMessage("That took too long. Tap retry and I'll try again.");
-        setRetryInput(text);
-      } else {
-        addAssistantMessage("I hit a connection issue. Please try again in a moment.");
-      }
+    } catch {
+      const fallback = setupAssistantTemplate(text);
+      addAssistantMessage(
+        "response" in fallback
+          ? fallback.response
+          : "The AI helper is unavailable, but you can keep editing your setup with the page controls."
+      );
+      setRetryInput(text);
     } finally {
       setIsResponding(false);
     }
@@ -724,12 +757,8 @@ export function SetupFlowAssistant() {
       const assistantText = await runAgentTurn(retryInput, priorHistory);
       addAssistantMessage(assistantText);
       setRetryInput(null);
-    } catch (error) {
-      if (error instanceof Error && error.message === "REQUEST_TIMEOUT") {
-        addAssistantMessage("Still timing out. Please check your connection and try again.");
-      } else {
-        addAssistantMessage("I still can't reach the AI right now. Please try again.");
-      }
+    } catch {
+      addAssistantMessage("The AI helper is still unavailable, but you can keep editing your setup with the page controls.");
     } finally {
       setIsResponding(false);
     }
@@ -777,6 +806,15 @@ export function SetupFlowAssistant() {
           </div>
 
           <div className="h-[340px] overflow-y-auto px-3 py-3 bg-[#FBFEFF]">
+            {(localAIProgress || aiWarning) && (
+              <div className="mb-2 rounded-xl border border-[#A9DDE3] bg-[#F0FAFB] px-3 py-2 text-xs text-[#2B2B2B]">
+                <p className="font-semibold">
+                  {localAIProgress
+                    ? `${Math.round(localAIProgress.progress * 100)}% — ${localAIProgress.text}`
+                    : aiWarning?.message}
+                </p>
+              </div>
+            )}
             {conversation.length === 0 && (
               <div className="rounded-xl border border-[#D9EDF0] bg-white px-3 py-2.5 text-xs text-[#5B7780]">
                 Ask me to add costs, update price, or fix product details.
@@ -796,7 +834,11 @@ export function SetupFlowAssistant() {
                         : "bg-white border border-[#A9DDE3] text-[#2B2B2B] rounded-tl-sm"
                     }`}
                   >
-                    {message.content}
+                    {message.role === "assistant" ? (
+                      <MarkdownMessage>{message.content}</MarkdownMessage>
+                    ) : (
+                      message.content
+                    )}
                   </div>
                 </div>
               ))}

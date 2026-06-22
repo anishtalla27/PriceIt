@@ -76,7 +76,8 @@ export default function SimulateSetupPage() {
   const location = useLocation();
   const { state, updateSimConfig } = useAppState();
   const { productInfo, fixedCosts, variableCosts, pricing, simConfig } = state;
-  const [flowNotice, setFlowNotice] = useState<string | null>(null);
+  const routeMessage = (location.state as { message?: string } | null)?.message ?? null;
+  const [flowNotice] = useState<string | null>(routeMessage);
 
   // ── derived numbers ──────────────────────────────────────────────────────
   const totalMonthlyFixed = fixedCosts.reduce((s, i) => s + fixedMonthly(i), 0);
@@ -127,12 +128,10 @@ export default function SimulateSetupPage() {
   }, [cash, weekly, quality]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const routeState = location.state as { message?: string } | null;
-    if (routeState?.message) {
-      setFlowNotice(routeState.message);
+    if (routeMessage) {
       navigate(location.pathname, { replace: true, state: null });
     }
-  }, [location.pathname, location.state, navigate]);
+  }, [location.pathname, navigate, routeMessage]);
 
   const canStart = cash !== "" && Number(cash) >= 50 && weekly !== "" && Number(weekly) >= 1;
 

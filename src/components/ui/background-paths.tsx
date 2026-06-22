@@ -2,7 +2,9 @@
 
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ChronicleButton } from "@/components/ui/chronicle-button";
+import { ArrowRight, Lightbulb, TrendingUp } from "lucide-react";
+import { useAppState } from "@/context/AppStateContext";
+import type { JourneyMode } from "@/context/AppStateContext";
 import logo from "../../../logo.png";
 
 function FloatingPaths({
@@ -60,6 +62,12 @@ function FloatingPaths({
 export function BackgroundPaths({ title = "PriceIt!" }: { title?: string }) {
     const words = title.split(" ");
     const navigate = useNavigate();
+    const { beginJourney } = useAppState();
+
+    const start = (mode: JourneyMode) => {
+        beginJourney(mode);
+        navigate("/setup");
+    };
 
     return (
         <div
@@ -86,7 +94,7 @@ export function BackgroundPaths({ title = "PriceIt!" }: { title?: string }) {
                     transition={{ duration: 1 }}
                     className="mx-auto max-w-4xl"
                 >
-                    <h1 className="mb-14 text-7xl font-bold leading-[0.9] tracking-tighter text-[#2B2B2B] sm:text-8xl md:text-[11rem]">
+                    <h1 className="mb-4 text-6xl font-bold leading-[0.9] tracking-tighter text-[#2B2B2B] sm:text-7xl md:text-8xl">
                         {words.map((word, wordIndex) => (
                             <span
                                 key={wordIndex}
@@ -114,17 +122,44 @@ export function BackgroundPaths({ title = "PriceIt!" }: { title?: string }) {
                         ))}
                     </h1>
 
-                    <div className="mt-2 inline-block rounded-2xl border border-[#A9DDE3] bg-white/90 p-1 shadow-sm">
-                        <ChronicleButton
-                            text="Let's Start →"
-                            onClick={() => navigate("/setup")}
-                            hoverColor="#F36C3D"
-                            customBackground="#5DB7C4"
-                            customForeground="#ffffff"
-                            hoverForeground="#ffffff"
-                            width="220px"
-                            borderRadius="18px"
-                        />
+                    <p className="mx-auto mb-8 max-w-2xl text-base text-[#5B7780] sm:text-lg">
+                        Build the numbers behind a new idea or find the smartest next move for a product you already sell.
+                    </p>
+
+                    <div className="mx-auto grid max-w-3xl gap-4 text-left md:grid-cols-2">
+                        <button
+                            type="button"
+                            onClick={() => start("create")}
+                            className="group rounded-3xl border border-[#A9DDE3] bg-white/90 p-6 shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:border-[#5DB7C4]"
+                        >
+                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF7F9] text-[#337F89]">
+                                <Lightbulb className="h-6 w-6" />
+                            </span>
+                            <span className="block text-xl font-extrabold text-[#2B2B2B]">Create a new product</span>
+                            <span className="mt-2 block text-sm leading-relaxed text-[#6F8A91]">
+                                Turn an idea into a product plan, calculate costs, choose a price, and test it.
+                            </span>
+                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-[#337F89]">
+                                Start creating <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => start("improve")}
+                            className="group rounded-3xl border border-[#F7BEA8] bg-white/90 p-6 shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:border-[#F36C3D]"
+                        >
+                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF1EA] text-[#D6532B]">
+                                <TrendingUp className="h-6 w-6" />
+                            </span>
+                            <span className="block text-xl font-extrabold text-[#2B2B2B]">Improve a current product</span>
+                            <span className="mt-2 block text-sm leading-relaxed text-[#6F8A91]">
+                                Review what you sell today, identify the problem, rework costs and pricing, and compare improvements.
+                            </span>
+                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-[#D6532B]">
+                                Start improving <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                            </span>
+                        </button>
                     </div>
                 </motion.div>
             </div>

@@ -363,8 +363,11 @@ function EditCard({
               </p>
             )}
             {!monthsError && (
-              <p className="mt-1 text-[11px] text-[#7B9EA3]">
-                Drag to spread this one-time cost over months.
+              <p className="mt-1 text-[11px] text-[#7B9EA3] leading-relaxed">
+                How long will you use this item? The cost gets spread across those months.{" "}
+                <span className="font-semibold text-[#F36C3D]">
+                  Example: a $24 tool used for 12 months = $2/month.
+                </span>
               </p>
             )}
           </div>
@@ -403,6 +406,7 @@ function EditCard({
 export default function FixedCostsPage() {
   const navigate = useNavigate();
   const { state, addFixedCost, updateFixedCost, deleteFixedCost } = useAppState();
+  const mode = state.journeyMode ?? "create";
   const { fixedCosts } = state;
 
   // IDs of cards currently open in edit mode
@@ -477,7 +481,7 @@ export default function FixedCostsPage() {
   }, []);
 
   const total = fixedCosts.reduce((sum, item) => sum + monthlyPortion(item), 0);
-  const canProceed = fixedCosts.length > 0 && fixedCosts.every(isRowComplete);
+  const canProceed = fixedCosts.every(isRowComplete);
 
   return (
     <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
@@ -495,27 +499,38 @@ export default function FixedCostsPage() {
 
       <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5">
         <div className="w-full max-w-lg">
-          <ProgressSteps currentStep={2} />
+          <ProgressSteps currentStep={2} mode={mode} />
 
           {/* Page title */}
           <div className="mb-4 text-center">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
-              What are your fixed costs?
+              {mode === "improve" ? "Review your current fixed costs" : "What are your fixed costs?"}
             </h1>
             <p className="mt-1 text-[#7B9EA3] text-sm">
-              These are costs you pay no matter how many you sell.
+              {mode === "improve"
+                ? "Use what you pay today so the improvement plan starts from real numbers."
+                : "These are costs you pay no matter how many you sell — like rent, equipment, or subscriptions. Service businesses with no overhead can skip this step."}
             </p>
           </div>
 
           {/* Cost item cards */}
           <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
             {fixedCosts.length === 0 && (
-              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-8 text-center">
-                <p className="text-3xl mb-2">🏷️</p>
-                <p className="text-[#7B9EA3] font-semibold text-sm">No costs yet! Hit "Add Fixed Cost" to get started 💸</p>
-                <p className="text-[#B0C4C7] text-xs mt-0.5">
-                  Add things like rent, equipment, or supplies.
-                </p>
+              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-8 px-5 text-center flex flex-col items-center gap-3">
+                <p className="text-3xl">🏷️</p>
+                <div>
+                  <p className="text-[#7B9EA3] font-semibold text-sm">No fixed costs added yet.</p>
+                  <p className="text-[#B0C4C7] text-xs mt-0.5">
+                    Add things like rent, equipment, or supplies — or skip if your business has none.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/setup/variable-costs")}
+                  className="mt-1 rounded-xl border-2 border-[#C8E0E4] bg-white px-5 py-2.5 text-sm font-bold text-[#5DB7C4] hover:border-[#5DB7C4] hover:bg-[#EAF7F9] transition-colors"
+                >
+                  I have no fixed costs — skip this step →
+                </button>
               </div>
             )}
 

@@ -4,6 +4,10 @@ import { useAppState } from "@/context/AppStateContext";
 import type { FixedCostItem, VariableCostItem } from "@/context/AppStateContext";
 import { ChronicleButton } from "@/components/ui/chronicle-button";
 import { ProgressSteps } from "@/components/ui/progress-steps";
+import { MarkdownMessage } from "@/components/ui/markdown-message";
+import { generateAI, type AIProgress, type AIWarning } from "@/lib/ai-provider";
+import { businessRatingTemplate, customerReviewsTemplate } from "@/lib/ai-templates";
+import { extractJsonObject } from "@/lib/safe-json";
 import {
   ChartContainer,
   ChartLegend,
@@ -13,6 +17,7 @@ import {
 } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis } from "recharts";
+import { Bot, ThumbsUp, Lightbulb, Send, ChevronDown, ChevronUp } from "lucide-react";
 import logo from "../../logo.png";
 
 // ─── cost math (mirrors PricingPage) ─────────────────────────────────────────
@@ -39,12 +44,35 @@ interface BusinessRating {
   verdict: string;
 }
 
+interface AIFeedbackSummary {
+  praises: string[];
+  improvements: string[];
+}
+
 interface CustomerReview {
   name: string;
   age: number;
   rating: number; // 1–5
   text: string;
   tag: "Love it ❤️" | "Needs work 🔧";
+}
+
+type ChatRole = "user" | "assistant";
+interface ChatMessage {
+  role: ChatRole;
+  content: string;
+}
+
+function isCustomerReview(value: unknown): value is CustomerReview {
+  if (!value || typeof value !== "object") return false;
+  const review = value as Record<string, unknown>;
+  return (
+    typeof review.name === "string" &&
+    typeof review.age === "number" &&
+    typeof review.rating === "number" &&
+    typeof review.text === "string" &&
+    (review.tag === "Love it ❤️" || review.tag === "Needs work 🔧")
+  );
 }
 
 // ─── star renderer ────────────────────────────────────────────────────────────
@@ -86,17 +114,18 @@ function Stars({
 
 // ─── loading screen ───────────────────────────────────────────────────────────
 
-function LoadingScreen() {
+const LOADING_MESSAGES = [
+  "Crunching your numbers... 🧮",
+  "Asking our business experts... 💼",
+  "Reading customer minds... 🔮",
+  "Almost ready... ✨",
+];
+
+function LoadingScreen({ progress }: { progress: AIProgress | null }) {
   const [msgIdx, setMsgIdx] = useState(0);
-  const messages = [
-    "Crunching your numbers... 🧮",
-    "Asking our business experts... 💼",
-    "Reading customer minds... 🔮",
-    "Almost ready... ✨",
-  ];
 
   useEffect(() => {
-    const id = setInterval(() => setMsgIdx((p) => (p + 1) % messages.length), 1500);
+    const id = setInterval(() => setMsgIdx((p) => (p + 1) % LOADING_MESSAGES.length), 1500);
     return () => clearInterval(id);
   }, []);
 
@@ -111,7 +140,7 @@ function LoadingScreen() {
         <div className="h-2 rounded-full bg-[#E0EFF1] overflow-hidden">
           <div
             className="h-full rounded-full bg-[#5DB7C4]"
-            style={{ width: `${((msgIdx + 1) / messages.length) * 100}%`, transition: "width 900ms ease" }}
+            style={{ width: `${progress ? progress.progress * 100 : ((msgIdx + 1) / LOADING_MESSAGES.length) * 100}%`, transition: "width 900ms ease" }}
           />
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -121,9 +150,11 @@ function LoadingScreen() {
           className="text-lg font-bold text-[#2B2B2B] transition-all duration-500"
           key={msgIdx}
         >
-          {messages[msgIdx]}
+          {progress?.text || LOADING_MESSAGES[msgIdx]}
         </p>
-        <p className="text-sm text-[#9BBFC3] mt-1">This takes about 10 seconds</p>
+        <p className="text-sm text-[#9BBFC3] mt-1">
+          {progress ? `${Math.round(progress.progress * 100)}% loaded` : "Getting your results ready"}
+        </p>
       </div>
     </div>
   );
@@ -186,6 +217,56 @@ function ReviewCard({ review }: { review: CustomerReview }) {
         </span>
       </div>
       <p className="text-xs text-[#5B7780] leading-relaxed">{review.text}</p>
+    </div>
+  );
+}
+
+// ─── chat components ──────────────────────────────────────────────────────────
+
+function ChatTypingIndicator() {
+  return (
+    <div className="flex justify-start items-end gap-2">
+      <div className="h-8 w-8 rounded-full border border-[#A9DDE3] bg-white flex items-center justify-center shadow-sm flex-shrink-0">
+        <Bot className="h-4 w-4 text-[#5DB7C4]" />
+      </div>
+      <div className="bg-white border border-[#A9DDE3] rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1.5 items-center shadow-sm">
+        <style>{`
+          @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+          }
+        `}</style>
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-2 h-2 rounded-full bg-[#5DB7C4]"
+            style={{ animation: `typingBounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChatBubble({ msg }: { msg: ChatMessage }) {
+  const isAI = msg.role === "assistant";
+  if (isAI) {
+    return (
+      <div className="flex justify-start items-end gap-2">
+        <div className="h-8 w-8 rounded-full border border-[#A9DDE3] bg-white flex items-center justify-center shadow-sm flex-shrink-0">
+          <Bot className="h-4 w-4 text-[#5DB7C4]" />
+        </div>
+        <div className="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm bg-white border border-[#A9DDE3] text-[#2B2B2B] rounded-tl-sm">
+          <MarkdownMessage>{msg.content}</MarkdownMessage>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex justify-end">
+      <div className="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm bg-[#5DB7C4] text-white rounded-tr-sm">
+        {msg.content}
+      </div>
     </div>
   );
 }
@@ -328,62 +409,13 @@ function MonthlyBarChart({
   );
 }
 
-// ─── OpenRouter API helper ────────────────────────────────────────────────────
-
-async function callOpenRouter(prompt: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-  if (!apiKey || apiKey === "your-api-key-here") {
-    throw new Error("VITE_OPENROUTER_API_KEY is not set in your .env file.");
-  }
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 10000);
-  let res: Response;
-  try {
-    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.0-flash-001",
-        max_tokens: 1500,
-        messages: [{ role: "user", content: prompt }],
-      }),
-      signal: controller.signal,
-    });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("REQUEST_TIMEOUT");
-    }
-    throw error;
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`API error ${res.status}: ${err}`);
-  }
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") {
-    throw new Error("OpenRouter response missing message content.");
-  }
-  return content;
-}
-
-function extractJson(text: string): unknown {
-  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
-  if (!match) throw new Error("No JSON found in response");
-  return JSON.parse(match[1]);
-}
-
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function ResultsPage() {
   const navigate = useNavigate();
   const { state } = useAppState();
   const { productInfo, fixedCosts, variableCosts, pricing } = state;
+  const mode = state.journeyMode ?? "create";
   const productInfoComplete =
     productInfo.productName.trim() !== "" &&
     productInfo.productDescription.trim() !== "" &&
@@ -408,7 +440,19 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [errorType, setErrorType] = useState<"none" | "timeout" | "generic">("none");
   const [businessRating, setBusinessRating] = useState<BusinessRating | null>(null);
+  const [feedbackSummary, setFeedbackSummary] = useState<AIFeedbackSummary | null>(null);
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [aiWarning, setAIWarning] = useState<AIWarning | null>(null);
+  const [localAIProgress, setLocalAIProgress] = useState<AIProgress | null>(null);
+
+  // Chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatTyping, setChatTyping] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
   const hasRunRef = useRef(false);
 
   const fmt2 = (n: number) => n.toFixed(2);
@@ -420,6 +464,10 @@ Description: ${productInfo.productDescription || "No description"}
 Target customer: ${productInfo.targetCustomer || "Not specified"}
 Special feature: ${productInfo.specialFeature || "None"}
 Category: ${productInfo.category || "Other"}
+Journey: ${mode === "improve" ? "Improve an existing product" : "Create a new product"}
+Current challenge: ${productInfo.currentChallenge || "Not applicable"}
+Improvement goal: ${productInfo.improvementGoal || "Not applicable"}
+Inspiration: ${productInfo.inspiration || "Not provided"}
 
 Fixed costs (monthly total): $${fmt2(totalMonthlyFixed)}
 Variable cost per unit: $${fmt2(totalVariablePerUnit)}
@@ -438,6 +486,7 @@ Estimated units per month: ${unitsPerMonth}
     profitPerUnit,
     marginPct,
     unitsPerMonth,
+    mode,
   ]);
 
   useEffect(() => {
@@ -456,19 +505,17 @@ Estimated units per month: ${unitsPerMonth}
     }
   }, [missingPricing, productInfoComplete, navigate]);
 
-  if (missingPricing || !productInfoComplete) {
-    return null;
-  }
-
   const runAnalysis = useCallback(async () => {
     setLoading(true);
     setErrorType("none");
     setBusinessRating(null);
+    setFeedbackSummary(null);
     setReviews([]);
+    setAIWarning(null);
 
     const ctx = buildContext();
 
-    const ratingPrompt = `You are a friendly business mentor for kids aged 8-12. A kid has created a business plan. Evaluate it honestly but encouragingly.
+    const ratingPrompt = `You are a friendly business mentor for kids aged 8-12. A kid is ${mode === "improve" ? "improving an existing product" : "creating a new product"}. Evaluate the plan honestly but encouragingly. ${mode === "improve" ? "Judge whether the new numbers and plan address the stated challenge and improvement goal." : "Judge whether the new product plan is financially sensible."}
 
 Business data:
 ${ctx}
@@ -476,36 +523,119 @@ ${ctx}
 Rate this business idea. Return ONLY valid JSON (no markdown, no explanation) in this exact format:
 {"rating": <number from 0 to 5 in 0.5 increments>, "verdict": "<2-3 sentence honest but encouraging verdict written for a kid>"}`;
 
-    const reviewPrompt = `You are generating realistic fake customer reviews for a kid's business project.
+    const feedbackPrompt = `You are a business mentor for kids aged 8-12. Analyze this business plan and give specific, grounded feedback.
 
 Business data:
 ${ctx}
 
-Generate exactly 10 realistic customer reviews. Mix positive and constructive feedback. Each reviewer is either a kid (age 8-14) or a parent (age 28-45). Make names and ages varied and realistic.
+Return ONLY valid JSON (no markdown) in this exact format:
+{"praises": ["...", "...", "..."], "improvements": ["...", "...", "..."]}
+
+Rules:
+- praises: exactly 3 things that are genuinely working well. Reference actual details like the product name, special feature, target customer, price, or margin. Be specific and encouraging.
+- improvements: exactly 3 concrete, actionable suggestions to make the business stronger. Be specific — name the numbers, suggest actual changes (e.g. "raise your price by $2", "cut packaging costs", "target a new audience"). Kid-friendly language.
+- Do NOT invent facts not in the business data.
+- Write for a kid aged 8-12. Keep each item to 1-2 sentences.`;
+
+    const reviewPrompt = `You are generating realistic customer reviews for a kid's business project.
+
+Business data:
+${ctx}
+
+Generate exactly 10 reviews. Mix positive (6-7) and constructive (3-4) feedback. Reviewers are a mix of kids (age 8-14) and parents/adults (age 28-45). Use varied, realistic names.
 
 Grounding rules (strict):
-- Use ONLY facts present in the Business data above.
-- Do NOT invent extra features, materials, promises, outcomes, shipping details, brand history, certifications, or user experiences not explicitly provided.
-- If information is missing, mention uncertainty naturally (for example: "I wish I knew more about ___") instead of making assumptions.
-- Keep review text focused on the known product description, target customer, special feature, category, and the provided business numbers.
+- Base every review on facts in the Business data above. Do NOT invent extra features, materials, history, or experiences not provided.
+- "Love it ❤️" reviews: praise 1-2 SPECIFIC things they love — the special feature, the product description, the target audience fit, or the value for money at $${fmt2(sellingPrice)}. Sound genuine and personal.
+- "Needs work 🔧" reviews: suggest ONE concrete improvement they'd want (e.g. lower price, a specific missing feature based on the category, packaging, availability). Honest but polite.
+- Make each review sound like a real person — vary sentence structure, use natural speech, avoid corporate language.
 
-Return ONLY valid JSON (no markdown) in this exact format:
+Return ONLY valid JSON (no markdown):
 {"reviews": [{"name": "string", "age": number, "rating": number (1-5 integer), "text": "2-3 sentences written naturally", "tag": "Love it ❤️" or "Needs work 🔧"}, ...]}
 
-Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings should match the tag (Love it = 4-5, Needs work = 1-3).`;
+Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings must match tag (Love it = 4-5, Needs work = 1-3).`;
 
     try {
-      const [ratingText, reviewText] = await Promise.all([
-        callOpenRouter(ratingPrompt),
-        callOpenRouter(reviewPrompt),
+      const templateInput = {
+        productName: productInfo.productName,
+        targetCustomer: productInfo.targetCustomer,
+        sellingPrice,
+        costPerUnit,
+        profitPerUnit,
+        marginPct,
+      };
+      const ratingFallback = businessRatingTemplate(templateInput);
+      const reviewsFallback = customerReviewsTemplate(templateInput);
+      const feedbackFallback: AIFeedbackSummary = {
+        praises: [
+          `${productInfo.productName} has a clear target customer in "${productInfo.targetCustomer}", which is a great start!`,
+          profitPerUnit > 0
+            ? `You're earning $${fmt2(profitPerUnit)} profit on every sale at your $${fmt2(sellingPrice)} price — that's real money!`
+            : `You've thought carefully about what your product costs to make, which is exactly the right first step.`,
+          `Your special feature — "${productInfo.specialFeature}" — gives customers a real reason to choose you.`,
+        ],
+        improvements: [
+          profitPerUnit > 0 && marginPct < 25
+            ? `Your profit margin is ${marginPct.toFixed(0)}%. Try raising your price by $1–2 to push it above 25% and give yourself more breathing room.`
+            : !profitPerUnit || profitPerUnit <= 0
+            ? `Your costs are higher than your selling price right now. Look for ways to reduce material costs or increase your price.`
+            : `Keep looking for bulk deals on your supplies — buying more at once often lowers your cost per item.`,
+          `Think about a simple marketing plan — even telling 10 friends or making a flyer can double your early customers.`,
+          `Consider offering a "starter pack" or bundle deal to encourage people to buy more than one at a time.`,
+        ],
+      };
+
+      const [ratingResult, feedbackResult, reviewResult] = await Promise.all([
+        generateAI({
+          messages: [{ role: "user", content: ratingPrompt }],
+          template: () => JSON.stringify(ratingFallback),
+          maxTokens: 300,
+          temperature: 0.2,
+          jsonMode: true,
+          onProgress: setLocalAIProgress,
+        }),
+        generateAI({
+          messages: [{ role: "user", content: feedbackPrompt }],
+          template: () => JSON.stringify(feedbackFallback),
+          maxTokens: 600,
+          temperature: 0.3,
+          jsonMode: true,
+          onProgress: setLocalAIProgress,
+        }),
+        generateAI({
+          messages: [{ role: "user", content: reviewPrompt }],
+          template: () => JSON.stringify({ reviews: reviewsFallback }),
+          maxTokens: 1400,
+          temperature: 0.5,
+          jsonMode: true,
+          onProgress: setLocalAIProgress,
+        }),
       ]);
 
-      const ratingData = extractJson(ratingText) as { rating: number; verdict: string };
-      const reviewData = extractJson(reviewText) as { reviews: CustomerReview[] };
+      setAIWarning(ratingResult.warning ?? feedbackResult.warning ?? reviewResult.warning ?? null);
 
-      setBusinessRating({ rating: ratingData.rating, verdict: ratingData.verdict });
-      const rawReviews = Array.isArray(reviewData.reviews) ? reviewData.reviews : [];
-      setReviews(rawReviews.slice(0, 10));
+      const ratingData = extractJsonObject(ratingResult.text);
+      const rating = Number(ratingData?.rating);
+      const verdict = ratingData?.verdict;
+      setBusinessRating(
+        Number.isFinite(rating) && typeof verdict === "string"
+          ? { rating: Math.max(0, Math.min(5, Math.round(rating * 2) / 2)), verdict }
+          : ratingFallback
+      );
+
+      const feedbackData = extractJsonObject(feedbackResult.text);
+      const praises = Array.isArray(feedbackData?.praises) ? feedbackData.praises.filter((s): s is string => typeof s === "string") : [];
+      const improvements = Array.isArray(feedbackData?.improvements) ? feedbackData.improvements.filter((s): s is string => typeof s === "string") : [];
+      setFeedbackSummary(
+        praises.length >= 2 && improvements.length >= 2
+          ? { praises, improvements }
+          : feedbackFallback
+      );
+
+      const rawReviews = Array.isArray(reviewResult.text ? extractJsonObject(reviewResult.text)?.reviews : null)
+        ? (extractJsonObject(reviewResult.text)?.reviews as unknown[]).filter(isCustomerReview)
+        : reviewsFallback;
+      setReviews(rawReviews.length >= 10 ? rawReviews.slice(0, 10) : reviewsFallback);
     } catch (e) {
       console.error(e);
       if (e instanceof Error && e.message === "REQUEST_TIMEOUT") {
@@ -515,14 +645,80 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings sho
       }
     } finally {
       setLoading(false);
+      setLocalAIProgress(null);
     }
-  }, [buildContext]);
+  }, [buildContext, costPerUnit, marginPct, mode, productInfo, profitPerUnit, sellingPrice, fmt2]);
 
   useEffect(() => {
+    if (missingPricing || !productInfoComplete) return;
     if (hasRunRef.current) return;
     hasRunRef.current = true;
     runAnalysis();
-  }, [runAnalysis]);
+  }, [missingPricing, productInfoComplete, runAnalysis]);
+
+  // Chat scroll to bottom
+  useEffect(() => {
+    if (chatOpen) {
+      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, chatTyping, chatOpen]);
+
+  // Open chat and send welcome message
+  const openChat = useCallback(async () => {
+    setChatOpen(true);
+    if (chatMessages.length > 0) return;
+    setChatTyping(true);
+    const ctx = buildContext();
+    const welcomePrompt = `You are a friendly business mentor for kids aged 8-12 named "Biz Bot". A kid has just finished setting up their business plan. Here is their business data:\n\n${ctx}\n\nGreet them warmly, briefly compliment one specific thing about their product (use details from the data above), and ask what question they have about their business. Keep it short — 2-3 sentences max. No lists. Kid-friendly language.`;
+    try {
+      const result = await generateAI({
+        messages: [{ role: "user", content: welcomePrompt }],
+        template: () => `Hi! Great job setting up your business plan for **${productInfo.productName}**! I'm here to help you think through any questions. What would you like to know?`,
+        maxTokens: 150,
+        temperature: 0.4,
+      });
+      setChatMessages([{ role: "assistant", content: result.text }]);
+    } catch {
+      setChatMessages([{ role: "assistant", content: `Hi! Great job setting up your business plan for **${productInfo.productName}**! I'm here to help you think through any questions. What would you like to know?` }]);
+    } finally {
+      setChatTyping(false);
+    }
+  }, [chatMessages.length, buildContext, productInfo.productName]);
+
+  const sendChatMessage = useCallback(async () => {
+    const text = chatInput.trim();
+    if (!text || chatTyping) return;
+    const userMsg: ChatMessage = { role: "user", content: text };
+    const next = [...chatMessages, userMsg];
+    setChatMessages(next);
+    setChatInput("");
+    setChatTyping(true);
+    const ctx = buildContext();
+    try {
+      const result = await generateAI({
+        messages: [
+          {
+            role: "system",
+            content: `You are Biz Bot, a friendly and encouraging business mentor for kids aged 8-12. The kid's business data:\n\n${ctx}\n\nAnswer questions about their business honestly and helpfully. Reference their specific product details whenever possible. Keep answers short (2-4 sentences), encouraging, and easy to understand. No jargon.`,
+          },
+          ...next.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+        ],
+        template: () => "That's a great question! Think about what your customers value most and use that to guide your decision.",
+        maxTokens: 200,
+        temperature: 0.5,
+      });
+      setChatMessages((prev) => [...prev, { role: "assistant", content: result.text }]);
+    } catch {
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "That's a great question! Think about what your customers value most and use that to guide your decision." },
+      ]);
+    } finally {
+      setChatTyping(false);
+    }
+  }, [chatInput, chatMessages, chatTyping, buildContext]);
+
+  if (missingPricing || !productInfoComplete) return null;
 
   return (
     <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
@@ -540,23 +736,29 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings sho
 
       <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5">
         <div className="w-full max-w-5xl">
-          <ProgressSteps currentStep={5} />
+          <ProgressSteps currentStep={5} mode={mode} />
 
           <div className="mb-4 text-center">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
-              Your Results!
+              {mode === "improve" ? "Your Improvement Plan" : "Your Results!"}
             </h1>
             <p className="mt-1 text-[#7B9EA3] text-sm">
-              Here's what our AI business experts think of{" "}
+              {mode === "improve" ? "Here's how the updated plan looks for " : "Here's what our AI business experts think of "}
               <strong>{productInfo.productName || "your product"}</strong>.
             </p>
           </div>
 
-          {loading && <LoadingScreen />}
+          {loading && <LoadingScreen progress={localAIProgress} />}
           {!loading && errorType !== "none" && <ErrorScreen onRetry={runAnalysis} isTimeout={errorType === "timeout"} />}
 
           {!loading && errorType === "none" && businessRating && (
             <div className="flex flex-col gap-4">
+              {aiWarning && (
+                <div className="rounded-xl border border-[#A9DDE3] bg-[#F0FAFB] px-4 py-3 text-sm text-[#2B2B2B]">
+                  <p className="font-semibold">{aiWarning.message}</p>
+                </div>
+              )}
+
               {/* ── Overall rating ── */}
               <section className="rounded-3xl border border-[#E0EFF1] bg-white/95 px-4 py-4 shadow-sm">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#9BBFC3] mb-2 text-center">
@@ -584,6 +786,119 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings sho
                   </div>
                 </div>
               </section>
+
+              {/* ── AI Feedback Summary ── */}
+              {feedbackSummary && (
+                <section className="rounded-3xl border border-[#E0EFF1] bg-white/95 px-4 py-4 shadow-sm">
+                  <div className="mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9BBFC3]">
+                      AI Feedback
+                    </p>
+                    <h2 className="text-base font-extrabold text-[#2B2B2B]">
+                      What's working & what to improve
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Praises */}
+                    <div className="rounded-2xl border border-[#D1FAE5] bg-[#F0FFF4] px-4 py-4 flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-[#22c55e] flex items-center justify-center flex-shrink-0">
+                          <ThumbsUp className="h-3.5 w-3.5 text-white" />
+                        </div>
+                        <p className="text-sm font-extrabold text-[#16a34a]">What's going great 🎉</p>
+                      </div>
+                      <ul className="flex flex-col gap-2">
+                        {feedbackSummary.praises.map((praise, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-[#22c55e] font-bold text-sm mt-0.5 flex-shrink-0">✓</span>
+                            <p className="text-xs text-[#166534] leading-relaxed">{praise}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {/* Improvements */}
+                    <div className="rounded-2xl border border-[#FED7AA] bg-[#FFF7ED] px-4 py-4 flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-[#F36C3D] flex items-center justify-center flex-shrink-0">
+                          <Lightbulb className="h-3.5 w-3.5 text-white" />
+                        </div>
+                        <p className="text-sm font-extrabold text-[#C2410C]">Ideas to level up 🚀</p>
+                      </div>
+                      <ul className="flex flex-col gap-2">
+                        {feedbackSummary.improvements.map((tip, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-[#F36C3D] font-bold text-sm mt-0.5 flex-shrink-0">{i + 1}.</span>
+                            <p className="text-xs text-[#7C2D12] leading-relaxed">{tip}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Chat with AI button */}
+                  <div className="mt-3">
+                    <button
+                      onClick={chatOpen ? () => setChatOpen(false) : openChat}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-[#A9DDE3] bg-[#F0FAFB] hover:bg-[#E0F5F8] transition-colors group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full border border-[#A9DDE3] bg-white flex items-center justify-center shadow-sm">
+                          <Bot className="h-4 w-4 text-[#5DB7C4]" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-bold text-[#2B2B2B]">Chat with your AI mentor</p>
+                          <p className="text-[11px] text-[#7B9EA3]">Ask questions about your business plan</p>
+                        </div>
+                      </div>
+                      {chatOpen
+                        ? <ChevronUp className="h-4 w-4 text-[#5DB7C4]" />
+                        : <ChevronDown className="h-4 w-4 text-[#5DB7C4]" />
+                      }
+                    </button>
+
+                    {/* Chat panel */}
+                    {chatOpen && (
+                      <div className="mt-2 rounded-2xl border border-[#E0EFF1] bg-white overflow-hidden priceit-fade-in">
+                        {/* Messages */}
+                        <div className="flex flex-col gap-3 px-4 py-4 max-h-80 overflow-y-auto">
+                          {chatMessages.map((msg, i) => (
+                            <ChatBubble key={i} msg={msg} />
+                          ))}
+                          {chatTyping && <ChatTypingIndicator />}
+                          <div ref={chatBottomRef} />
+                        </div>
+
+                        {/* Input */}
+                        <div className="border-t border-[#E0EFF1] px-3 py-3 flex items-center gap-2 bg-[#F9FAFB]">
+                          <input
+                            ref={chatInputRef}
+                            type="text"
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                sendChatMessage();
+                              }
+                            }}
+                            placeholder="Ask about your business..."
+                            disabled={chatTyping}
+                            className="flex-1 rounded-xl border border-[#D1E8EC] bg-white px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#A0B5BA] focus:outline-none focus:border-[#5DB7C4] disabled:opacity-50"
+                          />
+                          <button
+                            onClick={sendChatMessage}
+                            disabled={!chatInput.trim() || chatTyping}
+                            className="h-9 w-9 rounded-xl bg-[#5DB7C4] flex items-center justify-center hover:bg-[#F36C3D] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                            aria-label="Send message"
+                          >
+                            <Send className="h-4 w-4 text-white" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {/* ── Business data ── */}
               <section className="rounded-3xl border border-[#E0EFF1] bg-white/95 px-4 py-4 shadow-sm">
@@ -618,6 +933,9 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings sho
                     <h2 className="text-base font-extrabold text-[#2B2B2B]">
                       What people might say ({reviews.length})
                     </h2>
+                    <p className="text-[11px] text-[#7B9EA3] mt-0.5">
+                      AI-simulated reviews based on your product and pricing
+                    </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {reviews.map((r, i) => (
@@ -630,7 +948,7 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings sho
               {/* ── CTA ── */}
               <div className="flex justify-center pt-1 pb-2">
                 <ChronicleButton
-                  text="Try the Business Simulator →"
+                  text={mode === "improve" ? "Test the Improved Product →" : "Try the Business Simulator →"}
                   onClick={() => navigate("/simulate")}
                   hoverColor="#F36C3D"
                   customBackground="#5DB7C4"

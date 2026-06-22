@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 
 export interface ProductInfo {
   id: string;
@@ -7,7 +7,12 @@ export interface ProductInfo {
   targetCustomer: string;
   specialFeature: string;
   category: string;
+  currentChallenge: string;
+  improvementGoal: string;
+  inspiration: string;
 }
+
+export type JourneyMode = "create" | "improve";
 
 export type FixedCostCategory = "Equipment" | "Rent" | "Supplies" | "Packaging" | "Other";
 export type CostType = "one-time" | "monthly";
@@ -46,6 +51,7 @@ export interface SimConfig {
 }
 
 export interface AppState {
+  journeyMode: JourneyMode | null;
   productInfo: ProductInfo;
   fixedCosts: FixedCostItem[];
   variableCosts: VariableCostItem[];
@@ -60,9 +66,13 @@ const defaultProductInfo: ProductInfo = {
   targetCustomer: "",
   specialFeature: "",
   category: "",
+  currentChallenge: "",
+  improvementGoal: "",
+  inspiration: "",
 };
 
 const defaultState: AppState = {
+  journeyMode: null,
   productInfo: defaultProductInfo,
   fixedCosts: [],
   variableCosts: [],
@@ -89,6 +99,7 @@ function loadPersistedState(): AppState {
     const simConfig = isObject(parsed.simConfig) ? parsed.simConfig : {};
 
     return {
+      journeyMode: parsed.journeyMode === "improve" ? "improve" : parsed.journeyMode === "create" ? "create" : null,
       productInfo: {
         ...defaultState.productInfo,
         ...productInfo,
@@ -135,6 +146,7 @@ function makeVariableCostItem(): VariableCostItem {
 
 interface AppStateContextValue {
   state: AppState;
+  beginJourney: (mode: JourneyMode) => void;
   updateProductInfo: (updates: Partial<ProductInfo>) => void;
   addFixedCost: () => string;
   updateFixedCost: (id: string, updates: Partial<FixedCostItem>) => void;
@@ -155,6 +167,17 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(APP_STATE_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  const beginJourney = useCallback((mode: JourneyMode) => {
+    setState({
+      ...defaultState,
+      journeyMode: mode,
+      productInfo: { ...defaultProductInfo },
+    });
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("priceit_sim_game_v1");
+    }
+  }, []);
 
   const updateProductInfo = (updates: Partial<ProductInfo>) => {
     setState((prev) => ({
@@ -225,6 +248,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     <AppStateContext.Provider
       value={{
         state,
+        beginJourney,
         updateProductInfo,
         addFixedCost,
         updateFixedCost,

@@ -1,7 +1,7 @@
 import { Hero1 } from "@/components/ui/hero-1";
 import logo from "../../../logo.png";
 
-const DemoOne = () => {
+export default function DemoOne() {
   return (
     <Hero1
       logoSrc={logo}
@@ -12,6 +12,4 @@ const DemoOne = () => {
       <div />
     </Hero1>
   );
-};
-
-export default { DemoOne };
+}

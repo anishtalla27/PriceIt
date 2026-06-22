@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { DemoBackgroundPaths } from "@/components/ui/demo";
 import SetupPage from "@/pages/SetupPage";
 import FixedCostsPage from "@/pages/FixedCostsPage";
@@ -9,8 +10,21 @@ import SimulateSetupPage from "@/pages/SimulateSetupPage";
 import SimulateGamePage from "@/pages/SimulateGamePage";
 import SimulateGameOverPage from "@/pages/SimulateGameOverPage";
 import SimulateResultsPage from "@/pages/SimulateResultsPage";
-import { AppStateProvider } from "@/context/AppStateContext";
+import { AppStateProvider, useAppState } from "@/context/AppStateContext";
+import type { JourneyMode } from "@/context/AppStateContext";
 import { SetupFlowAssistant } from "@/components/ui/setup-flow-assistant";
+
+function JourneyEntry({ mode }: { mode: JourneyMode }) {
+  const navigate = useNavigate();
+  const { beginJourney } = useAppState();
+
+  useEffect(() => {
+    beginJourney(mode);
+    navigate("/setup", { replace: true });
+  }, [beginJourney, mode, navigate]);
+
+  return null;
+}
 
 function App() {
   return (
@@ -18,6 +32,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<DemoBackgroundPaths />} />
+          <Route path="/create" element={<JourneyEntry mode="create" />} />
+          <Route path="/improve" element={<JourneyEntry mode="improve" />} />
           <Route path="/setup" element={<SetupPage />} />
           <Route path="/setup/costs" element={<FixedCostsPage />} />
           <Route path="/setup/variable-costs" element={<VariableCostsPage />} />

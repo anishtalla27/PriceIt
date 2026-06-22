@@ -9,10 +9,13 @@ const STEPS = [
   { number: 6, label: "Simulation" },
 ];
 
-export function ProgressSteps({ currentStep }: { currentStep: number }) {
+export function ProgressSteps({ currentStep, mode = "create" }: { currentStep: number; mode?: "create" | "improve" }) {
+  const steps = mode === "improve"
+    ? STEPS.map((step) => step.number === 1 ? { ...step, label: "Current Product" } : step.number === 5 ? { ...step, label: "Improvement Plan" } : step)
+    : STEPS;
   return (
     <div className="flex items-center justify-center gap-1 sm:gap-2 mb-8">
-      {STEPS.map((step, index) => {
+      {steps.map((step, index) => {
         const isActive = step.number === currentStep;
         const isDone = step.number < currentStep;
         return (
@@ -37,7 +40,7 @@ export function ProgressSteps({ currentStep }: { currentStep: number }) {
                 {step.label}
               </span>
             </div>
-            {index < STEPS.length - 1 && (
+            {index < steps.length - 1 && (
               <div
                 className={`h-0.5 flex-1 max-w-[32px] sm:max-w-[48px] rounded-full transition-all mb-4 ${
                   isDone ? "bg-[#5DB7C4]" : "bg-[#E0EFF1]"
