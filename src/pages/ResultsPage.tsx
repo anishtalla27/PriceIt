@@ -946,7 +946,7 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
               )}
 
               {/* ── CTA ── */}
-              <div className="flex justify-center pt-1 pb-2">
+              <div className="flex flex-wrap justify-center gap-3 pt-1 pb-2">
                 <ChronicleButton
                   text={mode === "improve" ? "Test the Improved Product →" : "Try the Business Simulator →"}
                   onClick={() => navigate("/simulate")}
@@ -957,6 +957,13 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
                   width="260px"
                   borderRadius="10px"
                 />
+                <button
+                  type="button"
+                  onClick={() => navigate("/tracker")}
+                  className="flex items-center gap-2 rounded-xl border-2 border-[#E0EFF1] bg-white px-5 py-2.5 text-sm font-bold text-[#7B9EA3] hover:border-[#5DB7C4] hover:text-[#5DB7C4] transition-colors"
+                >
+                  Track My Business
+                </button>
               </div>
             </div>
           )}
