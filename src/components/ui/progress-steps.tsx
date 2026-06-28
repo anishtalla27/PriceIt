@@ -6,7 +6,6 @@ const STEPS = [
   { number: 3, label: "Variable Costs" },
   { number: 4, label: "Pricing" },
   { number: 5, label: "Results" },
-  { number: 6, label: "Simulation" },
 ];
 
 export function ProgressSteps({ currentStep, mode = "create" }: { currentStep: number; mode?: "create" | "improve" }) {

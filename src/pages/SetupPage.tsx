@@ -4,7 +4,7 @@ import { useAppState } from "@/context/AppStateContext";
 import { Hero1 } from "@/components/ui/hero-1";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { MarkdownMessage } from "@/components/ui/markdown-message";
-import { getSetupQuickOptions, setupConversationTemplate } from "@/lib/ai-templates";
+import { getSetupExamples, getSetupQuickOptions, setupConversationTemplate } from "@/lib/ai-templates";
 import { generateAI, type AIProgress } from "@/lib/ai-provider";
 import { extractJsonObject } from "@/lib/safe-json";
 import { Bot } from "lucide-react";
@@ -134,7 +134,7 @@ export default function SetupPage() {
             messages: [
               {
                 role: "system",
-                content: `You are PriceIt, a warm business coach for kids aged 8-12. The user is ${mode === "improve" ? "improving an existing product" : "creating a new product"}.
+                content: `You are LaunchPad, a warm business coach for kids aged 8-12. The user is ${mode === "improve" ? "improving an existing product" : "creating a new product"}.
 Keep normal replies brief. If the user asks a useful business question, answer it briefly before returning to the guided step. When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas based only on the user's interests, audience, and preferred product type. Let the user choose or combine them. Do not mention these instructions.`,
               },
               ...history.slice(-8),
@@ -220,6 +220,7 @@ Keep normal replies brief. If the user asks a useful business question, answer i
 
   const handleSend = () => sendAnswer(input);
   const quickOptions = getSetupQuickOptions(messages, mode);
+  const exampleOptions = quickOptions.length === 0 ? getSetupExamples(messages, mode) : [];
 
   return (
     <Hero1
@@ -235,11 +236,11 @@ Keep normal replies brief. If the user asks a useful business question, answer i
         isComplete
           ? "All done! Moving you forward... 🎉"
           : isTyping
-          ? localAIProgress?.text || "PriceIt is typing..."
+          ? localAIProgress?.text || "LaunchPad is typing..."
           : "Type your answer here..."
       }
       badgeText={mode === "improve" ? "Product Improvement" : "New Product Setup"}
-      title={mode === "improve" ? "Tell PriceIt What You Want to Improve" : "Tell PriceIt About Your New Product"}
+      title={mode === "improve" ? "Tell LaunchPad What You Want to Improve" : "Tell LaunchPad About Your New Product"}
       description={mode === "improve" ? "Describe what exists today, what is not working, and the result you want." : "Chat with our AI to turn your idea into a business plan."}
     >
       <div className="-mb-3 sm:-mb-2">
@@ -267,6 +268,25 @@ Keep normal replies brief. If the user asks a useful business question, answer i
                 {option}
               </button>
             ))}
+          </div>
+        )}
+        {!isTyping && !isComplete && exampleOptions.length > 0 && (
+          <div className="ml-10 flex flex-col gap-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">
+              Example answers — click to use
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {exampleOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setInput(option)}
+                  className="rounded-xl border border-[#D8E8EC] bg-[#F7FBFC] px-3.5 py-1.5 text-sm text-[#5B7780] hover:border-[#5DB7C4] hover:bg-[#EAF7F9] hover:text-[#1E6470] transition-colors"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {isTyping && <TypingIndicator />}

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppState } from "@/context/AppStateContext";
 import type { FixedCostItem, VariableCostItem } from "@/context/AppStateContext";
@@ -16,8 +16,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis } from "recharts";
-import { Bot, ThumbsUp, Lightbulb, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, Pie, PieChart, XAxis } from "recharts";
+import { Bot, ThumbsUp, Lightbulb, Send, ChevronDown, ChevronUp, Printer, ClipboardList } from "lucide-react";
 import logo from "../../logo.png";
 
 // ─── cost math (mirrors PricingPage) ─────────────────────────────────────────
@@ -383,8 +383,20 @@ function MonthlyBarChart({
         <h2 className="text-sm font-extrabold text-[#2B2B2B]">Your Monthly Breakdown</h2>
         <p className="text-[11px] text-[#7B9EA3]">Revenue, costs, and profit side-by-side</p>
       </div>
+      {revenue > 0 && (
+        <p className="text-xs text-[#5B7780] leading-relaxed">
+          Each month, you make{" "}
+          <strong className="text-[#5DB7C4]">${Math.round(revenue)}</strong> in sales, spend{" "}
+          <strong className="text-[#F36C3D]">${Math.round(cost)}</strong>, and{" "}
+          {profit >= 0 ? (
+            <>keep <strong className="text-[#16a34a]">${Math.round(profit)}</strong> as profit.</>
+          ) : (
+            <>lose <strong className="text-[#dc2626]">${Math.round(Math.abs(profit))}</strong>.</>
+          )}
+        </p>
+      )}
       <ChartContainer config={monthlyBreakdownChartConfig} className="h-[230px] sm:h-[250px] w-full">
-        <BarChart data={monthlyData} margin={{ top: 8, right: 16, bottom: 0, left: 16 }}>
+        <BarChart data={monthlyData} margin={{ top: 20, right: 16, bottom: 0, left: 16 }}>
           <CartesianGrid vertical={false} stroke="#E0EFF1" strokeDasharray="2 2" />
           <XAxis
             dataKey="name"
@@ -395,9 +407,33 @@ function MonthlyBarChart({
           />
           <ChartTooltip content={<ChartTooltipContent />} />
           <ChartLegend content={<ChartLegendContent />} />
-          <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[8, 8, 0, 0]} />
-          <Bar dataKey="cost" fill="var(--color-cost)" radius={[8, 8, 0, 0]} />
-          <Bar dataKey="profit" fill="var(--color-profit)" radius={[8, 8, 0, 0]} />
+          <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[8, 8, 0, 0]}>
+            <LabelList
+              dataKey="revenue"
+              position="top"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(v: any) => Number(v) > 0 ? `$${Math.round(Number(v))}` : ""}
+              style={{ fontSize: 11, fontWeight: 700, fill: "#5DB7C4" }}
+            />
+          </Bar>
+          <Bar dataKey="cost" fill="var(--color-cost)" radius={[8, 8, 0, 0]}>
+            <LabelList
+              dataKey="cost"
+              position="top"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(v: any) => Number(v) > 0 ? `$${Math.round(Number(v))}` : ""}
+              style={{ fontSize: 11, fontWeight: 700, fill: "#F36C3D" }}
+            />
+          </Bar>
+          <Bar dataKey="profit" fill="var(--color-profit)" radius={[8, 8, 0, 0]}>
+            <LabelList
+              dataKey="profit"
+              position="top"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(v: any) => { const n = Number(v); return `${n >= 0 ? "+" : "-"}$${Math.round(Math.abs(n))}`; }}
+              style={{ fontSize: 11, fontWeight: 700, fill: "#2B2B2B" }}
+            />
+          </Bar>
         </BarChart>
       </ChartContainer>
       {profit < 0 && (
@@ -407,6 +443,188 @@ function MonthlyBarChart({
       )}
     </div>
   );
+}
+
+// ─── next steps template ──────────────────────────────────────────────────────
+
+function buildNextStepsFallback(
+  productName: string,
+  targetCustomer: string,
+  profitPerUnit: number,
+  marginPct: number
+): string[] {
+  const name = productName || "your product";
+  const customer =
+    targetCustomer
+      ? targetCustomer.split(/[,\s]+/).filter(Boolean)[0] ?? "customers"
+      : "customers";
+  const steps: string[] = [
+    `Sell ${name} to 3 friends or family members this week to get real feedback.`,
+    `Ask one ${customer} what they liked most and what they would change.`,
+  ];
+  if (profitPerUnit <= 0) {
+    steps.push("Find one way to lower your costs — even $0.50 saved adds up over many sales.");
+    steps.push("Try raising your price by $1 to see if customers will still buy.");
+  } else if (marginPct < 20) {
+    steps.push(`Test a small price increase to push your profit margin above 20%.`);
+    steps.push(`Track your actual costs for one week to find any savings.`);
+  } else {
+    steps.push(`Keep track of how many ${customer}s you reach each week so you can see your growth.`);
+    steps.push("Ask three real people what they like most and what they would change next.");
+  }
+  return steps.slice(0, 4);
+}
+
+// ─── next steps section ───────────────────────────────────────────────────────
+
+function NextStepsSection({ steps }: { steps: string[] }) {
+  if (steps.length === 0) return null;
+  return (
+    <section className="rounded-3xl border border-[#E0EFF1] bg-white/95 px-4 py-4 shadow-sm no-print">
+      <div className="mb-3">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[#9BBFC3]">
+          Action Plan
+        </p>
+        <h2 className="text-base font-extrabold text-[#2B2B2B]">Your next steps</h2>
+        <p className="text-[11px] text-[#7B9EA3] mt-0.5">
+          Try these to make your business stronger.
+        </p>
+      </div>
+      <ul className="flex flex-col gap-2.5">
+        {steps.map((step, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#EAF7F9] text-[#5DB7C4] text-xs font-extrabold flex-shrink-0 mt-0.5">
+              {i + 1}
+            </span>
+            <p className="text-sm text-[#2B2B2B] leading-relaxed">{step}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// ─── printable business plan ──────────────────────────────────────────────────
+
+function PrintableBusinessPlan({
+  productName,
+  description,
+  targetCustomer,
+  specialFeature,
+  category,
+  totalMonthlyFixed,
+  totalVariablePerUnit,
+  costPerUnit,
+  sellingPrice,
+  unitsPerMonth,
+  monthlyRevenue,
+  monthlyCosts,
+  monthlyProfit,
+  marginPct,
+  verdict,
+  nextSteps,
+}: {
+  productName: string;
+  description: string;
+  targetCustomer: string;
+  specialFeature: string;
+  category: string;
+  totalMonthlyFixed: number;
+  totalVariablePerUnit: number;
+  costPerUnit: number;
+  sellingPrice: number;
+  unitsPerMonth: number;
+  monthlyRevenue: number;
+  monthlyCosts: number;
+  monthlyProfit: number;
+  marginPct: number;
+  verdict: string;
+  nextSteps: string[];
+}) {
+  const fmt = (n: number) =>
+    n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  return (
+    <div className="print-plan" style={{ display: "none", fontFamily: "system-ui, sans-serif", color: "#111", lineHeight: 1.6 }}>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .print-plan { display: block !important; padding: 24px; }
+          body { background: white !important; }
+        }
+      `}</style>
+
+      <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>
+        Business Plan: {productName || "My Product"}
+      </h1>
+      <p style={{ fontSize: 12, color: "#666", marginBottom: 20 }}>
+        Created with LaunchPad · {new Date().toLocaleDateString()}
+      </p>
+
+      <Section title="Product">
+        <Row label="Name" value={productName} />
+        <Row label="Category" value={category} />
+        <Row label="Description" value={description} />
+        <Row label="Ideal customer" value={targetCustomer} />
+        <Row label="What makes it special" value={specialFeature} />
+      </Section>
+
+      <Section title="Costs">
+        <Row label="Monthly fixed costs" value={`$${fmt(totalMonthlyFixed)}`} />
+        <Row label="Variable cost per item" value={`$${fmt(totalVariablePerUnit)}`} />
+        <Row label="Total cost per item" value={`$${fmt(costPerUnit)}`} />
+      </Section>
+
+      <Section title="Pricing &amp; Profit">
+        <Row label="Selling price per item" value={`$${fmt(sellingPrice)}`} />
+        <Row label="Estimated monthly sales" value={`${unitsPerMonth} items`} />
+        <Row label="Monthly revenue" value={`$${fmt(monthlyRevenue)}`} />
+        <Row label="Monthly costs" value={`$${fmt(monthlyCosts)}`} />
+        <Row label="Monthly profit" value={`${monthlyProfit >= 0 ? "+" : ""}$${fmt(monthlyProfit)}`} />
+        <Row label="Profit margin" value={`${marginPct.toFixed(1)}%`} />
+      </Section>
+
+      {verdict && (
+        <Section title="AI Business Verdict">
+          <p style={{ fontSize: 13, marginTop: 4 }}>{verdict}</p>
+        </Section>
+      )}
+
+      {nextSteps.length > 0 && (
+        <Section title="Next Steps">
+          {nextSteps.map((step, i) => (
+            <p key={i} style={{ fontSize: 13, margin: "4px 0" }}>
+              {i + 1}. {step}
+            </p>
+          ))}
+        </Section>
+      )}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <h2 style={{ fontSize: 15, fontWeight: 700, borderBottom: "1.5px solid #ddd", paddingBottom: 4, marginBottom: 8 }}>
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: "flex", gap: 8, fontSize: 13, marginBottom: 3 }}>
+      <span style={{ fontWeight: 600, minWidth: 180, color: "#444" }}>{label}:</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+function fmt2(n: number) {
+  return n.toFixed(2);
 }
 
 // ─── page ─────────────────────────────────────────────────────────────────────
@@ -442,6 +660,7 @@ export default function ResultsPage() {
   const [businessRating, setBusinessRating] = useState<BusinessRating | null>(null);
   const [feedbackSummary, setFeedbackSummary] = useState<AIFeedbackSummary | null>(null);
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [nextSteps, setNextSteps] = useState<string[]>([]);
   const [aiWarning, setAIWarning] = useState<AIWarning | null>(null);
   const [localAIProgress, setLocalAIProgress] = useState<AIProgress | null>(null);
 
@@ -454,8 +673,6 @@ export default function ResultsPage() {
   const chatInputRef = useRef<HTMLInputElement>(null);
 
   const hasRunRef = useRef(false);
-
-  const fmt2 = (n: number) => n.toFixed(2);
 
   const buildContext = useCallback(() => {
     return `
@@ -511,6 +728,7 @@ Estimated units per month: ${unitsPerMonth}
     setBusinessRating(null);
     setFeedbackSummary(null);
     setReviews([]);
+    setNextSteps([]);
     setAIWarning(null);
 
     const ctx = buildContext();
@@ -555,6 +773,19 @@ Return ONLY valid JSON (no markdown):
 
 Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings must match tag (Love it = 4-5, Needs work = 1-3).`;
 
+    const nextStepsPrompt = `You are a business mentor for kids aged 8-12. Give this kid 4 clear, actionable next steps they can take right now to grow or improve their business.
+
+Business data:
+${ctx}
+
+Rules:
+- Make steps specific to this product, customer type, or numbers (use the product name and customer type directly)
+- Start each step with a verb
+- Kid-friendly language, no jargon
+- If not yet profitable, prioritize steps that address that first
+
+Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
+
     try {
       const templateInput = {
         productName: productInfo.productName,
@@ -585,7 +816,14 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
         ],
       };
 
-      const [ratingResult, feedbackResult, reviewResult] = await Promise.all([
+      const nextStepsFallback = buildNextStepsFallback(
+        productInfo.productName,
+        productInfo.targetCustomer,
+        profitPerUnit,
+        marginPct
+      );
+
+      const [ratingResult, feedbackResult, reviewResult, nextStepsResult] = await Promise.all([
         generateAI({
           messages: [{ role: "user", content: ratingPrompt }],
           template: () => JSON.stringify(ratingFallback),
@@ -610,9 +848,17 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
           jsonMode: true,
           onProgress: setLocalAIProgress,
         }),
+        generateAI({
+          messages: [{ role: "user", content: nextStepsPrompt }],
+          template: () => JSON.stringify({ steps: nextStepsFallback }),
+          maxTokens: 400,
+          temperature: 0.4,
+          jsonMode: true,
+          onProgress: setLocalAIProgress,
+        }),
       ]);
 
-      setAIWarning(ratingResult.warning ?? feedbackResult.warning ?? reviewResult.warning ?? null);
+      setAIWarning(ratingResult.warning ?? feedbackResult.warning ?? reviewResult.warning ?? nextStepsResult.warning ?? null);
 
       const ratingData = extractJsonObject(ratingResult.text);
       const rating = Number(ratingData?.rating);
@@ -636,6 +882,12 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
         ? (extractJsonObject(reviewResult.text)?.reviews as unknown[]).filter(isCustomerReview)
         : reviewsFallback;
       setReviews(rawReviews.length >= 10 ? rawReviews.slice(0, 10) : reviewsFallback);
+
+      const nextStepsData = extractJsonObject(nextStepsResult.text);
+      const parsedSteps = Array.isArray(nextStepsData?.steps)
+        ? (nextStepsData.steps as unknown[]).filter((s): s is string => typeof s === "string")
+        : [];
+      setNextSteps(parsedSteps.length >= 3 ? parsedSteps.slice(0, 5) : nextStepsFallback);
     } catch (e) {
       console.error(e);
       if (e instanceof Error && e.message === "REQUEST_TIMEOUT") {
@@ -647,7 +899,7 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
       setLoading(false);
       setLocalAIProgress(null);
     }
-  }, [buildContext, costPerUnit, marginPct, mode, productInfo, profitPerUnit, sellingPrice, fmt2]);
+  }, [buildContext, costPerUnit, marginPct, mode, productInfo, profitPerUnit, sellingPrice]);
 
   useEffect(() => {
     if (missingPricing || !productInfoComplete) return;
@@ -720,18 +972,52 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
 
   if (missingPricing || !productInfoComplete) return null;
 
+  const monthlyRevenue = sellingPrice * unitsPerMonth;
+  const monthlyCosts = costPerUnit * unitsPerMonth;
+  const monthlyProfit = monthlyRevenue - monthlyCosts;
+
   return (
     <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
+      {/* Print-only business plan — hidden on screen, shown when printing */}
+      <PrintableBusinessPlan
+        productName={productInfo.productName}
+        description={productInfo.productDescription}
+        targetCustomer={productInfo.targetCustomer}
+        specialFeature={productInfo.specialFeature}
+        category={productInfo.category}
+        totalMonthlyFixed={totalMonthlyFixed}
+        totalVariablePerUnit={totalVariablePerUnit}
+        costPerUnit={costPerUnit}
+        sellingPrice={sellingPrice}
+        unitsPerMonth={unitsPerMonth}
+        monthlyRevenue={monthlyRevenue}
+        monthlyCosts={monthlyCosts}
+        monthlyProfit={monthlyProfit}
+        marginPct={marginPct}
+        verdict={businessRating?.verdict ?? ""}
+        nextSteps={nextSteps}
+      />
+
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="no-print flex items-center justify-between px-6 py-4 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup/pricing")}
           className="min-h-11 px-3 text-[#5DB7C4] font-semibold text-sm hover:text-[#F36C3D] transition-colors"
         >
           Back
         </button>
-        <img src={logo} alt="PriceIt logo" className="h-9 w-auto" />
-        <div className="w-16" />
+        <img src={logo} alt="LaunchPad logo" className="h-14 w-auto" />
+        <button
+          type="button"
+          onClick={() => navigate("/tracker")}
+          className="no-print flex items-center gap-2 rounded-xl bg-[#5DB7C4] px-3 py-1.5 text-white shadow-[0_0_12px_rgba(93,183,196,0.45)] hover:bg-[#4aa8b5] hover:shadow-[0_0_18px_rgba(93,183,196,0.6)] active:scale-95 transition-all"
+        >
+          <ClipboardList className="h-4 w-4 flex-none" />
+          <span className="text-left leading-tight">
+            <span className="block text-xs font-extrabold">Track My Business</span>
+            <span className="block text-[10px] font-medium opacity-85">sales · goals · inventory</span>
+          </span>
+        </button>
       </header>
 
       <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5">
@@ -758,6 +1044,32 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
                   <p className="font-semibold">{aiWarning.message}</p>
                 </div>
               )}
+
+              <section className="priceit-feature-cta no-print rounded-3xl bg-white/95 px-5 py-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl border-2 border-[#A9DDE3] bg-white text-[#5DB7C4] shadow-sm">
+                      <ClipboardList className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="priceit-cta-badge mb-1">Use this next</p>
+                      <h2 className="text-xl font-extrabold text-[#2B2B2B]">
+                        Track your real business progress
+                      </h2>
+                      <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#5B7780]">
+                        Now that your plan is done, use Track My Business to record sales, inventory, expenses, events, goals, and customer feedback.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/tracker")}
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-[#5DB7C4] px-5 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(93,183,196,0.28)] transition hover:bg-[#F36C3D]"
+                  >
+                    Open Tracker <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </section>
 
               {/* ── Overall rating ── */}
               <section className="rounded-3xl border border-[#E0EFF1] bg-white/95 px-4 py-4 shadow-sm">
@@ -837,24 +1149,25 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
 
                   {/* Chat with AI button */}
                   <div className="mt-3">
-                    <button
-                      onClick={chatOpen ? () => setChatOpen(false) : openChat}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-[#A9DDE3] bg-[#F0FAFB] hover:bg-[#E0F5F8] transition-colors group"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full border border-[#A9DDE3] bg-white flex items-center justify-center shadow-sm">
-                          <Bot className="h-4 w-4 text-[#5DB7C4]" />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-sm font-bold text-[#2B2B2B]">Chat with your AI mentor</p>
-                          <p className="text-[11px] text-[#7B9EA3]">Ask questions about your business plan</p>
-                        </div>
-                      </div>
-                      {chatOpen
-                        ? <ChevronUp className="h-4 w-4 text-[#5DB7C4]" />
-                        : <ChevronDown className="h-4 w-4 text-[#5DB7C4]" />
-                      }
-                    </button>
+	                    <button
+	                      onClick={chatOpen ? () => setChatOpen(false) : openChat}
+	                      className="priceit-feature-cta w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-[#F0FAFB] transition-all group"
+	                    >
+	                      <div className="flex items-center gap-3">
+	                        <div className="h-10 w-10 rounded-full border-2 border-[#A9DDE3] bg-white flex items-center justify-center shadow-sm">
+	                          <Bot className="h-4 w-4 text-[#5DB7C4]" />
+	                        </div>
+	                        <div className="text-left">
+	                          <p className="priceit-cta-badge mb-1">Ask for help</p>
+	                          <p className="text-base font-extrabold text-[#2B2B2B]">Chat with your AI mentor</p>
+	                          <p className="text-xs text-[#5B7780]">Ask what to improve, test, or try next</p>
+	                        </div>
+	                      </div>
+	                      {chatOpen
+	                        ? <span className="priceit-cta-arrow"><ChevronUp className="h-5 w-5" /></span>
+	                        : <span className="priceit-cta-arrow"><ChevronDown className="h-5 w-5" /></span>
+	                      }
+	                    </button>
 
                     {/* Chat panel */}
                     {chatOpen && (
@@ -934,7 +1247,7 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
                       What people might say ({reviews.length})
                     </h2>
                     <p className="text-[11px] text-[#7B9EA3] mt-0.5">
-                      AI-simulated reviews based on your product and pricing
+                      AI-generated reviews based on your product and pricing
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -945,18 +1258,19 @@ Rules: at least 6 "Love it ❤️" and at least 3 "Needs work 🔧". Ratings mus
                 </section>
               )}
 
+              {/* ── Next Steps ── */}
+              <NextStepsSection steps={nextSteps} />
+
               {/* ── CTA ── */}
-              <div className="flex justify-center pt-1 pb-2">
-                <ChronicleButton
-                  text={mode === "improve" ? "Test the Improved Product →" : "Try the Business Simulator →"}
-                  onClick={() => navigate("/simulate")}
-                  hoverColor="#F36C3D"
-                  customBackground="#5DB7C4"
-                  customForeground="#ffffff"
-                  hoverForeground="#ffffff"
-                  width="260px"
-                  borderRadius="10px"
-                />
+              <div className="flex flex-wrap justify-center gap-3 pt-1 pb-2 no-print">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 rounded-xl border-2 border-[#E0EFF1] bg-white px-5 py-2.5 text-sm font-bold text-[#7B9EA3] hover:border-[#5DB7C4] hover:text-[#5DB7C4] transition-colors"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print Business Plan
+                </button>
               </div>
             </div>
           )}

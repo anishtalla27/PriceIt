@@ -6,6 +6,7 @@ import { ChronicleButton } from "@/components/ui/chronicle-button";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { injectBauhausCardStyles } from "@/components/ui/bauhaus-card";
 import { injectFieldCardStyles } from "@/components/ui/field-card";
+import { SaveStatus } from "@/components/ui/save-status";
 import logo from "../../logo.png";
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -486,14 +487,14 @@ export default function FixedCostsPage() {
   return (
     <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup")}
           className="min-h-11 px-3 flex items-center gap-2 text-[#5DB7C4] font-semibold text-sm hover:text-[#F36C3D] transition-colors"
         >
           Back
         </button>
-        <img src={logo} alt="PriceIt logo" className="h-9 w-auto" />
+        <img src={logo} alt="LaunchPad logo" className="h-14 w-auto" />
         <div className="w-16" />
       </header>
 
@@ -612,6 +613,7 @@ export default function FixedCostsPage() {
               disabled={!canProceed}
             />
           </div>
+          <SaveStatus />
         </div>
       </main>
     </div>

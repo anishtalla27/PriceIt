@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Lightbulb, TrendingUp } from "lucide-react";
+import { ArrowRight, FlaskConical, Lightbulb, TrendingUp } from "lucide-react";
 import { useAppState } from "@/context/AppStateContext";
 import type { JourneyMode } from "@/context/AppStateContext";
 import logo from "../../../logo.png";
@@ -59,14 +59,19 @@ function FloatingPaths({
     );
 }
 
-export function BackgroundPaths({ title = "PriceIt!" }: { title?: string }) {
+export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
     const words = title.split(" ");
     const navigate = useNavigate();
-    const { beginJourney } = useAppState();
+    const { beginJourney, loadTestProject } = useAppState();
 
     const start = (mode: JourneyMode) => {
         beginJourney(mode);
         navigate("/setup");
+    };
+
+    const startTestProject = () => {
+        loadTestProject();
+        navigate("/setup/pricing");
     };
 
     return (
@@ -78,7 +83,7 @@ export function BackgroundPaths({ title = "PriceIt!" }: { title?: string }) {
             }}
         >
             <div className="absolute right-4 top-4 z-20 rounded-xl border border-[#A9DDE3] bg-white/90 p-2 shadow-sm sm:right-8 sm:top-6">
-                <img src={logo} alt="PriceIt logo" className="h-10 w-auto sm:h-12" />
+                <img src={logo} alt="LaunchPad logo" className="h-10 w-auto sm:h-12" />
             </div>
             <div className="absolute inset-0">
                 <div className="absolute -left-16 -top-16 h-72 w-72 rounded-full bg-[#A9DDE3]/35 blur-3xl" />
@@ -161,6 +166,28 @@ export function BackgroundPaths({ title = "PriceIt!" }: { title?: string }) {
                             </span>
                         </button>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={startTestProject}
+                        className="priceit-feature-cta mx-auto mt-5 flex w-full max-w-3xl items-center justify-between gap-4 rounded-3xl bg-white/95 px-5 py-4 text-left transition-all"
+                    >
+                        <div className="flex items-center gap-4">
+                            <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl border-2 border-[#A9DDE3] bg-white text-[#5DB7C4] shadow-sm">
+                                <FlaskConical className="h-6 w-6" />
+                            </span>
+                            <span>
+                                <span className="priceit-cta-badge mb-1">Testing shortcut</span>
+                                <span className="block text-lg font-extrabold text-[#2B2B2B]">
+                                    Load sample business and jump to pricing
+                                </span>
+                                <span className="mt-1 block text-sm leading-relaxed text-[#5B7780]">
+                                    Fills product info, fixed costs, variable costs, and starter pricing with realistic bracelet data.
+                                </span>
+                            </span>
+                        </div>
+                        <span className="priceit-cta-arrow">Go →</span>
+                    </button>
                 </motion.div>
             </div>
         </div>

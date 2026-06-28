@@ -42,21 +42,12 @@ export interface PricingInfo {
   unitsPerMonth: number | "";
 }
 
-export type StartingQuality = "Standard" | "Premium" | "Deluxe";
-
-export interface SimConfig {
-  startingCash: number | "";
-  maxWeeklyUnits: number | "";
-  startingQuality: StartingQuality;
-}
-
 export interface AppState {
   journeyMode: JourneyMode | null;
   productInfo: ProductInfo;
   fixedCosts: FixedCostItem[];
   variableCosts: VariableCostItem[];
   pricing: PricingInfo;
-  simConfig: SimConfig;
 }
 
 const defaultProductInfo: ProductInfo = {
@@ -77,7 +68,6 @@ const defaultState: AppState = {
   fixedCosts: [],
   variableCosts: [],
   pricing: { sellingPrice: "", unitsPerMonth: "" },
-  simConfig: { startingCash: "", maxWeeklyUnits: "", startingQuality: "Standard" },
 };
 
 const APP_STATE_STORAGE_KEY = "priceit_app_state_v1";
@@ -96,8 +86,6 @@ function loadPersistedState(): AppState {
 
     const productInfo = isObject(parsed.productInfo) ? parsed.productInfo : {};
     const pricing = isObject(parsed.pricing) ? parsed.pricing : {};
-    const simConfig = isObject(parsed.simConfig) ? parsed.simConfig : {};
-
     return {
       journeyMode: parsed.journeyMode === "improve" ? "improve" : parsed.journeyMode === "create" ? "create" : null,
       productInfo: {
@@ -111,10 +99,6 @@ function loadPersistedState(): AppState {
       pricing: {
         ...defaultState.pricing,
         ...pricing,
-      },
-      simConfig: {
-        ...defaultState.simConfig,
-        ...simConfig,
       },
     };
   } catch {
@@ -146,6 +130,7 @@ function makeVariableCostItem(): VariableCostItem {
 
 interface AppStateContextValue {
   state: AppState;
+  lastSavedAt: number;
   beginJourney: (mode: JourneyMode) => void;
   updateProductInfo: (updates: Partial<ProductInfo>) => void;
   addFixedCost: () => string;
@@ -155,17 +140,19 @@ interface AppStateContextValue {
   updateVariableCost: (id: string, updates: Partial<VariableCostItem>) => void;
   deleteVariableCost: (id: string) => void;
   updatePricing: (updates: Partial<PricingInfo>) => void;
-  updateSimConfig: (updates: Partial<SimConfig>) => void;
+  loadTestProject: () => void;
 }
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(() => loadPersistedState());
+  const [lastSavedAt, setLastSavedAt] = useState<number>(0);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(APP_STATE_STORAGE_KEY, JSON.stringify(state));
+    setLastSavedAt(Date.now());
   }, [state]);
 
   const beginJourney = useCallback((mode: JourneyMode) => {
@@ -174,9 +161,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       journeyMode: mode,
       productInfo: { ...defaultProductInfo },
     });
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("priceit_sim_game_v1");
-    }
   }, []);
 
   const updateProductInfo = (updates: Partial<ProductInfo>) => {
@@ -237,17 +221,98 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const updateSimConfig = (updates: Partial<SimConfig>) => {
-    setState((prev) => ({
-      ...prev,
-      simConfig: { ...prev.simConfig, ...updates },
-    }));
-  };
+  const loadTestProject = useCallback(() => {
+    setState({
+      journeyMode: "create",
+      productInfo: {
+        id: "test-product-friendship-bracelets",
+        productName: "Sunshine Friendship Bracelets",
+        productDescription:
+          "Handmade colorful friendship bracelets with custom color patterns and a small initial charm.",
+        targetCustomer:
+          "Kids ages 8 to 13 who want affordable gifts for friends, birthdays, camp, and school events.",
+        specialFeature:
+          "Customers can choose their colors and add one initial charm, so each bracelet feels personal.",
+        category: "Handmade accessories",
+        currentChallenge:
+          "Figuring out a price that is still affordable but leaves enough profit after supplies and booth costs.",
+        improvementGoal:
+          "Test a price and bundle offer that can earn at least $100 profit in one month.",
+        inspiration:
+          "Bright summer colors, friendship gifts, craft fairs, and custom bracelets kids can trade.",
+      },
+      fixedCosts: [
+        {
+          id: "test-fc-starter-kit",
+          name: "Bracelet tool starter kit",
+          totalCost: 24,
+          type: "one-time",
+          monthsOfUse: 6,
+          category: "Equipment",
+        },
+        {
+          id: "test-fc-fair-table",
+          name: "Craft fair table fee",
+          totalCost: 15,
+          type: "monthly",
+          monthsOfUse: "",
+          category: "Rent",
+        },
+        {
+          id: "test-fc-signs",
+          name: "Display signs and price cards",
+          totalCost: 12,
+          type: "one-time",
+          monthsOfUse: 4,
+          category: "Supplies",
+        },
+      ],
+      variableCosts: [
+        {
+          id: "test-vc-thread",
+          name: "Embroidery thread",
+          pricePerPack: 9,
+          unitsPerPack: 30,
+          unitsPerProduct: 3,
+          category: "Materials",
+        },
+        {
+          id: "test-vc-charms",
+          name: "Initial charms",
+          pricePerPack: 12,
+          unitsPerPack: 40,
+          unitsPerProduct: 1,
+          category: "Materials",
+        },
+        {
+          id: "test-vc-bags",
+          name: "Small gift bags",
+          pricePerPack: 6,
+          unitsPerPack: 50,
+          unitsPerProduct: 1,
+          category: "Packaging",
+        },
+        {
+          id: "test-vc-labor",
+          name: "Making time",
+          pricePerPack: 6,
+          unitsPerPack: 12,
+          unitsPerProduct: 1,
+          category: "Labor",
+        },
+      ],
+      pricing: {
+        sellingPrice: 6,
+        unitsPerMonth: 45,
+      },
+    });
+  }, []);
 
   return (
     <AppStateContext.Provider
       value={{
         state,
+        lastSavedAt,
         beginJourney,
         updateProductInfo,
         addFixedCost,
@@ -257,7 +322,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         updateVariableCost,
         deleteVariableCost,
         updatePricing,
-        updateSimConfig,
+        loadTestProject,
       }}
     >
       {children}

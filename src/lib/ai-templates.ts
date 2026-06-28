@@ -155,10 +155,48 @@ export function getSetupQuickOptions(
   history: TemplateChatMessage[],
   mode: SetupJourneyMode = "create"
 ): string[] {
-  if (mode !== "create") return [];
   const stage = nextSetupStage(getSetupAnswers(history, mode), mode);
-  if (stage === "ideaPath") return ["I already have an idea", "Help me create an idea"];
-  if (stage === "productType") return ["A physical product", "A service", "Either one"];
+  if (mode === "create") {
+    if (stage === "ideaPath") return ["I already have an idea", "Help me create an idea"];
+    if (stage === "productType") return ["A physical product", "A service", "Either one"];
+  }
+  if (mode === "improve") {
+    if (stage === "currentChallenge") {
+      return ["Not enough sales", "Profit is too low", "Costs are too high", "Product quality", "Customer feedback", "Not enough marketing", "Something else"];
+    }
+  }
+  return [];
+}
+
+export function getSetupExamples(
+  history: TemplateChatMessage[],
+  mode: SetupJourneyMode = "create"
+): string[] {
+  const answers = getSetupAnswers(history, mode);
+  const stage = nextSetupStage(answers, mode);
+  if (stage === "description") {
+    return mode === "improve"
+      ? ["I make handmade bracelets", "I tutor kids in math", "I sell baked goods at local markets"]
+      : ["Helps kids stay organized", "Makes a gift feel special and personal", "Cheaper and cuter than store brands"];
+  }
+  if (stage === "targetCustomer") {
+    return ["Kids my age (8–12)", "Parents and families", "Students and teachers", "Pet owners"];
+  }
+  if (stage === "specialFeature") {
+    return ["It's fully custom-made", "It costs less than stores", "It saves time", "It looks way better"];
+  }
+  if (stage === "improvementGoal") {
+    return ["Get 5 more customers per month", "Cut costs by $3 per item", "Improve packaging", "Get better reviews"];
+  }
+  if (stage === "currentChallenge") {
+    return ["Not enough customers", "My costs are too high", "People don't know about me", "My price feels too high"];
+  }
+  if (stage === "interests") {
+    return ["Art and crafts", "Sports and fitness", "Pets and animals", "Food and cooking"];
+  }
+  if (stage === "audience") {
+    return ["Kids my age", "Parents", "Athletes", "Pet owners"];
+  }
   return [];
 }
 
@@ -303,16 +341,6 @@ export function customerReviewsTemplate(input: BusinessTemplateInput): TemplateR
       tag: constructive ? "Needs work 🔧" : "Love it ❤️",
     };
   });
-}
-
-export function simulationEventTemplate(week: number, productName: string) {
-  const events = [
-    { headline: "Friends Spread the Word", description: `More people heard about ${productName} this week!`, modifier: 1.15, modifierLabel: "More customers" },
-    { headline: "A Quiet School Week", description: "Customers were a little busier than usual this week.", modifier: 0.9, modifierLabel: "Fewer customers" },
-    { headline: "Great Customer Feedback", description: `A happy customer recommended ${productName} to a friend.`, modifier: 1.1, modifierLabel: "More customers" },
-    { headline: "A Normal Business Week", description: "Demand stayed steady while you worked on your plan.", modifier: 1, modifierLabel: "Steady demand" },
-  ];
-  return events[(Math.max(1, week) - 1) % events.length];
 }
 
 export type AssistantTemplateAction =

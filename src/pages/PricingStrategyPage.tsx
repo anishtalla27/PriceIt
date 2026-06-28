@@ -1,0 +1,300 @@
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Calculator, CheckCircle2, Sparkles, Store } from "lucide-react";
+import { ChronicleButton } from "@/components/ui/chronicle-button";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
+import { SaveStatus } from "@/components/ui/save-status";
+import { useAppState } from "@/context/AppStateContext";
+import type { FixedCostItem, VariableCostItem } from "@/context/AppStateContext";
+import logo from "../../logo.png";
+
+type Strategy = "cost-plus" | "market" | "value";
+
+function fixedMonthly(item: FixedCostItem): number {
+  if (item.totalCost === "" || Number(item.totalCost) <= 0) return 0;
+  if (item.type === "monthly") return Number(item.totalCost);
+  if (item.monthsOfUse === "" || Number(item.monthsOfUse) <= 0) return 0;
+  return Number(item.totalCost) / Number(item.monthsOfUse);
+}
+
+function variableCPP(item: VariableCostItem): number {
+  const p = Number(item.pricePerPack);
+  const pp = Number(item.unitsPerPack);
+  const u = Number(item.unitsPerProduct);
+  if (!p || !pp || !u) return 0;
+  return (p / pp) * u;
+}
+
+function fmt(n: number): string {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function roundMoney(n: number): number {
+  return Math.max(0, Math.round(n * 100) / 100);
+}
+
+function priceStepFor(amount: number): number {
+  if (amount >= 5000) return 500;
+  if (amount >= 1000) return 100;
+  if (amount >= 500) return 50;
+  if (amount >= 100) return 10;
+  if (amount >= 25) return 1;
+  return 0.25;
+}
+
+function Metric({
+  label,
+  value,
+  helper,
+  accent = "#5DB7C4",
+  term,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  accent?: string;
+  term?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#DCE9EC] bg-white px-4 py-4 shadow-sm">
+      <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#6F8A91]">
+        {label}
+        {term && <HelpTooltip term={term} />}
+      </p>
+      <p className="mt-2 text-2xl font-extrabold text-[#2B2B2B]" style={{ color: accent }}>
+        {value}
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-[#6F8A91]">{helper}</p>
+    </div>
+  );
+}
+
+function LessonBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-3xl border border-[#DCE9EC] bg-white/95 px-4 py-4 shadow-sm">
+      {children}
+    </div>
+  );
+}
+
+export default function PricingStrategyPage() {
+  const navigate = useNavigate();
+  const params = useParams();
+  const strategy = (params.strategy ?? "cost-plus") as Strategy;
+  const { state, updatePricing } = useAppState();
+  const { productInfo, pricing, fixedCosts, variableCosts } = state;
+
+  const currentPrice = Number(pricing.sellingPrice) || 0;
+  const unitsPerMonth = Number(pricing.unitsPerMonth) || 1;
+  const fixedMonthlyTotal = fixedCosts.reduce((sum, item) => sum + fixedMonthly(item), 0);
+  const variableCost = variableCosts.reduce((sum, item) => sum + variableCPP(item), 0);
+  const costPerProduct = variableCost + fixedMonthlyTotal / unitsPerMonth;
+  const [desiredProfit, setDesiredProfit] = useState(Math.max(1, roundMoney(costPerProduct * 0.5)));
+  const [lowPrice, setLowPrice] = useState(Math.max(1, roundMoney(currentPrice * 0.8 || costPerProduct + 1)));
+  const [averagePrice, setAveragePrice] = useState(Math.max(2, roundMoney(currentPrice || costPerProduct + 2)));
+  const [highPrice, setHighPrice] = useState(Math.max(3, roundMoney(currentPrice * 1.25 || costPerProduct + 4)));
+  const [valueAnswers, setValueAnswers] = useState({
+    custom: false,
+    unique: false,
+    quality: false,
+    solvesProblem: false,
+    giftable: false,
+  });
+
+  const costPlusPrice = roundMoney(costPerProduct + desiredProfit);
+  const valueScore = Object.values(valueAnswers).filter(Boolean).length;
+  const valueLow = roundMoney(costPerProduct + Math.max(1, desiredProfit) + valueScore * 0.75);
+  const valueHigh = roundMoney(valueLow + Math.max(1.5, valueScore * 1.2));
+  const priceStep = priceStepFor(Math.max(costPerProduct, currentPrice, highPrice, desiredProfit));
+
+  const meta = {
+    "cost-plus": {
+      title: "Cost-Plus Pricing",
+      eyebrow: "Start with your costs",
+      icon: <Calculator className="h-5 w-5" />,
+      intro: "Cost-plus pricing means: cost per product plus the profit you want. It is the easiest way to avoid accidentally losing money.",
+    },
+    market: {
+      title: "Market-Based Pricing",
+      eyebrow: "Compare similar products",
+      icon: <Store className="h-5 w-5" />,
+      intro: "Market-based pricing means looking at what similar products sell for, then deciding where your product belongs.",
+    },
+    value: {
+      title: "Value-Based Pricing",
+      eyebrow: "Price the extra value",
+      icon: <Sparkles className="h-5 w-5" />,
+      intro: "Value-based pricing asks what customers get from your product, not just what it costs to make.",
+    },
+  }[strategy] ?? {
+    title: "Cost-Plus Pricing",
+    eyebrow: "Start with your costs",
+    icon: <Calculator className="h-5 w-5" />,
+    intro: "Cost-plus pricing means: cost per product plus the profit you want.",
+  };
+
+  return (
+    <div className="min-h-screen priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#E0EFF1] bg-white/80 px-6 py-4 backdrop-blur-sm">
+        <button onClick={() => navigate("/setup/pricing-lab/strategies")} className="min-h-11 px-3 text-sm font-semibold text-[#5DB7C4] transition-colors hover:text-[#F36C3D]">
+          Methods
+        </button>
+        <img src={logo} alt="LaunchPad logo" className="h-14 w-auto" />
+        <div className="w-16" />
+      </header>
+
+      <main className="px-4 py-5">
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="mb-5">
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#5DB7C4]">{meta.eyebrow}</p>
+            <div className="mt-1 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0FAFB] text-[#5DB7C4]">
+                {meta.icon}
+              </div>
+              <h1 className="text-3xl font-extrabold leading-tight text-[#2B2B2B] sm:text-[2.35rem]">{meta.title}</h1>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#6F8A91]">
+              {meta.intro}
+            </p>
+          </div>
+
+          <section className="mb-4 grid gap-3 sm:grid-cols-3">
+            <Metric label="Your price" value={`$${fmt(currentPrice)}`} helper="The price saved in your plan." />
+            <Metric label="Cost per product" value={`$${fmt(costPerProduct)}`} helper="Your estimated cost for one product." term="Cost per unit" />
+            <Metric label="Product" value={productInfo.productName || "Your product"} helper={productInfo.category || "Use this lesson with your current idea."} accent="#F36C3D" />
+          </section>
+
+          {strategy === "cost-plus" && (
+            <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+              <LessonBox>
+                <h2 className="text-xl font-extrabold text-[#2B2B2B]">Build the price</h2>
+                <p className="mt-1 text-sm text-[#6F8A91]">Choose how much profit you want from each sale.</p>
+                <label className="mt-4 block text-xs font-bold uppercase tracking-wider text-[#6F8A91]">
+                  Desired profit per product
+                  <input className="bauhaus-field-input mt-1" type="number" min="0" step={priceStep} value={desiredProfit} onChange={(event) => setDesiredProfit(Math.max(0, Number(event.target.value) || 0))} />
+                </label>
+                <div className="mt-4 rounded-2xl bg-[#F0FAFB] px-4 py-4">
+                  <p className="text-sm font-bold text-[#6F8A91]">${fmt(costPerProduct)} cost + ${fmt(desiredProfit)} profit</p>
+                  <p className="mt-1 text-3xl font-extrabold text-[#5DB7C4]">${fmt(costPlusPrice)}</p>
+                </div>
+              </LessonBox>
+              <LessonBox>
+                <h2 className="text-xl font-extrabold text-[#2B2B2B]">When this works best</h2>
+                <div className="mt-3 grid gap-2">
+                  {[
+                    "You are still learning what customers will pay.",
+                    "Your costs are clear and you do not want to lose money.",
+                    "You want a simple starting price to test for one week.",
+                  ].map((item) => (
+                    <p key={item} className="flex gap-2 rounded-2xl bg-[#F7F9FA] px-3 py-2 text-sm text-[#2B2B2B]">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#16a34a]" />
+                      {item}
+                    </p>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-[#6F8A91]">Watch out: cost-plus does not tell you whether customers think the price feels fair. Test it with real people.</p>
+              </LessonBox>
+            </div>
+          )}
+
+          {strategy === "market" && (
+            <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+              <LessonBox>
+                <h2 className="text-xl font-extrabold text-[#2B2B2B]">Enter competitor prices</h2>
+                <p className="mt-1 text-sm text-[#6F8A91]">Use prices from similar products. They do not need to be perfect.</p>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  {[
+                    ["Low competitor", lowPrice, setLowPrice],
+                    ["Average competitor", averagePrice, setAveragePrice],
+                    ["High competitor", highPrice, setHighPrice],
+                  ].map(([label, value, setter]) => (
+                    <label key={label as string} className="text-xs font-bold uppercase tracking-wider text-[#6F8A91]">
+                      {label as string}
+                      <input className="bauhaus-field-input mt-1" type="number" min="0" step={priceStep} value={value as number} onChange={(event) => (setter as (value: number) => void)(Math.max(0, Number(event.target.value) || 0))} />
+                    </label>
+                  ))}
+                </div>
+              </LessonBox>
+              <LessonBox>
+                <h2 className="text-xl font-extrabold text-[#2B2B2B]">Choose your position</h2>
+                <div className="mt-3 grid gap-3">
+                  <Metric label="Budget option" value={`$${fmt(lowPrice)}`} helper="Good if you want customers to try you easily." />
+                  <Metric label="Average option" value={`$${fmt(averagePrice)}`} helper="Good if your product is similar to others." accent="#F59E0B" />
+                  <Metric label="Premium option" value={`$${fmt(highPrice)}`} helper="Good only if your product looks or feels better." accent="#F36C3D" />
+                </div>
+                <p className="mt-3 text-sm text-[#6F8A91]">Watch out: if a competitor is cheaper because their costs are lower, copying them may hurt your profit.</p>
+              </LessonBox>
+            </div>
+          )}
+
+          {strategy === "value" && (
+            <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+              <LessonBox>
+                <h2 className="text-xl font-extrabold text-[#2B2B2B]">What extra value do customers get?</h2>
+                <p className="mt-1 text-sm text-[#6F8A91]">Check what makes your product worth more than a basic version.</p>
+                <div className="mt-4 grid gap-2">
+                  {[
+                    ["custom", "It is custom-made for the customer."],
+                    ["unique", "It is different from what people usually see."],
+                    ["quality", "It uses better materials or looks higher quality."],
+                    ["solvesProblem", "It saves time or solves a real problem."],
+                    ["giftable", "It feels special enough to give as a gift."],
+                  ].map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 rounded-2xl border border-[#DCE9EC] bg-[#F7F9FA] px-3 py-2 text-sm font-bold text-[#2B2B2B]">
+                      <input
+                        type="checkbox"
+                        checked={valueAnswers[key as keyof typeof valueAnswers]}
+                        onChange={(event) => setValueAnswers((prev) => ({ ...prev, [key]: event.target.checked }))}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </LessonBox>
+              <LessonBox>
+                <h2 className="text-xl font-extrabold text-[#2B2B2B]">Value price range</h2>
+                <div className="mt-3 rounded-2xl bg-[#F0FAFB] px-4 py-4">
+                  <p className="text-sm font-bold text-[#6F8A91]">{valueScore} value signals selected</p>
+                  <p className="mt-1 text-3xl font-extrabold text-[#5DB7C4]">${fmt(valueLow)} - ${fmt(valueHigh)}</p>
+                </div>
+                <p className="mt-3 text-sm text-[#6F8A91]">This is not a magic answer. It is a test range. Customers need to understand the extra value before they pay more.</p>
+                <p className="mt-3 rounded-2xl bg-[#F7F9FA] px-3 py-2 text-sm text-[#2B2B2B]">
+                  Try saying: “This costs more because {productInfo.specialFeature || "it has a special feature"}.”
+                </p>
+              </LessonBox>
+            </div>
+          )}
+
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <ChronicleButton
+              text="Back to Methods"
+              onClick={() => navigate("/setup/pricing-lab/strategies")}
+              hoverColor="#5DB7C4"
+              customBackground="#E8ECEE"
+              customForeground="#5DB7C4"
+              hoverForeground="#ffffff"
+              width="150px"
+              borderRadius="10px"
+            />
+            <ChronicleButton
+              text="Use This Price"
+              onClick={() => {
+                const nextPrice =
+                  strategy === "cost-plus" ? costPlusPrice : strategy === "market" ? averagePrice : valueLow;
+                updatePricing({ sellingPrice: roundMoney(nextPrice) });
+                navigate("/setup/pricing-lab");
+              }}
+              hoverColor="#F36C3D"
+              customBackground="#5DB7C4"
+              customForeground="#ffffff"
+              hoverForeground="#ffffff"
+              width="170px"
+              borderRadius="10px"
+            />
+          </div>
+          <SaveStatus />
+        </div>
+      </main>
+    </div>
+  );
+}

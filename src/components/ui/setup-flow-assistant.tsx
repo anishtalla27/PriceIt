@@ -68,7 +68,7 @@ const FIXED_COST_CATEGORIES: FixedCostCategory[] = [
   "Other",
 ];
 
-const SYSTEM_PROMPT = `You are a helpful business assistant for kids aged 8-12 using the PriceIt app.
+const SYSTEM_PROMPT = `You are a helpful business assistant for kids aged 8-12 using the LaunchPad app.
 You can read and update the user's product information through tool calls.
 
 Rules you must always follow:
@@ -791,7 +791,7 @@ User request: ${userInput}`;
                 <Bot className="h-4 w-4" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#2B2B2B] leading-tight">PriceIt Helper</p>
+                <p className="text-sm font-bold text-[#2B2B2B] leading-tight">LaunchPad Helper</p>
                 <p className="text-[11px] text-[#7B9EA3] leading-tight">Ask me to update anything</p>
               </div>
             </div>
@@ -873,7 +873,7 @@ User request: ${userInput}`;
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder={isResponding ? "PriceIt is thinking..." : "Type a message..."}
+                placeholder={isResponding ? "LaunchPad is thinking..." : "Type a message..."}
                 disabled={isResponding}
                 className="flex-1 bg-transparent outline-none text-sm text-[#2B2B2B] placeholder-[#7B9EA3] px-2"
               />

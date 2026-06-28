@@ -33,7 +33,7 @@ const Hero1 = ({
   inputDisabled = false,
   inputPlaceholder = "Tip: Be specific for more accurate AI results.",
   badgeText = "Product Info Setup",
-  title = "Tell PriceIt About Your Product",
+  title = "Tell LaunchPad About Your Product",
   description = "Chat with our AI to describe your idea.",
 }: Hero1Props) => {
   const [internalText, setInternalText] = React.useState("");
@@ -77,8 +77,8 @@ const Hero1 = ({
           Back
         </button>
         <div className="flex items-center gap-2">
-          <img src={logoSrc} width={150} height={150} alt="PriceIt logo" />
-          <div className="font-bold text-md">PriceIt</div>
+          <img src={logoSrc} width={150} height={150} alt="LaunchPad logo" />
+          <div className="font-bold text-md">LaunchPad</div>
         </div>
         <div className="flex items-center gap-2">
           <ChronicleButton

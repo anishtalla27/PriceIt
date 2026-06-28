@@ -40,7 +40,7 @@ export async function generateAI(options: GenerateAIOptions): Promise<GenerateAI
     return {
       text: options.template(),
       provider: "template",
-      warning: { kind: "template", message: "PriceIt is using built-in feedback." },
+      warning: { kind: "template", message: "LaunchPad is using built-in feedback." },
     };
   }
 
@@ -59,7 +59,7 @@ export async function generateAI(options: GenerateAIOptions): Promise<GenerateAI
       provider: "template",
       warning: {
         kind: "remote_failed",
-        message: "Online AI could not respond, so PriceIt used built-in feedback instead.",
+        message: "Online AI could not respond, so LaunchPad used built-in feedback instead.",
       },
     };
   }
