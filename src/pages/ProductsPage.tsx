@@ -169,6 +169,14 @@ export default function ProductsPage() {
     setProducts(nextProducts);
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate("/");
+  };
+
   return (
     <div
       className="min-h-screen priceit-fade-in"
@@ -177,10 +185,10 @@ export default function ProductsPage() {
       <header className="sticky top-0 z-20 flex items-center border-b border-[#D0EAF0] bg-white px-4 py-4 shadow-sm">
         <button
           type="button"
-          onClick={() => navigate("/results")}
+          onClick={handleBack}
           className="min-w-[86px] rounded-xl bg-[#0E92A3] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#E1603F]"
         >
-          Results
+          Back
         </button>
         <div className="flex flex-1 justify-center">
           <img src={logo} alt="LaunchPad logo" className="h-12 w-auto" />
