@@ -13,15 +13,11 @@ const BAUHAUS_CARD_STYLES = `
   place-content: center;
   place-items: center;
   text-align: center;
-  box-shadow: 1px 12px 25px rgb(0,0,0/78%);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.28);
   border-radius: var(--card-radius, 20px);
-  border: var(--card-border-width, 2px) solid transparent;
+  border: var(--card-border-width, 2px) solid var(--card-separator, #2F2B2A);
   --rotation: 4.2rad;
-  background-image:
-    linear-gradient(var(--card-bg, #151419), var(--card-bg, #151419)),
-    linear-gradient(calc(var(--rotation,4.2rad)), var(--card-accent, #156ef6) 0, var(--card-bg, #151419) 30%, transparent 80%);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
+  background: var(--card-bg, #151419);
   color: var(--card-text-main, #f0f0f1);
 }
 .bauhaus-card::before {
@@ -56,7 +52,7 @@ const BAUHAUS_CARD_STYLES = `
   padding-bottom: 7px;
 }
 .bauhaus-date {
-  color: var(--card-text-top, #bfc7d5);
+  color: var(--card-text-top, #B9C1CC);
 }
 .bauhaus-size6 {
   width: 2.5rem;
@@ -79,7 +75,7 @@ const BAUHAUS_CARD_STYLES = `
   color: var(--card-text-main, #f0f0f1);
 }
 .bauhaus-card-body p {
-  color: var(--card-text-sub, #a0a1b3);
+  color: var(--card-text-sub, #8F94A3);
   font-size: 1rem;
   letter-spacing: 0.031rem;
 }
@@ -104,13 +100,13 @@ const BAUHAUS_CARD_STYLES = `
   width: 100%;
   display: block;
   margin-bottom: 0.313rem;
-  color: var(--card-text-progress-label, #b4c7e7);
+  color: var(--card-text-progress-label, #AEBBCB);
 }
 .bauhaus-progress span:last-of-type {
   margin-top: 0.313rem;
   text-align: right;
   display: block;
-  color: var(--card-text-progress-value, #e7e7f7);
+  color: var(--card-text-progress-value, #E6E8EE);
 }
 .bauhaus-card-footer {
   position: absolute;
@@ -178,7 +174,7 @@ export const Component: React.FC<BauhausCardProps> = ({
   borderRadius = "2em",
   backgroundColor = "#151419",
   separatorColor = "#2F2B2A",
-  accentColor = "#156ef6",
+  accentColor = "#255D8F",
   borderWidth = "2px",
   topInscription = "Not Set!",
   swapButtons = false,
@@ -193,12 +189,12 @@ export const Component: React.FC<BauhausCardProps> = ({
   onOutlinedButtonClick,
   onMoreOptionsClick,
   mirrored = false,
-  ChronicleButtonHoverColor = "#156ef6",
-  textColorTop = "#bfc7d5",
+  ChronicleButtonHoverColor = "#255D8F",
+  textColorTop = "#B9C1CC",
   textColorMain = "#f0f0f1",
-  textColorSub = "#a0a1b3",
-  textColorProgressLabel = "#b4c7e7",
-  textColorProgressValue = "#e7e7f7",
+  textColorSub = "#8F94A3",
+  textColorProgressLabel = "#AEBBCB",
+  textColorProgressValue = "#E6E8EE",
   progressBarBackground = "#363636",
   chronicleButtonBg = "#151419",
   chronicleButtonFg = "#fff",

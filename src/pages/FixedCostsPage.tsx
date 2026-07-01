@@ -47,7 +47,7 @@ function isRowComplete(item: FixedCostItem): boolean {
 // ─── shared card container with bauhaus gradient border + mouse tracking ──────
 
 function CardShell({
-  accentColor = "#5DB7C4",
+  accentColor = "#2F6F7A",
   compact = false,
   children,
 }: {
@@ -103,22 +103,22 @@ function CompactCard({
   const monthly = monthlyPortion(item);
 
   return (
-    <CardShell accentColor="#5DB7C4" compact>
+    <CardShell accentColor="#2F6F7A" compact>
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 sm:gap-3 items-center">
         <div className="min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xl select-none leading-none">{categoryEmoji(item.category)}</span>
-            <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#B0C4C7]"}`}>
+            <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#9AA9AD]"}`}>
               {item.name || "Unnamed item"}
             </p>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-            <span className="px-2 py-0.5 rounded-full bg-[#EEF6F8] text-[#5DB7C4]">{item.category}</span>
-            <span className="px-2 py-0.5 rounded-full bg-[#F7F9FA] text-[#7B9EA3]">
+            <span className="px-2 py-0.5 rounded-full bg-[#F1F5F6] text-[#2F6F7A]">{item.category}</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#F7F9FA] text-[#6C7E83]">
               {item.type === "monthly" ? "Monthly" : "One-Time"}
             </span>
             {item.type === "one-time" && item.monthsOfUse && (
-              <span className="px-2 py-0.5 rounded-full bg-[#FFF5F0] text-[#F36C3D]">
+              <span className="px-2 py-0.5 rounded-full bg-[#F7F0EC] text-[#A65A3F]">
                 {item.monthsOfUse} mo
               </span>
             )}
@@ -126,17 +126,17 @@ function CompactCard({
         </div>
 
         <div className="shrink-0 text-left sm:text-right">
-          <p className="font-extrabold text-[#5DB7C4] text-base leading-tight">
+          <p className="font-extrabold text-[#2F6F7A] text-base leading-tight">
             {monthly > 0 ? `$${monthly.toFixed(2)}` : "—"}
           </p>
-          <p className="text-[10px] text-[#9BBFC3] font-semibold">monthly portion</p>
+          <p className="text-[10px] text-[#84999E] font-semibold">monthly portion</p>
         </div>
 
         <div className="shrink-0 flex items-center gap-2">
         <button
           type="button"
           onClick={onEdit}
-          className="min-h-10 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#EEF6F8] text-[#5DB7C4] hover:bg-[#5DB7C4] hover:text-white transition-colors"
+          className="min-h-10 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#F1F5F6] text-[#2F6F7A] hover:bg-[#2F6F7A] hover:text-white transition-colors"
         >
           Edit
         </button>
@@ -144,7 +144,7 @@ function CompactCard({
         <button
           type="button"
           onClick={onDelete}
-          className="min-h-10 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
+          className="min-h-10 flex items-center justify-center rounded-lg bg-[#F6EDE8] text-[#A65A3F] hover:bg-[#A65A3F] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete"
         >
           Delete
@@ -188,7 +188,7 @@ function EditCard({
       : Math.min(monthsSliderMax, Math.max(monthsSliderMin, Math.round(Number(item.monthsOfUse))));
 
   return (
-    <CardShell accentColor="#5DB7C4">
+    <CardShell accentColor="#2F6F7A">
       <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_11rem_auto] gap-2 items-end mb-2.5">
         <div className="min-w-0">
           <label className="bauhaus-field-label">Cost item name</label>
@@ -200,10 +200,10 @@ function EditCard({
             onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
             placeholder="e.g. Sewing Machine"
             autoFocus
-            style={nameError ? { borderColor: "#F36C3D", background: "#FFF5F0" } : undefined}
+            style={nameError ? { borderColor: "#A65A3F", background: "#F7F0EC" } : undefined}
           />
           {nameError && (
-            <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+            <p className="mt-1 text-xs font-semibold text-[#A65A3F]">
               Add a name so we know what this cost is.
             </p>
           )}
@@ -215,7 +215,7 @@ function EditCard({
             value={item.category}
             onChange={(e) => onUpdate({ category: e.target.value as FixedCostCategory })}
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235DB7C4' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%232F6F7A' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
               backgroundRepeat: "no-repeat",
               backgroundPosition: "right 10px center",
               appearance: "none",
@@ -232,7 +232,7 @@ function EditCard({
         <button
           type="button"
           onClick={onDelete}
-          className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
+          className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#F6EDE8] text-[#A65A3F] hover:bg-[#A65A3F] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete cost item"
         >
           Delete
@@ -243,7 +243,7 @@ function EditCard({
         <div className="flex-1">
           <label className="bauhaus-field-label">Total cost</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7B9EA3] font-semibold select-none pointer-events-none">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6C7E83] font-semibold select-none pointer-events-none">
               $
             </span>
             <input
@@ -270,12 +270,12 @@ function EditCard({
               placeholder="0.00"
               style={{
                 paddingLeft: "1.75rem",
-                ...(totalCostError ? { borderColor: "#F36C3D", background: "#FFF5F0" } : {}),
+                ...(totalCostError ? { borderColor: "#A65A3F", background: "#F7F0EC" } : {}),
               }}
             />
           </div>
           {totalCostError && (
-            <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+            <p className="mt-1 text-xs font-semibold text-[#A65A3F]">
               Enter a cost bigger than $0.00.
             </p>
           )}
@@ -283,14 +283,14 @@ function EditCard({
 
         <div className="w-full">
           <label className="bauhaus-field-label">Type</label>
-          <div className="flex rounded-xl overflow-hidden border-2 border-[#E0EFF1] min-h-10">
+          <div className="flex rounded-xl overflow-hidden border-2 border-[#DCE5E8] min-h-10">
             <button
               type="button"
               onClick={() => onUpdate({ type: "one-time" })}
               className={`flex-1 min-h-10 text-xs font-bold transition-colors ${
                 item.type === "one-time"
-                  ? "bg-[#5DB7C4] text-white"
-                  : "bg-[#E8ECEE] text-[#7B9EA3] hover:bg-[#dce5e8]"
+                  ? "bg-[#2F6F7A] text-white"
+                  : "bg-[#E7EBED] text-[#6C7E83] hover:bg-[#DDE4E6]"
               }`}
             >
               One-Time
@@ -300,8 +300,8 @@ function EditCard({
               onClick={() => onUpdate({ type: "monthly" })}
               className={`flex-1 min-h-10 text-xs font-bold transition-colors ${
                 item.type === "monthly"
-                  ? "bg-[#5DB7C4] text-white"
-                  : "bg-[#E8ECEE] text-[#7B9EA3] hover:bg-[#dce5e8]"
+                  ? "bg-[#2F6F7A] text-white"
+                  : "bg-[#E7EBED] text-[#6C7E83] hover:bg-[#DDE4E6]"
               }`}
             >
               Monthly
@@ -336,7 +336,7 @@ function EditCard({
                 }
               }}
               placeholder="12"
-              style={monthsError ? { borderColor: "#F36C3D", background: "#FFF5F0" } : undefined}
+              style={monthsError ? { borderColor: "#A65A3F", background: "#F7F0EC" } : undefined}
             />
             <input
               type="range"
@@ -351,34 +351,34 @@ function EditCard({
               }}
               aria-label="Months of use slider"
               style={{
-                "--range-accent": "#F36C3D",
+                "--range-accent": "#A65A3F",
               } as React.CSSProperties}
             />
-            <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#9BBFC3]">
+            <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-[#84999E]">
               <span>{monthsSliderMin} mo</span>
               <span>{monthsSliderMax} mo</span>
             </div>
             {monthsError && (
-              <p className="mt-1 text-xs font-semibold text-[#F36C3D]">
+              <p className="mt-1 text-xs font-semibold text-[#A65A3F]">
                 Enter at least 1 month.
               </p>
             )}
             {!monthsError && (
-              <p className="mt-1 text-[11px] text-[#7B9EA3] leading-relaxed">
+              <p className="mt-1 text-[11px] text-[#6C7E83] leading-relaxed">
                 How long will you use this item? The cost gets spread across those months.{" "}
-                <span className="font-semibold text-[#F36C3D]">
+                <span className="font-semibold text-[#A65A3F]">
                   Example: a $24 tool used for 12 months = $2/month.
                 </span>
               </p>
             )}
           </div>
           {monthly > 0 && (
-            <div className="rounded-xl bg-[#FFF0EA] border border-[#F36C3D]/20 px-3 py-2">
-              <p className="text-xs font-bold text-[#F36C3D] leading-snug">
+            <div className="rounded-xl bg-[#F6EDE8] border border-[#A65A3F]/20 px-3 py-2">
+              <p className="text-xs font-bold text-[#A65A3F] leading-snug">
                 ${Number(item.totalCost).toFixed(2)} over {item.monthsOfUse}{" "}
                 month{Number(item.monthsOfUse) !== 1 ? "s" : ""}
               </p>
-              <p className="text-sm sm:text-base font-extrabold text-[#F36C3D]">
+              <p className="text-sm sm:text-base font-extrabold text-[#A65A3F]">
                 = ${monthly.toFixed(2)}/month
               </p>
             </div>
@@ -386,14 +386,14 @@ function EditCard({
         </div>
       )}
 
-      <div className="mt-1 pt-2 border-t border-[#E0EFF1] flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-[#9BBFC3]">
+      <div className="mt-1 pt-2 border-t border-[#DCE5E8] flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-[#84999E]">
           {monthly > 0 ? `Monthly portion: $${monthly.toFixed(2)}/mo` : "Monthly portion: —"}
         </span>
         <button
           type="button"
           onClick={onDone}
-          className="min-h-10 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#5DB7C4] text-white hover:bg-[#4aa8b5] transition-colors"
+          className="min-h-10 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#2F6F7A] text-white hover:bg-[#285F69] transition-colors"
         >
           ✓ Done
         </button>
@@ -468,10 +468,10 @@ export default function FixedCostsPage() {
   return (
     <div className="priceit-cost-page min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-[#DCE5E8] bg-white sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup")}
-          className="min-h-11 px-3 flex items-center gap-2 text-[#5DB7C4] font-semibold text-sm hover:text-[#F36C3D] transition-colors"
+          className="min-h-11 px-3 flex items-center gap-2 text-[#2F6F7A] font-semibold text-sm hover:text-[#A65A3F] transition-colors"
         >
           Back
         </button>
@@ -489,7 +489,7 @@ export default function FixedCostsPage() {
               {mode === "improve" ? "Review your current fixed costs" : "What are your fixed costs?"}
               <HelpTooltip term="Fixed costs" />
             </h1>
-            <p className="mt-1 text-[#7B9EA3] text-sm">
+            <p className="mt-1 text-[#6C7E83] text-sm">
               {mode === "improve"
                 ? "Use what you pay today so the improvement plan starts from real numbers."
                 : "These are costs you pay no matter how many you sell — like rent, equipment, or subscriptions. Service businesses with no overhead can skip this step."}
@@ -499,18 +499,18 @@ export default function FixedCostsPage() {
           {/* Cost item cards */}
           <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
             {fixedCosts.length === 0 && (
-              <div className="rounded-2xl border-2 border-dashed border-[#C8E0E4] bg-white/60 py-8 px-5 text-center flex flex-col items-center gap-3">
+              <div className="rounded-2xl border-2 border-dashed border-[#BCCDD1] bg-white py-8 px-5 text-center flex flex-col items-center gap-3">
                 <p className="text-3xl">🏷️</p>
                 <div>
-                  <p className="text-[#7B9EA3] font-semibold text-sm">No fixed costs added yet.</p>
-                  <p className="text-[#B0C4C7] text-xs mt-0.5">
+                  <p className="text-[#6C7E83] font-semibold text-sm">No fixed costs added yet.</p>
+                  <p className="text-[#9AA9AD] text-xs mt-0.5">
                     Add things like rent, equipment, or supplies — or skip if your business has none.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate("/setup/variable-costs")}
-                  className="mt-1 rounded-xl border-2 border-[#C8E0E4] bg-white px-5 py-2.5 text-sm font-bold text-[#5DB7C4] hover:border-[#5DB7C4] hover:bg-[#EAF7F9] transition-colors"
+                  className="mt-1 rounded-xl border-2 border-[#BCCDD1] bg-white px-5 py-2.5 text-sm font-bold text-[#2F6F7A] hover:border-[#2F6F7A] hover:bg-[#EFF4F5] transition-colors"
                 >
                   I have no fixed costs — skip this step →
                 </button>
@@ -541,9 +541,9 @@ export default function FixedCostsPage() {
               <ChronicleButton
                 text="+ Add Fixed Cost"
                 onClick={handleAdd}
-                hoverColor="#F36C3D"
-                customBackground="#EAF7F9"
-                customForeground="#5DB7C4"
+                hoverColor="#A65A3F"
+                customBackground="#EFF4F5"
+                customForeground="#2F6F7A"
                 hoverForeground="#ffffff"
                 width="100%"
                 borderRadius="14px"
@@ -553,18 +553,18 @@ export default function FixedCostsPage() {
 
           {/* Running total */}
           {fixedCosts.length > 0 && (
-            <div className="mt-3 rounded-2xl bg-white border border-[#E0EFF1] px-4 py-3 flex items-center justify-between shadow-sm">
+            <div className="mt-3 rounded-2xl bg-white border border-[#DCE5E8] px-4 py-3 flex items-center justify-between shadow-sm">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-[#7B9EA3]">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#6C7E83]">
                   Total Monthly Fixed Costs
                 </p>
-                <p className="text-xs text-[#B0C4C7] mt-0.5">
+                <p className="text-xs text-[#9AA9AD] mt-0.5">
                   Sum of all monthly portions above
                 </p>
               </div>
-              <p className="text-2xl font-extrabold text-[#5DB7C4]">
+              <p className="text-2xl font-extrabold text-[#2F6F7A]">
                 ${total.toFixed(2)}
-                <span className="text-sm font-bold text-[#9BBFC3]">/mo</span>
+                <span className="text-sm font-bold text-[#84999E]">/mo</span>
               </p>
             </div>
           )}
@@ -574,9 +574,9 @@ export default function FixedCostsPage() {
             <ChronicleButton
               text="Back"
               onClick={() => navigate("/setup")}
-              hoverColor="#5DB7C4"
-              customBackground="#E8ECEE"
-              customForeground="#5DB7C4"
+              hoverColor="#2F6F7A"
+              customBackground="#E7EBED"
+              customForeground="#2F6F7A"
               hoverForeground="#ffffff"
               width="140px"
               borderRadius="10px"
@@ -584,8 +584,8 @@ export default function FixedCostsPage() {
             <ChronicleButton
               text="Next"
               onClick={() => { if (canProceed) navigate("/setup/variable-costs"); }}
-              hoverColor="#F36C3D"
-              customBackground="#5DB7C4"
+              hoverColor="#A65A3F"
+              customBackground="#2F6F7A"
               customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="160px"

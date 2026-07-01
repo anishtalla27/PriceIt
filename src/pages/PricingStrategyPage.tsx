@@ -122,7 +122,7 @@ function Metric({
   label,
   value,
   helper,
-  accent = "#5DB7C4",
+  accent = "#2F6F7A",
   term,
   warning,
 }: {
@@ -134,17 +134,17 @@ function Metric({
   warning?: string | null;
 }) {
   return (
-    <div className={`rounded-2xl border bg-white px-4 py-4 shadow-sm ${warning ? "border-[#F36C3D]" : "border-[#DCE9EC]"}`}>
-      <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#6F8A91]">
+    <div className={`rounded-2xl border bg-white px-4 py-4 shadow-sm ${warning ? "border-[#A65A3F]" : "border-[#D9E2E5]"}`}>
+      <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#65777D]">
         {label}
         {term && <HelpTooltip term={term} />}
       </p>
       <p className="mt-2 break-words text-2xl font-extrabold text-[#2B2B2B]" style={{ color: accent }}>
         {value}
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-[#6F8A91]">{helper}</p>
+      <p className="mt-1 text-xs leading-relaxed text-[#65777D]">{helper}</p>
       {warning && (
-        <p className="mt-2 rounded-xl border border-[#F36C3D]/25 bg-[#FFF5F0] px-3 py-2 text-xs font-bold leading-relaxed text-[#F36C3D]">
+        <p className="mt-2 rounded-xl border border-[#A65A3F]/25 bg-[#F7F0EC] px-3 py-2 text-xs font-bold leading-relaxed text-[#A65A3F]">
           {warning}
         </p>
       )}
@@ -154,7 +154,7 @@ function Metric({
 
 function LessonBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-3xl border border-[#DCE9EC] bg-white/95 px-4 py-4 shadow-sm">
+    <div className="rounded-3xl border border-[#D9E2E5] bg-white px-4 py-4 shadow-sm">
       {children}
     </div>
   );
@@ -253,8 +253,8 @@ export default function PricingStrategyPage() {
 
   return (
     <div className="min-h-screen priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#E0EFF1] bg-white/80 px-6 py-4 backdrop-blur-sm">
-        <button onClick={() => navigate("/setup/pricing-lab/strategies")} className="min-h-11 px-3 text-sm font-semibold text-[#5DB7C4] transition-colors hover:text-[#F36C3D]">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#DCE5E8] bg-white px-6 py-4">
+        <button onClick={() => navigate("/setup/pricing-lab/strategies")} className="min-h-11 px-3 text-sm font-semibold text-[#2F6F7A] transition-colors hover:text-[#A65A3F]">
           Methods
         </button>
         <img src={logo} alt="LaunchPad logo" className="h-14 w-auto" />
@@ -264,14 +264,14 @@ export default function PricingStrategyPage() {
       <main className="px-4 py-5">
         <div className="mx-auto w-full max-w-5xl">
           <div className="mb-5">
-            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#5DB7C4]">{meta.eyebrow}</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#2F6F7A]">{meta.eyebrow}</p>
             <div className="mt-1 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0FAFB] text-[#5DB7C4]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F4F7F8] text-[#2F6F7A]">
                 {meta.icon}
               </div>
               <h1 className="text-3xl font-extrabold leading-tight text-[#2B2B2B] sm:text-[2.35rem]">{meta.title}</h1>
             </div>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#6F8A91]">
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#65777D]">
               {meta.intro}
             </p>
           </div>
@@ -279,17 +279,17 @@ export default function PricingStrategyPage() {
           <section className="mb-4 grid gap-3 sm:grid-cols-3">
             <Metric label="Your price" value={`$${fmt(currentPrice)}`} helper="The price saved in your plan." />
             <Metric label="Cost per product" value={`$${fmt(costPerProduct)}`} helper="Your estimated cost for one product." term="Cost per unit" />
-            <Metric label="Product" value={productInfo.productName || "Your product"} helper={productInfo.category || "Use this lesson with your current idea."} accent="#F36C3D" />
+            <Metric label="Product" value={productInfo.productName || "Your product"} helper={productInfo.category || "Use this lesson with your current idea."} accent="#A65A3F" />
           </section>
 
           {strategy === "cost-plus" && (
             <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
               <LessonBox>
                 <h2 className="text-xl font-extrabold text-[#2B2B2B]">Build the price</h2>
-                <p className="mt-1 text-sm text-[#6F8A91]">Choose how much profit you want from each sale.</p>
+                <p className="mt-1 text-sm text-[#65777D]">Choose how much profit you want from each sale.</p>
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#6F8A91]">Desired profit %</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#65777D]">Desired profit %</span>
                     <div className="flex items-center gap-1">
                       <input
                         type="number"
@@ -298,9 +298,9 @@ export default function PricingStrategyPage() {
                         step={1}
                         value={markupPct}
                         onChange={(e) => setMarkupPct(Math.max(0, Math.min(500, Number(e.target.value) || 0)))}
-                        className="w-16 rounded-lg border border-[#A9DDE3] bg-white px-2 py-1 text-right text-sm font-bold text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#5DB7C4]"
+                        className="w-16 rounded-lg border border-[#B9C9CE] bg-white px-2 py-1 text-right text-sm font-bold text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#2F6F7A]"
                       />
-                      <span className="text-sm font-bold text-[#6F8A91]">%</span>
+                      <span className="text-sm font-bold text-[#65777D]">%</span>
                     </div>
                   </div>
                   <input
@@ -310,17 +310,17 @@ export default function PricingStrategyPage() {
                     step={5}
                     value={Math.min(markupPct, 200)}
                     onChange={(e) => setMarkupPct(Number(e.target.value))}
-                    className="w-full accent-[#5DB7C4]"
+                    className="w-full accent-[#2F6F7A]"
                   />
-                  <div className="flex justify-between text-xs text-[#A0B8BD] mt-1">
+                  <div className="flex justify-between text-xs text-[#8A9CA1] mt-1">
                     <span>0%</span>
                     <span>100%</span>
                     <span>200%+</span>
                   </div>
                 </div>
-                <div className="mt-4 rounded-2xl bg-[#F0FAFB] px-4 py-4">
-                  <p className="text-sm font-bold text-[#6F8A91]">${fmt(costPerProduct)} cost + {markupPct}% = ${fmt(desiredProfit)} profit</p>
-                  <p className="mt-1 text-3xl font-extrabold text-[#5DB7C4]">${fmt(costPlusPrice)}</p>
+                <div className="mt-4 rounded-2xl bg-[#F4F7F8] px-4 py-4">
+                  <p className="text-sm font-bold text-[#65777D]">${fmt(costPerProduct)} cost + {markupPct}% = ${fmt(desiredProfit)} profit</p>
+                  <p className="mt-1 text-3xl font-extrabold text-[#2F6F7A]">${fmt(costPlusPrice)}</p>
                 </div>
               </LessonBox>
               <LessonBox>
@@ -332,12 +332,12 @@ export default function PricingStrategyPage() {
                     "You want a simple starting price to test for one week.",
                   ].map((item) => (
                     <p key={item} className="flex gap-2 rounded-2xl bg-[#F7F9FA] px-3 py-2 text-sm text-[#2B2B2B]">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#16a34a]" />
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#2E7D52]" />
                       {item}
                     </p>
                   ))}
                 </div>
-                <p className="mt-3 text-sm text-[#6F8A91]">Watch out: cost-plus does not tell you whether customers think the price feels fair. Test it with real people.</p>
+                <p className="mt-3 text-sm text-[#65777D]">Watch out: cost-plus does not tell you whether customers think the price feels fair. Test it with real people.</p>
               </LessonBox>
             </div>
           )}
@@ -346,23 +346,23 @@ export default function PricingStrategyPage() {
             <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
               <LessonBox>
                 <h2 className="text-xl font-extrabold text-[#2B2B2B]">Enter competitor prices</h2>
-                <p className="mt-1 text-sm text-[#6F8A91]">Use prices from similar products. They do not need to be perfect.</p>
+                <p className="mt-1 text-sm text-[#65777D]">Use prices from similar products. They do not need to be perfect.</p>
                 <div className="mt-4 flex flex-col gap-3">
                   {([
-                    { label: "Low", dot: "#22c55e", value: lowPrice, setter: setLowPrice },
-                    { label: "Average", dot: "#F59E0B", value: averagePrice, setter: setAveragePrice },
-                    { label: "High", dot: "#F36C3D", value: highPrice, setter: setHighPrice },
+                    { label: "Low", dot: "#2F7D52", value: lowPrice, setter: setLowPrice },
+                    { label: "Average", dot: "#A86F20", value: averagePrice, setter: setAveragePrice },
+                    { label: "High", dot: "#A65A3F", value: highPrice, setter: setHighPrice },
                   ] as const).map(({ label, dot, value, setter }) => (
                     <div
                       key={label}
                       className={`flex items-center gap-3 rounded-2xl border bg-[#F7FCFD] px-4 py-3 ${
-                        value === "" ? "border-[#F36C3D]" : "border-[#E0EFF1]"
+                        value === "" ? "border-[#A65A3F]" : "border-[#DCE5E8]"
                       }`}
                     >
                       <span className="h-2.5 w-2.5 flex-none rounded-full" style={{ backgroundColor: dot }} />
-                      <span className="w-16 text-xs font-bold uppercase tracking-wider text-[#6F8A91]">{label}</span>
+                      <span className="w-16 text-xs font-bold uppercase tracking-wider text-[#65777D]">{label}</span>
                       <div className="flex flex-1 items-center gap-1">
-                        <span className="text-sm font-bold text-[#6F8A91]">$</span>
+                        <span className="text-sm font-bold text-[#65777D]">$</span>
                         <input
                           type="number"
                           min="0"
@@ -381,8 +381,8 @@ export default function PricingStrategyPage() {
                           onBlur={() => {
                             if (value !== "") setter(roundMoney(value));
                           }}
-                          className={`w-full rounded-xl border bg-white px-3 py-2 text-sm font-bold text-[#2B2B2B] placeholder:text-[#B0C4C7] focus:outline-none focus:ring-2 focus:ring-[#5DB7C4] ${
-                            value === "" ? "border-[#F36C3D]" : "border-[#A9DDE3]"
+                          className={`w-full rounded-xl border bg-white px-3 py-2 text-sm font-bold text-[#2B2B2B] placeholder:text-[#9AA9AD] focus:outline-none focus:ring-2 focus:ring-[#2F6F7A] ${
+                            value === "" ? "border-[#A65A3F]" : "border-[#B9C9CE]"
                           }`}
                         />
                       </div>
@@ -397,25 +397,25 @@ export default function PricingStrategyPage() {
                     label="Budget option"
                     value={lowPrice === "" ? "Add price" : `$${fmt(lowPrice)}`}
                     helper="Good if you want customers to try you easily."
-                    accent={marketWarning(lowPrice) ? "#F36C3D" : "#5DB7C4"}
+                    accent={marketWarning(lowPrice) ? "#A65A3F" : "#2F6F7A"}
                     warning={marketWarning(lowPrice)}
                   />
                   <Metric
                     label="Average option"
                     value={averagePrice === "" ? "Add price" : `$${fmt(averagePrice)}`}
                     helper="Good if your product is similar to others."
-                    accent={marketWarning(averagePrice) ? "#F36C3D" : "#F59E0B"}
+                    accent={marketWarning(averagePrice) ? "#A65A3F" : "#A86F20"}
                     warning={marketWarning(averagePrice)}
                   />
                   <Metric
                     label="Premium option"
                     value={highPrice === "" ? "Add price" : `$${fmt(highPrice)}`}
                     helper="Good only if your product looks or feels better."
-                    accent="#F36C3D"
+                    accent="#A65A3F"
                     warning={marketWarning(highPrice)}
                   />
                 </div>
-                <p className="mt-3 text-sm text-[#6F8A91]">Watch out: if a competitor is cheaper because their costs are lower, copying them may hurt your profit.</p>
+                <p className="mt-3 text-sm text-[#65777D]">Watch out: if a competitor is cheaper because their costs are lower, copying them may hurt your profit.</p>
               </LessonBox>
             </div>
           )}
@@ -424,7 +424,7 @@ export default function PricingStrategyPage() {
             <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
               <LessonBox>
                 <h2 className="text-xl font-extrabold text-[#2B2B2B]">What extra value do customers get?</h2>
-                <p className="mt-1 text-sm text-[#6F8A91]">Check what makes your product worth more than a basic version.</p>
+                <p className="mt-1 text-sm text-[#65777D]">Check what makes your product worth more than a basic version.</p>
                 <div className="mt-4 grid gap-2">
                   {[
                     ["custom", "It is custom-made for the customer."],
@@ -433,7 +433,7 @@ export default function PricingStrategyPage() {
                     ["solvesProblem", "It saves time or solves a real problem."],
                     ["giftable", "It feels special enough to give as a gift."],
                   ].map(([key, label]) => (
-                    <label key={key} className="flex items-center gap-2 rounded-2xl border border-[#DCE9EC] bg-[#F7F9FA] px-3 py-2 text-sm font-bold text-[#2B2B2B]">
+                    <label key={key} className="flex items-center gap-2 rounded-2xl border border-[#D9E2E5] bg-[#F7F9FA] px-3 py-2 text-sm font-bold text-[#2B2B2B]">
                       <input
                         type="checkbox"
                         checked={valueAnswers[key as keyof typeof valueAnswers]}
@@ -446,11 +446,11 @@ export default function PricingStrategyPage() {
               </LessonBox>
               <LessonBox>
                 <h2 className="text-xl font-extrabold text-[#2B2B2B]">Value price range</h2>
-                <div className="mt-3 rounded-2xl bg-[#F0FAFB] px-4 py-4">
-                  <p className="text-sm font-bold text-[#6F8A91]">{valueScore} value signals selected</p>
-                  <p className="mt-1 text-3xl font-extrabold text-[#5DB7C4]">${fmt(valueLow)} - ${fmt(valueHigh)}</p>
+                <div className="mt-3 rounded-2xl bg-[#F4F7F8] px-4 py-4">
+                  <p className="text-sm font-bold text-[#65777D]">{valueScore} value signals selected</p>
+                  <p className="mt-1 text-3xl font-extrabold text-[#2F6F7A]">${fmt(valueLow)} - ${fmt(valueHigh)}</p>
                 </div>
-                <p className="mt-3 text-sm text-[#6F8A91]">This is not a magic answer. It is a test range. Customers need to understand the extra value before they pay more.</p>
+                <p className="mt-3 text-sm text-[#65777D]">This is not a magic answer. It is a test range. Customers need to understand the extra value before they pay more.</p>
                 <p className="mt-3 rounded-2xl bg-[#F7F9FA] px-3 py-2 text-sm text-[#2B2B2B]">
                   Try saying: “This price works because {valueReason}.”
                 </p>
@@ -462,9 +462,9 @@ export default function PricingStrategyPage() {
             <ChronicleButton
               text="Back to Methods"
               onClick={() => navigate("/setup/pricing-lab/strategies")}
-              hoverColor="#5DB7C4"
-              customBackground="#E8ECEE"
-              customForeground="#5DB7C4"
+              hoverColor="#2F6F7A"
+              customBackground="#E7EBED"
+              customForeground="#2F6F7A"
               hoverForeground="#ffffff"
               width="150px"
               borderRadius="10px"
@@ -476,8 +476,8 @@ export default function PricingStrategyPage() {
                 updatePricing({ sellingPrice: roundMoney(selectedStrategyPrice) });
                 navigate("/setup/pricing-lab");
               }}
-              hoverColor="#F36C3D"
-              customBackground="#5DB7C4"
+              hoverColor="#A65A3F"
+              customBackground="#2F6F7A"
               customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="170px"
@@ -486,7 +486,7 @@ export default function PricingStrategyPage() {
             />
           </div>
           {strategyPriceWarning && (
-            <p className="mt-3 rounded-2xl border border-[#F36C3D]/25 bg-white px-4 py-3 text-sm font-bold text-[#F36C3D]">
+            <p className="mt-3 rounded-2xl border border-[#A65A3F]/25 bg-white px-4 py-3 text-sm font-bold text-[#A65A3F]">
               {strategyPriceWarning}
             </p>
           )}

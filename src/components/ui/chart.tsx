@@ -47,7 +47,7 @@ const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
           data-chart={chartId}
           ref={ref}
           className={cn(
-            "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-[#7B9EA3] [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-[#E0EFF1] [&_.recharts-curve.recharts-tooltip-cursor]:stroke-[#E0EFF1] [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-pie-label-text]:fill-[#2B2B2B] [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-[#E0EFF1] [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[#EAF7F9] [&_.recharts-reference-line_[stroke='#ccc']]:stroke-[#E0EFF1]",
+            "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-[#6C7E83] [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-[#DCE5E8] [&_.recharts-curve.recharts-tooltip-cursor]:stroke-[#DCE5E8] [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-pie-label-text]:fill-[#2B2B2B] [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-[#DCE5E8] [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[#EFF4F5] [&_.recharts-reference-line_[stroke='#ccc']]:stroke-[#DCE5E8]",
             className,
           )}
           {...props}
@@ -152,7 +152,7 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContent
       <div
         ref={ref}
         className={cn(
-          "grid min-w-[8rem] items-start gap-1.5 rounded-xl border border-[#E0EFF1] bg-white px-3 py-2 text-xs shadow-xl",
+          "grid min-w-[8rem] items-start gap-1.5 rounded-xl border border-[#DCE5E8] bg-white px-3 py-2 text-xs shadow-xl",
           className,
         )}
       >
@@ -167,7 +167,7 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContent
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
             const payloadFill =
               item.payload && typeof item.payload.fill === "string" ? item.payload.fill : undefined;
-            const indicatorColor = payloadFill || item.color || "#5DB7C4";
+            const indicatorColor = payloadFill || item.color || "#2F6F7A";
 
             return (
               <div
@@ -190,7 +190,7 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContent
                 )}
                 {itemConfig?.icon && <itemConfig.icon />}
                 <div className="flex flex-1 justify-between leading-none">
-                  <span className="text-[#5B7780]">{itemConfig?.label || item.name}</span>
+                  <span className="text-[#54666C]">{itemConfig?.label || item.name}</span>
                   {formatter ? (
                     formatter(item.value, item.name, item, index, item.payload)
                   ) : (
@@ -253,7 +253,7 @@ const ChartLegendContent = React.forwardRef<HTMLDivElement, ChartLegendContentPr
               ) : (
                 <div className="h-2.5 w-2.5 rounded-[2px]" style={{ backgroundColor: item.color }} />
               )}
-              <span className="text-xs font-semibold text-[#5B7780]">{itemConfig?.label}</span>
+              <span className="text-xs font-semibold text-[#54666C]">{itemConfig?.label}</span>
             </div>
           );
         })}

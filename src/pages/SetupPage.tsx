@@ -33,10 +33,10 @@ function isProductCompletion(value: Record<string, unknown> | null): value is Re
 function TypingIndicator() {
   return (
     <div className="flex justify-start items-end gap-2">
-      <div className="h-8 w-8 rounded-full border border-[#A9DDE3] bg-white flex items-center justify-center shadow-sm">
-        <Bot className="h-4 w-4 text-[#5DB7C4]" />
+      <div className="h-8 w-8 rounded-full border border-[#B9C9CE] bg-white flex items-center justify-center shadow-sm">
+        <Bot className="h-4 w-4 text-[#2F6F7A]" />
       </div>
-      <div className="bg-white border border-[#A9DDE3] rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1.5 items-center shadow-sm">
+      <div className="bg-white border border-[#B9C9CE] rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1.5 items-center shadow-sm">
         <style>{`
           @keyframes typingBounce {
             0%, 60%, 100% { transform: translateY(0); }
@@ -46,7 +46,7 @@ function TypingIndicator() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="w-2 h-2 rounded-full bg-[#5DB7C4]"
+            className="w-2 h-2 rounded-full bg-[#2F6F7A]"
             style={{ animation: `typingBounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
           />
         ))}
@@ -62,10 +62,10 @@ function Bubble({ msg }: { msg: Message }) {
   if (isAI) {
     return (
       <div className="flex justify-start items-end gap-2">
-        <div className="h-8 w-8 rounded-full border border-[#A9DDE3] bg-white flex items-center justify-center shadow-sm">
-          <Bot className="h-4 w-4 text-[#5DB7C4]" />
+        <div className="h-8 w-8 rounded-full border border-[#B9C9CE] bg-white flex items-center justify-center shadow-sm">
+          <Bot className="h-4 w-4 text-[#2F6F7A]" />
         </div>
-        <div className="max-w-[82%] rounded-2xl px-4 py-3 text-base leading-relaxed shadow-sm bg-white border border-[#A9DDE3] text-[#2B2B2B] rounded-tl-sm">
+        <div className="max-w-[82%] rounded-2xl px-4 py-3 text-base leading-relaxed shadow-sm bg-white border border-[#B9C9CE] text-[#2B2B2B] rounded-tl-sm">
           <MarkdownMessage>{msg.content}</MarkdownMessage>
         </div>
       </div>
@@ -74,7 +74,7 @@ function Bubble({ msg }: { msg: Message }) {
 
   return (
     <div className="flex justify-end">
-      <div className="max-w-[82%] rounded-2xl px-4 py-3 text-base leading-relaxed shadow-sm bg-[#5DB7C4] text-white rounded-tr-sm">
+      <div className="max-w-[82%] rounded-2xl px-4 py-3 text-base leading-relaxed shadow-sm bg-[#2F6F7A] text-white rounded-tr-sm">
         {msg.content}
       </div>
     </div>
@@ -248,12 +248,12 @@ When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas 
         <ProgressSteps currentStep={1} mode={mode} />
       </div>
       {flowNotice && (
-        <div className="mb-2 rounded-xl border border-[#A9DDE3] bg-white px-4 py-2 text-sm font-semibold text-[#2B2B2B]">
+        <div className="mb-2 rounded-xl border border-[#B9C9CE] bg-white px-4 py-2 text-sm font-semibold text-[#2B2B2B]">
           {flowNotice}
         </div>
       )}
       {/* Chat messages */}
-      <div className={`flex flex-col gap-3 min-h-[17rem] max-h-[27rem] overflow-y-auto px-2 py-2.5 scroll-smooth rounded-2xl border border-[#D6E6EA] bg-[#FCFEFF] ${assistantHighlight ? "priceit-agent-highlight p-2" : ""}`}>
+      <div className={`flex flex-col gap-3 min-h-[17rem] max-h-[27rem] overflow-y-auto px-2 py-2.5 scroll-smooth rounded-2xl border border-[#D3DFE2] bg-[#FBFCFC] ${assistantHighlight ? "priceit-agent-highlight p-2" : ""}`}>
         {messages.map((msg, i) => (
           <Bubble key={i} msg={msg} />
         ))}
@@ -264,7 +264,7 @@ When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas 
                 key={option}
                 type="button"
                 onClick={() => sendAnswer(option)}
-                className="min-h-11 rounded-xl border border-[#5DB7C4] bg-white px-4 py-2 text-sm font-bold text-[#337F89] shadow-sm transition hover:bg-[#EAF7F9]"
+                className="min-h-11 rounded-xl border border-[#2F6F7A] bg-white px-4 py-2 text-sm font-bold text-[#2F6F7A] shadow-sm transition hover:bg-[#EFF4F5]"
               >
                 {option}
               </button>
@@ -273,7 +273,7 @@ When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas 
         )}
         {!isTyping && !isComplete && exampleOptions.length > 0 && (
           <div className="ml-10 flex flex-col gap-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#9BBFC3]">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#84999E]">
               Example answers — click to use
             </p>
             <div className="flex flex-wrap gap-2">
@@ -282,7 +282,7 @@ When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas 
                   key={option}
                   type="button"
                   onClick={() => setInput(option)}
-                  className="rounded-xl border border-[#D8E8EC] bg-[#F7FBFC] px-3.5 py-1.5 text-sm text-[#5B7780] hover:border-[#5DB7C4] hover:bg-[#EAF7F9] hover:text-[#1E6470] transition-colors"
+                  className="rounded-xl border border-[#D6E1E4] bg-[#F8FAFA] px-3.5 py-1.5 text-sm text-[#54666C] hover:border-[#2F6F7A] hover:bg-[#EFF4F5] hover:text-[#295E66] transition-colors"
                 >
                   {option}
                 </button>

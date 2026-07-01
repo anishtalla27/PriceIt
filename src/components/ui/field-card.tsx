@@ -13,22 +13,19 @@ const FIELD_CARD_STYLES = `
   text-align: left !important;
   place-content: unset !important;
   place-items: unset !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 10px rgba(31,44,50,0.08);
   border-radius: var(--card-radius, 1rem);
-  border: var(--card-border-width, 2px) solid transparent;
+  border: var(--card-border-width, 2px) solid #D4DEE1;
   --rotation: 4.2rad;
-  background-image:
-    linear-gradient(var(--card-bg, #ffffff), var(--card-bg, #ffffff)),
-    linear-gradient(calc(var(--rotation, 4.2rad)), var(--card-accent, #5DB7C4) 0, #e8f4f6 40%, transparent 80%);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
+  background: var(--card-bg, #ffffff);
   padding: 1.1rem 1.4rem 1.35rem;
   color: #2B2B2B;
-  transition: box-shadow 0.25s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .bauhaus-field-card:focus-within {
-  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  border-color: var(--card-accent, #2F6F7A);
+  box-shadow: 0 4px 16px rgba(31,44,50,0.10);
 }
 
 .bauhaus-field-label {
@@ -37,14 +34,14 @@ const FIELD_CARD_STYLES = `
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #7B9EA3;
+  color: #6C7E83;
   margin-bottom: 0.6rem;
 }
 
 .bauhaus-field-input {
   width: 100%;
-  background: #E8ECEE;
-  border: 1.5px solid #d4dde0;
+  background: #E7EBED;
+  border: 1.5px solid #D2DADD;
   border-radius: 0.55rem;
   padding: 0.65rem 0.9rem;
   color: #2B2B2B;
@@ -56,12 +53,12 @@ const FIELD_CARD_STYLES = `
 }
 
 .bauhaus-field-input:focus {
-  border-color: var(--card-accent, #5DB7C4);
-  background: #eef1f2;
+  border-color: var(--card-accent, #2F6F7A);
+  background: #F0F2F3;
 }
 
 .bauhaus-field-input::placeholder {
-  color: #B0C4C7;
+  color: #9AA9AD;
 }
 
 .bauhaus-field-input option {
@@ -82,7 +79,7 @@ export function injectFieldCardStyles() {
 
 export function FieldCard({
   label,
-  accentColor = "#5DB7C4",
+  accentColor = "#2F6F7A",
   children,
 }: {
   label: React.ReactNode;

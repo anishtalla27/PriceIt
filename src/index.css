@@ -6,14 +6,14 @@
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color: #2b2b2b;
   background-color: #f7f9fa;
-  --priceit-teal: #5DB7C4;
-  --priceit-orange: #F36C3D;
+  --priceit-teal: #2F6F7A;
+  --priceit-orange: #A65A3F;
   --priceit-bg: #F7F9FA;
   --priceit-text: #2B2B2B;
 
   --bauhaus-card-bg: #f0f4fb;
   --bauhaus-card-separator: #d3dce8;
-  --bauhaus-card-accent: #156ef6;
+  --bauhaus-card-accent: #255D8F;
   --bauhaus-card-radius: 2em;
   --bauhaus-card-border-width: 2px;
   --bauhaus-card-inscription-top: #3b4252;
@@ -31,14 +31,14 @@
   --background: #252533;
   --bauhaus-card-bg: #151419;
   --bauhaus-card-separator: #2F2B2A;
-  --bauhaus-card-accent: #156ef6;
+  --bauhaus-card-accent: #255D8F;
   --bauhaus-card-radius: 2em;
   --bauhaus-card-border-width: 2px;
-  --bauhaus-card-inscription-top: #bfc7d5;
+  --bauhaus-card-inscription-top: #B9C1CC;
   --bauhaus-card-inscription-main: #f0f0f1;
-  --bauhaus-card-inscription-sub: #a0a1b3;
-  --bauhaus-card-inscription-progress-label: #b5b6c4;
-  --bauhaus-card-inscription-progress-value: #e7e7f7;
+  --bauhaus-card-inscription-sub: #8F94A3;
+  --bauhaus-card-inscription-progress-label: #B3BAC4;
+  --bauhaus-card-inscription-progress-value: #E6E8EE;
   --bauhaus-card-progress-bar-bg: #363636;
   --bauhaus-chronicle-bg: #fff;
   --bauhaus-chronicle-fg: #151419;
@@ -87,12 +87,12 @@ body {
 
 @keyframes priceitPulseHighlight {
   0% {
-    box-shadow: 0 0 0 0 rgba(93, 183, 196, 0.55);
-    border-color: rgba(93, 183, 196, 0.8);
+    box-shadow: 0 0 0 0 rgba(47, 111, 122, 0.22);
+    border-color: rgba(47, 111, 122, 0.65);
   }
   100% {
-    box-shadow: 0 0 0 12px rgba(93, 183, 196, 0);
-    border-color: rgba(93, 183, 196, 0.2);
+    box-shadow: 0 0 0 12px rgba(47, 111, 122, 0);
+    border-color: rgba(47, 111, 122, 0.18);
   }
 }
 
@@ -105,13 +105,13 @@ body {
 }
 
 .priceit-agent-highlight {
-  border: 2px solid rgba(93, 183, 196, 0.7) !important;
+  border: 2px solid rgba(47, 111, 122, 0.55) !important;
   animation: priceitPulseHighlight 900ms ease-out;
 }
 
 @keyframes priceitBtnReady {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(93, 183, 196, 0); }
-  50%       { box-shadow: 0 0 0 7px rgba(93, 183, 196, 0.25); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 111, 122, 0); }
+  50%       { box-shadow: 0 0 0 6px rgba(47, 111, 122, 0.14); }
 }
 
 .priceit-btn-ready {
@@ -121,11 +121,10 @@ body {
 
 .priceit-feature-cta {
   position: relative;
-  border: 2px solid rgba(93, 183, 196, 0.75) !important;
+  border: 1px solid #B9C9CE !important;
   box-shadow:
-    0 18px 38px rgba(93, 183, 196, 0.26),
-    0 5px 0 rgba(93, 183, 196, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 12px 28px rgba(31, 44, 50, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .priceit-feature-cta::before {
@@ -134,9 +133,7 @@ body {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background:
-    linear-gradient(135deg, rgba(93, 183, 196, 0.2), rgba(243, 108, 61, 0.13)),
-    radial-gradient(circle at 92% 18%, rgba(243, 108, 61, 0.18), transparent 28%);
+  background: rgba(47, 111, 122, 0.04);
 }
 
 .priceit-feature-cta > * {
@@ -147,13 +144,12 @@ body {
 .priceit-feature-cta:hover {
   transform: translateY(-3px);
   box-shadow:
-    0 24px 48px rgba(93, 183, 196, 0.33),
-    0 6px 0 rgba(93, 183, 196, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 14px 30px rgba(31, 44, 50, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .priceit-feature-cta:focus-visible {
-  outline: 3px solid rgba(243, 108, 61, 0.32);
+  outline: 3px solid rgba(166, 90, 63, 0.24);
   outline-offset: 3px;
 }
 
@@ -162,14 +158,14 @@ body {
   width: fit-content;
   align-items: center;
   border-radius: 999px;
-  background: #F36C3D;
+  background: #A65A3F;
   color: #ffffff;
   padding: 0.2rem 0.55rem;
   font-size: 0.66rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  box-shadow: 0 6px 14px rgba(243, 108, 61, 0.28);
+  box-shadow: 0 4px 10px rgba(31, 44, 50, 0.14);
 }
 
 .priceit-cta-arrow {
@@ -179,10 +175,10 @@ body {
   justify-content: center;
   border-radius: 999px;
   background: #ffffff;
-  color: #5DB7C4;
+  color: #2F6F7A;
   padding: 0.45rem 0.7rem;
   font-weight: 900;
-  box-shadow: 0 8px 18px rgba(43, 43, 43, 0.12);
+  box-shadow: 0 6px 14px rgba(43, 43, 43, 0.10);
 }
 
 .priceit-range {
@@ -191,17 +187,17 @@ body {
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: #d8e4e6;
+  background: #DCE3E5;
   outline: none;
   transition: filter 0.2s ease;
 }
 
 .priceit-range:hover {
-  filter: brightness(0.99);
+  filter: none;
 }
 
 .priceit-range:focus-visible {
-  box-shadow: 0 0 0 3px rgba(93, 183, 196, 0.2);
+  box-shadow: 0 0 0 3px rgba(47, 111, 122, 0.18);
 }
 
 .priceit-range::-webkit-slider-thumb {
@@ -210,7 +206,7 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 999px;
-  border: 3px solid var(--range-accent, #5DB7C4);
+  border: 3px solid var(--range-accent, #2F6F7A);
   background: #ffffff;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(43, 43, 43, 0.22);
@@ -231,7 +227,7 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 999px;
-  border: 3px solid var(--range-accent, #5DB7C4);
+  border: 3px solid var(--range-accent, #2F6F7A);
   background: #ffffff;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(43, 43, 43, 0.22);
