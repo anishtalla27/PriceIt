@@ -89,7 +89,8 @@ export default function PricingStrategyPage() {
   const fixedMonthlyTotal = fixedCosts.reduce((sum, item) => sum + fixedMonthly(item), 0);
   const variableCost = variableCosts.reduce((sum, item) => sum + variableCPP(item), 0);
   const costPerProduct = variableCost + fixedMonthlyTotal / unitsPerMonth;
-  const [desiredProfit, setDesiredProfit] = useState(Math.max(1, roundMoney(costPerProduct * 0.5)));
+  const [markupPct, setMarkupPct] = useState(50);
+  const desiredProfit = roundMoney(costPerProduct * markupPct / 100);
   const [lowPrice, setLowPrice] = useState(Math.max(1, roundMoney(currentPrice * 0.8 || costPerProduct + 1)));
   const [averagePrice, setAveragePrice] = useState(Math.max(2, roundMoney(currentPrice || costPerProduct + 2)));
   const [highPrice, setHighPrice] = useState(Math.max(3, roundMoney(currentPrice * 1.25 || costPerProduct + 4)));
@@ -169,12 +170,39 @@ export default function PricingStrategyPage() {
               <LessonBox>
                 <h2 className="text-xl font-extrabold text-[#2B2B2B]">Build the price</h2>
                 <p className="mt-1 text-sm text-[#6F8A91]">Choose how much profit you want from each sale.</p>
-                <label className="mt-4 block text-xs font-bold uppercase tracking-wider text-[#6F8A91]">
-                  Desired profit per product
-                  <input className="bauhaus-field-input mt-1" type="number" min="0" step={priceStep} value={desiredProfit} onChange={(event) => setDesiredProfit(Math.max(0, Number(event.target.value) || 0))} />
-                </label>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#6F8A91]">Desired profit %</span>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={500}
+                        step={1}
+                        value={markupPct}
+                        onChange={(e) => setMarkupPct(Math.max(0, Math.min(500, Number(e.target.value) || 0)))}
+                        className="w-16 rounded-lg border border-[#A9DDE3] bg-white px-2 py-1 text-right text-sm font-bold text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#5DB7C4]"
+                      />
+                      <span className="text-sm font-bold text-[#6F8A91]">%</span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={200}
+                    step={5}
+                    value={Math.min(markupPct, 200)}
+                    onChange={(e) => setMarkupPct(Number(e.target.value))}
+                    className="w-full accent-[#5DB7C4]"
+                  />
+                  <div className="flex justify-between text-xs text-[#A0B8BD] mt-1">
+                    <span>0%</span>
+                    <span>100%</span>
+                    <span>200%+</span>
+                  </div>
+                </div>
                 <div className="mt-4 rounded-2xl bg-[#F0FAFB] px-4 py-4">
-                  <p className="text-sm font-bold text-[#6F8A91]">${fmt(costPerProduct)} cost + ${fmt(desiredProfit)} profit</p>
+                  <p className="text-sm font-bold text-[#6F8A91]">${fmt(costPerProduct)} cost + {markupPct}% = ${fmt(desiredProfit)} profit</p>
                   <p className="mt-1 text-3xl font-extrabold text-[#5DB7C4]">${fmt(costPlusPrice)}</p>
                 </div>
               </LessonBox>
