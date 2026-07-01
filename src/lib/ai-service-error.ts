@@ -6,7 +6,20 @@ export type AIServiceErrorCode =
   | "SERVICE_UNAVAILABLE"
   | "REQUEST_TIMEOUT"
   | "NETWORK_ERROR"
-  | "NO_RESPONSE";
+  | "NO_RESPONSE"
+  | "INVALID_REQUEST";
+
+const VALID_CODES = new Set<AIServiceErrorCode>([
+  "MISSING_API_KEY",
+  "AUTH_FAILED",
+  "RATE_LIMITED",
+  "MODEL_UNAVAILABLE",
+  "SERVICE_UNAVAILABLE",
+  "REQUEST_TIMEOUT",
+  "NETWORK_ERROR",
+  "NO_RESPONSE",
+  "INVALID_REQUEST",
+]);
 
 export class AIServiceError extends Error {
   readonly code: AIServiceErrorCode;
@@ -18,7 +31,20 @@ export class AIServiceError extends Error {
   }
 }
 
-export function errorFromResponseStatus(status: number) {
+export function errorFromResponse(status: number, body?: unknown): AIServiceError {
+  if (body && typeof body === "object" && "error" in body) {
+    const code = (body as Record<string, unknown>).error;
+    if (code && typeof code === "object" && "code" in code) {
+      const c = (code as Record<string, unknown>).code;
+      if (typeof c === "string" && VALID_CODES.has(c as AIServiceErrorCode)) {
+        return new AIServiceError(c as AIServiceErrorCode);
+      }
+    }
+  }
+  return errorFromResponseStatus(status);
+}
+
+export function errorFromResponseStatus(status: number): AIServiceError {
   if (status === 401 || status === 403) return new AIServiceError("AUTH_FAILED");
   if (status === 404) return new AIServiceError("MODEL_UNAVAILABLE");
   if (status === 429) return new AIServiceError("RATE_LIMITED");
@@ -33,9 +59,9 @@ export function getAIErrorMessage(error: unknown) {
 
   switch (error.code) {
     case "MISSING_API_KEY":
-      return "The AI assistant isn't configured yet. Add a valid OpenRouter API key, then restart the app.";
+      return "The AI assistant isn't configured yet. Please try again later.";
     case "AUTH_FAILED":
-      return "The AI assistant couldn't authenticate. Please check the OpenRouter API key, then restart the app.";
+      return "The AI assistant couldn't authenticate. Please try again later.";
     case "RATE_LIMITED":
       return "The AI assistant has reached its request limit. Please wait a minute and try again.";
     case "MODEL_UNAVAILABLE":
@@ -48,5 +74,7 @@ export function getAIErrorMessage(error: unknown) {
       return "The AI service couldn't be reached. Check your connection and try again.";
     case "NO_RESPONSE":
       return "The AI service responded without an answer. Tap retry to try again.";
+    case "INVALID_REQUEST":
+      return "The AI request was invalid. Please try again.";
   }
 }

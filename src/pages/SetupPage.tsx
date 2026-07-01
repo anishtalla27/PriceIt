@@ -190,10 +190,7 @@ Keep normal replies brief. If the user asks a useful business question, answer i
     } catch {
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: setupConversationTemplate(history, mode),
-        },
+        { role: "assistant", content: "Error with AI. Please try again." },
       ]);
     } finally {
       setIsTyping(false);

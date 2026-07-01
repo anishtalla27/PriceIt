@@ -14,11 +14,6 @@ export interface AIProgress {
   text: string;
 }
 
-export interface AIWarning {
-  kind: "remote_failed" | "template";
-  message: string;
-}
-
 export interface GenerateAIOptions {
   messages: AIMessage[];
   template: () => string;
@@ -32,35 +27,19 @@ export interface GenerateAIOptions {
 export interface GenerateAIResult {
   text: string;
   provider: AIProvider;
-  warning?: AIWarning;
 }
 
 export async function generateAI(options: GenerateAIOptions): Promise<GenerateAIResult> {
   if (AI_PROVIDER === "template") {
-    return {
-      text: options.template(),
-      provider: "template",
-      warning: { kind: "template", message: "LaunchPad is using built-in feedback." },
-    };
+    return { text: options.template(), provider: "template" };
   }
 
-  try {
-    const text = await askOpenRouterText({
-      messages: options.messages,
-      maxTokens: options.maxTokens,
-      temperature: options.temperature,
-      jsonMode: options.jsonMode,
-      signal: options.signal,
-    });
-    return { text, provider: "openrouter" };
-  } catch {
-    return {
-      text: options.template(),
-      provider: "template",
-      warning: {
-        kind: "remote_failed",
-        message: "Online AI could not respond, so LaunchPad used built-in feedback instead.",
-      },
-    };
-  }
+  const text = await askOpenRouterText({
+    messages: options.messages,
+    maxTokens: options.maxTokens,
+    temperature: options.temperature,
+    jsonMode: options.jsonMode,
+    signal: options.signal,
+  });
+  return { text, provider: "openrouter" };
 }

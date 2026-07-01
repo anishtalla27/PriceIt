@@ -5,7 +5,7 @@ import type { FixedCostItem, VariableCostItem } from "@/context/AppStateContext"
 import { ChronicleButton } from "@/components/ui/chronicle-button";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { MarkdownMessage } from "@/components/ui/markdown-message";
-import { generateAI, type AIProgress, type AIWarning } from "@/lib/ai-provider";
+import { generateAI, type AIProgress } from "@/lib/ai-provider";
 import { businessRatingTemplate, customerReviewsTemplate } from "@/lib/ai-templates";
 import { extractJsonObject } from "@/lib/safe-json";
 import {
@@ -661,7 +661,6 @@ export default function ResultsPage() {
   const [feedbackSummary, setFeedbackSummary] = useState<AIFeedbackSummary | null>(null);
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
   const [nextSteps, setNextSteps] = useState<string[]>([]);
-  const [aiWarning, setAIWarning] = useState<AIWarning | null>(null);
   const [localAIProgress, setLocalAIProgress] = useState<AIProgress | null>(null);
 
   // Chat state
@@ -729,8 +728,6 @@ Estimated units per month: ${unitsPerMonth}
     setFeedbackSummary(null);
     setReviews([]);
     setNextSteps([]);
-    setAIWarning(null);
-
     const ctx = buildContext();
 
     const ratingPrompt = `You are a friendly business mentor for kids aged 8-12. A kid is ${mode === "improve" ? "improving an existing product" : "creating a new product"}. Evaluate the plan honestly but encouragingly. ${mode === "improve" ? "Judge whether the new numbers and plan address the stated challenge and improvement goal." : "Judge whether the new product plan is financially sensible."}
@@ -857,8 +854,6 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
           onProgress: setLocalAIProgress,
         }),
       ]);
-
-      setAIWarning(ratingResult.warning ?? feedbackResult.warning ?? reviewResult.warning ?? nextStepsResult.warning ?? null);
 
       const ratingData = extractJsonObject(ratingResult.text);
       const rating = Number(ratingData?.rating);
@@ -1039,12 +1034,6 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
 
           {!loading && errorType === "none" && businessRating && (
             <div className="flex flex-col gap-4">
-              {aiWarning && (
-                <div className="rounded-xl border border-[#A9DDE3] bg-[#F0FAFB] px-4 py-3 text-sm text-[#2B2B2B]">
-                  <p className="font-semibold">{aiWarning.message}</p>
-                </div>
-              )}
-
               <section className="priceit-feature-cta no-print rounded-3xl bg-white/95 px-5 py-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-4">

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Bot, MessageCircle, Send, X } from "lucide-react";
 import { useAppState } from "@/context/AppStateContext";
 import { MarkdownMessage } from "@/components/ui/markdown-message";
-import { AI_PROVIDER, generateAI, type AIProgress, type AIWarning } from "@/lib/ai-provider";
+import { AI_PROVIDER, generateAI, type AIProgress } from "@/lib/ai-provider";
 import { setupAssistantTemplate } from "@/lib/ai-templates";
  
 import { askOpenRouter } from "@/lib/openrouter-ai";
@@ -285,7 +285,6 @@ export function SetupFlowAssistant() {
   const [retryInput, setRetryInput] = useState<string | null>(null);
   const [conversation, setConversation] = useState<ChatMessage[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [aiWarning, setAIWarning] = useState<AIWarning | null>(null);
   const [localAIProgress, setLocalAIProgress] = useState<AIProgress | null>(null);
 
   const stateRef = useRef(state);
@@ -600,7 +599,6 @@ User request: ${userInput}`;
       onProgress: setLocalAIProgress,
     });
     setLocalAIProgress(null);
-    setAIWarning(result.warning ?? null);
 
     const parsed: Record<string, unknown> =
       extractJsonObject(result.text) ?? (fallback as unknown as Record<string, unknown>);
@@ -737,12 +735,7 @@ User request: ${userInput}`;
       const assistantText = await runAgentTurn(text, priorHistory);
       addAssistantMessage(assistantText);
     } catch {
-      const fallback = setupAssistantTemplate(text);
-      addAssistantMessage(
-        "response" in fallback
-          ? fallback.response
-          : "The AI helper is unavailable, but you can keep editing your setup with the page controls."
-      );
+      addAssistantMessage("Error with AI. Please try again.");
       setRetryInput(text);
     } finally {
       setIsResponding(false);
@@ -758,7 +751,7 @@ User request: ${userInput}`;
       addAssistantMessage(assistantText);
       setRetryInput(null);
     } catch {
-      addAssistantMessage("The AI helper is still unavailable, but you can keep editing your setup with the page controls.");
+      addAssistantMessage("Error with AI. Please try again.");
     } finally {
       setIsResponding(false);
     }
@@ -806,12 +799,10 @@ User request: ${userInput}`;
           </div>
 
           <div className="h-[340px] overflow-y-auto px-3 py-3 bg-[#FBFEFF]">
-            {(localAIProgress || aiWarning) && (
+            {localAIProgress && (
               <div className="mb-2 rounded-xl border border-[#A9DDE3] bg-[#F0FAFB] px-3 py-2 text-xs text-[#2B2B2B]">
                 <p className="font-semibold">
-                  {localAIProgress
-                    ? `${Math.round(localAIProgress.progress * 100)}% — ${localAIProgress.text}`
-                    : aiWarning?.message}
+                  {`${Math.round(localAIProgress.progress * 100)}% — ${localAIProgress.text}`}
                 </p>
               </div>
             )}
