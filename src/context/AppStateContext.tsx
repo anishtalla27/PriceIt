@@ -1,4 +1,6 @@
 import React, { createContext, useCallback, useContext, useState } from "react";
+import type { SavedProduct } from "@/lib/saved-products";
+import { clearActiveProductSidecarData, restoreProductSidecarData } from "@/lib/saved-products";
 
 export interface ProductInfo {
   id: string;
@@ -51,26 +53,32 @@ export interface PricingInfo {
 
 export interface AppState {
   journeyMode: JourneyMode | null;
+  activeSavedProductId: string | null;
   productInfo: ProductInfo;
   fixedCosts: FixedCostItem[];
   variableCosts: VariableCostItem[];
   pricing: PricingInfo;
 }
 
-const defaultProductInfo: ProductInfo = {
-  id: "product-1",
-  productName: "",
-  productDescription: "",
-  targetCustomer: "",
-  specialFeature: "",
-  category: "",
-  currentChallenge: "",
-  improvementGoal: "",
-  inspiration: "",
-};
+function makeDefaultProductInfo(): ProductInfo {
+  return {
+    id: `product-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    productName: "",
+    productDescription: "",
+    targetCustomer: "",
+    specialFeature: "",
+    category: "",
+    currentChallenge: "",
+    improvementGoal: "",
+    inspiration: "",
+  };
+}
+
+const defaultProductInfo: ProductInfo = makeDefaultProductInfo();
 
 const defaultState: AppState = {
   journeyMode: null,
+  activeSavedProductId: null,
   productInfo: defaultProductInfo,
   fixedCosts: [],
   variableCosts: [],
@@ -95,6 +103,7 @@ function loadPersistedState(): AppState {
     const pricing = isObject(parsed.pricing) ? parsed.pricing : {};
     return {
       journeyMode: parsed.journeyMode === "improve" ? "improve" : parsed.journeyMode === "create" ? "create" : null,
+      activeSavedProductId: typeof parsed.activeSavedProductId === "string" ? parsed.activeSavedProductId : null,
       productInfo: {
         ...defaultState.productInfo,
         ...productInfo,
@@ -147,6 +156,8 @@ interface AppStateContextValue {
   updateVariableCost: (id: string, updates: Partial<VariableCostItem>) => void;
   deleteVariableCost: (id: string) => void;
   updatePricing: (updates: Partial<PricingInfo>) => void;
+  setActiveSavedProductId: (id: string | null) => void;
+  loadSavedProduct: (product: SavedProduct) => void;
   loadTestProject: () => void;
 }
 
@@ -163,10 +174,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, [state]);
 
   const beginJourney = useCallback((mode: JourneyMode) => {
+    clearActiveProductSidecarData();
     setState({
       ...defaultState,
       journeyMode: mode,
-      productInfo: { ...defaultProductInfo },
+      activeSavedProductId: null,
+      productInfo: makeDefaultProductInfo(),
     });
   }, []);
 
@@ -228,9 +241,27 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const setActiveSavedProductId = useCallback((id: string | null) => {
+    setState((prev) => ({ ...prev, activeSavedProductId: id }));
+  }, []);
+
+  const loadSavedProduct = useCallback((product: SavedProduct) => {
+    restoreProductSidecarData(product);
+    setState({
+      journeyMode: product.journeyMode,
+      activeSavedProductId: product.id,
+      productInfo: product.productInfo,
+      fixedCosts: product.fixedCosts,
+      variableCosts: product.variableCosts,
+      pricing: product.pricing,
+    });
+  }, []);
+
   const loadTestProject = useCallback(() => {
+    clearActiveProductSidecarData();
     setState({
       journeyMode: "create",
+      activeSavedProductId: null,
       productInfo: {
         id: "test-product-friendship-bracelets",
         productName: "Sunshine Friendship Bracelets",
@@ -329,6 +360,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         updateVariableCost,
         deleteVariableCost,
         updatePricing,
+        setActiveSavedProductId,
+        loadSavedProduct,
         loadTestProject,
       }}
     >

@@ -10,6 +10,7 @@ import PricingStrategiesPage from "@/pages/PricingStrategiesPage";
 import PricingStrategyPage from "@/pages/PricingStrategyPage";
 import ResultsPage from "@/pages/ResultsPage";
 import TrackerPage from "@/pages/TrackerPage";
+import ProductsPage from "@/pages/ProductsPage";
 import { AppStateProvider, useAppState } from "@/context/AppStateContext";
 import { TrackerProvider } from "@/context/TrackerContext";
 import type { JourneyMode } from "@/context/AppStateContext";
@@ -49,6 +50,8 @@ function App() {
             <Route path="/pricing-lab/:strategy" element={<PricingStrategyPage />} />
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/tracker" element={<TrackerPage />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/my-products" element={<ProductsPage />} />
           </Routes>
           <SetupFlowAssistant />
         </BrowserRouter>

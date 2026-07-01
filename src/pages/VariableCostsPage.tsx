@@ -286,14 +286,14 @@ function CompactCard({
             </p>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-            <span className="px-2 py-0.5 rounded-full bg-[#E8F8FA] text-[#0E92A3]">{item.category}</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#0E92A3] text-white">{item.category}</span>
             {item.unitsPerProduct !== "" && (
-              <span className="px-2 py-0.5 rounded-full bg-[#FFF0E7] text-[#E1603F]">
+              <span className="px-2 py-0.5 rounded-full bg-[#E1603F] text-white">
                 {item.unitsPerProduct} used/product
               </span>
             )}
             {item.unitsPerPack !== "" && (
-              <span className="px-2 py-0.5 rounded-full bg-[#F8FBFC] text-[#5C7F87]">
+              <span className="px-2 py-0.5 rounded-full bg-[#F0A92E] text-white">
                 {item.unitsPerPack} per pack
               </span>
             )}

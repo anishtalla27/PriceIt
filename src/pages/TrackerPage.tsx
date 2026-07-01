@@ -1251,13 +1251,22 @@ export default function TrackerPage() {
     >
       {/* Header */}
       <header className="sticky top-0 z-20 flex items-center border-b border-[#D0EAF0] bg-white px-4 py-4 shadow-sm">
-        <button
-          type="button"
-          onClick={() => navigate("/results")}
-          className="min-w-[80px] cursor-pointer rounded-xl bg-[#0E92A3] px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-[#E1603F]"
-        >
-          Results
-        </button>
+        <div className="flex min-w-[150px] gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/results")}
+            className="cursor-pointer rounded-xl bg-[#0E92A3] px-3 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-[#E1603F]"
+          >
+            Results
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/products")}
+            className="cursor-pointer rounded-xl bg-[#E1603F] px-3 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-[#C94E32]"
+          >
+            Products
+          </button>
+        </div>
         <div className="flex-1 flex justify-center">
           <img src={logo} alt="LaunchPad logo" className="h-12 w-auto" />
         </div>

@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, Pie, PieChart, XAxis } from "recharts";
-import { Bot, ThumbsUp, Lightbulb, Send, ChevronDown, ChevronUp, Printer, ClipboardList } from "lucide-react";
+import { Bot, ThumbsUp, Lightbulb, Send, ChevronDown, ChevronUp, Printer, ClipboardList, PackagePlus, Save } from "lucide-react";
 import logo from "../../logo.png";
+import { saveCurrentProduct, type SavedProductResults } from "@/lib/saved-products";
 
 // ─── cost math (mirrors PricingPage) ─────────────────────────────────────────
 
@@ -627,11 +628,49 @@ function fmt2(n: number) {
   return n.toFixed(2);
 }
 
+const RESULTS_CACHE_STORAGE_KEY = "priceit_results_analysis_cache_v1";
+
+interface ResultsAnalysisCache {
+  contextKey: string;
+  businessRating: BusinessRating;
+  feedbackSummary: AIFeedbackSummary;
+  reviews: CustomerReview[];
+  nextSteps: string[];
+  cachedAt: number;
+}
+
+function cacheKeyForContext(context: string): string {
+  let hash = 0;
+  for (let i = 0; i < context.length; i += 1) {
+    hash = (hash * 31 + context.charCodeAt(i)) | 0;
+  }
+  return `${context.length}:${(hash >>> 0).toString(36)}`;
+}
+
+function readCachedResults(contextKey: string): ResultsAnalysisCache | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RESULTS_CACHE_STORAGE_KEY) ?? "null") as Partial<ResultsAnalysisCache> | null;
+    if (!parsed || parsed.contextKey !== contextKey) return null;
+    if (!parsed.businessRating || !parsed.feedbackSummary || !Array.isArray(parsed.reviews) || !Array.isArray(parsed.nextSteps)) {
+      return null;
+    }
+    return parsed as ResultsAnalysisCache;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedResults(cache: ResultsAnalysisCache) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(RESULTS_CACHE_STORAGE_KEY, JSON.stringify(cache));
+}
+
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function ResultsPage() {
   const navigate = useNavigate();
-  const { state } = useAppState();
+  const { state, setActiveSavedProductId } = useAppState();
   const { productInfo, fixedCosts, variableCosts, pricing } = state;
   const mode = state.journeyMode ?? "create";
   const productInfoComplete =
@@ -662,6 +701,7 @@ export default function ResultsPage() {
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
   const [nextSteps, setNextSteps] = useState<string[]>([]);
   const [localAIProgress, setLocalAIProgress] = useState<AIProgress | null>(null);
+  const [saveNotice, setSaveNotice] = useState("");
 
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
@@ -858,31 +898,42 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
       const ratingData = extractJsonObject(ratingResult.text);
       const rating = Number(ratingData?.rating);
       const verdict = ratingData?.verdict;
-      setBusinessRating(
+      const nextBusinessRating =
         Number.isFinite(rating) && typeof verdict === "string"
           ? { rating: Math.max(0, Math.min(5, Math.round(rating * 2) / 2)), verdict }
-          : ratingFallback
-      );
+          : ratingFallback;
+      setBusinessRating(nextBusinessRating);
 
       const feedbackData = extractJsonObject(feedbackResult.text);
       const praises = Array.isArray(feedbackData?.praises) ? feedbackData.praises.filter((s): s is string => typeof s === "string") : [];
       const improvements = Array.isArray(feedbackData?.improvements) ? feedbackData.improvements.filter((s): s is string => typeof s === "string") : [];
-      setFeedbackSummary(
+      const nextFeedbackSummary =
         praises.length >= 2 && improvements.length >= 2
           ? { praises, improvements }
-          : feedbackFallback
-      );
+          : feedbackFallback;
+      setFeedbackSummary(nextFeedbackSummary);
 
       const rawReviews = Array.isArray(reviewResult.text ? extractJsonObject(reviewResult.text)?.reviews : null)
         ? (extractJsonObject(reviewResult.text)?.reviews as unknown[]).filter(isCustomerReview)
         : reviewsFallback;
-      setReviews(rawReviews.length >= 10 ? rawReviews.slice(0, 10) : reviewsFallback);
+      const nextReviews = rawReviews.length >= 10 ? rawReviews.slice(0, 10) : reviewsFallback;
+      setReviews(nextReviews);
 
       const nextStepsData = extractJsonObject(nextStepsResult.text);
       const parsedSteps = Array.isArray(nextStepsData?.steps)
         ? (nextStepsData.steps as unknown[]).filter((s): s is string => typeof s === "string")
         : [];
-      setNextSteps(parsedSteps.length >= 3 ? parsedSteps.slice(0, 5) : nextStepsFallback);
+      const nextNextSteps = parsedSteps.length >= 3 ? parsedSteps.slice(0, 5) : nextStepsFallback;
+      setNextSteps(nextNextSteps);
+
+      writeCachedResults({
+        contextKey: cacheKeyForContext(ctx),
+        businessRating: nextBusinessRating,
+        feedbackSummary: nextFeedbackSummary,
+        reviews: nextReviews,
+        nextSteps: nextNextSteps,
+        cachedAt: Date.now(),
+      });
     } catch (e) {
       console.error(e);
       if (e instanceof Error && e.message === "REQUEST_TIMEOUT") {
@@ -900,8 +951,20 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
     if (missingPricing || !productInfoComplete) return;
     if (hasRunRef.current) return;
     hasRunRef.current = true;
+    const ctx = buildContext();
+    const cached = readCachedResults(cacheKeyForContext(ctx));
+    if (cached) {
+      setBusinessRating(cached.businessRating);
+      setFeedbackSummary(cached.feedbackSummary);
+      setReviews(cached.reviews);
+      setNextSteps(cached.nextSteps);
+      setErrorType("none");
+      setLoading(false);
+      setLocalAIProgress(null);
+      return;
+    }
     runAnalysis();
-  }, [missingPricing, productInfoComplete, runAnalysis]);
+  }, [buildContext, missingPricing, productInfoComplete, runAnalysis]);
 
   // Chat scroll to bottom
   useEffect(() => {
@@ -971,6 +1034,37 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
   const monthlyCosts = costPerUnit * unitsPerMonth;
   const monthlyProfit = monthlyRevenue - monthlyCosts;
 
+  const buildSavedResults = (): SavedProductResults | undefined => {
+    if (!businessRating || !feedbackSummary) return undefined;
+    return {
+      contextKey: cacheKeyForContext(buildContext()),
+      businessRating,
+      feedbackSummary,
+      reviews,
+      nextSteps,
+      cachedAt: Date.now(),
+    };
+  };
+
+  const handleSaveProduct = () => {
+    const saved = saveCurrentProduct(state, {
+      existingId: state.activeSavedProductId,
+      results: buildSavedResults(),
+    });
+    if (!saved) return;
+    setActiveSavedProductId(saved.id);
+    setSaveNotice("Saved to your business.");
+  };
+
+  const handleAddAnotherProduct = () => {
+    const saved = saveCurrentProduct(state, {
+      existingId: state.activeSavedProductId,
+      results: buildSavedResults(),
+    });
+    if (saved) setActiveSavedProductId(saved.id);
+    navigate("/create");
+  };
+
   return (
     <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
       {/* Print-only business plan — hidden on screen, shown when printing */}
@@ -1002,17 +1096,26 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
           Back
         </button>
         <img src={logo} alt="LaunchPad logo" className="h-14 w-auto" />
-        <button
-          type="button"
-          onClick={() => navigate("/tracker")}
-          className="no-print flex items-center gap-2 rounded-xl bg-[#0E92A3] px-3 py-1.5 text-white shadow-[0_8px_18px_rgba(31,44,50,0.16)] hover:bg-[#0A7685] hover:shadow-[0_10px_20px_rgba(31,44,50,0.18)] active:scale-95 transition-all"
-        >
-          <ClipboardList className="h-4 w-4 flex-none" />
-          <span className="text-left leading-tight">
-            <span className="block text-xs font-extrabold">Track My Business</span>
-            <span className="block text-[10px] font-medium opacity-85">sales · goals · inventory</span>
-          </span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/products")}
+            className="no-print rounded-xl bg-[#E1603F] px-3 py-2 text-sm font-bold text-white shadow-[0_8px_18px_rgba(31,44,50,0.14)] transition hover:bg-[#C94E32]"
+          >
+            My Products
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/tracker")}
+            className="no-print flex items-center gap-2 rounded-xl bg-[#0E92A3] px-3 py-1.5 text-white shadow-[0_8px_18px_rgba(31,44,50,0.16)] hover:bg-[#0A7685] hover:shadow-[0_10px_20px_rgba(31,44,50,0.18)] active:scale-95 transition-all"
+          >
+            <ClipboardList className="h-4 w-4 flex-none" />
+            <span className="hidden text-left leading-tight sm:block">
+              <span className="block text-xs font-extrabold">Track My Business</span>
+              <span className="block text-[10px] font-medium opacity-85">sales · goals · inventory</span>
+            </span>
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5">
@@ -1034,6 +1137,71 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
 
           {!loading && errorType === "none" && businessRating && (
             <div className="flex flex-col gap-4">
+              <section className="rounded-3xl border border-[#CDEBF0] bg-white px-5 py-5 shadow-sm no-print">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#0E92A3]">Save your plan</p>
+                    <h2 className="mt-1 text-xl font-extrabold text-[#2B2B2B]">Save this product to My Business</h2>
+                    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#4F747C]">
+                      Keep this plan, then open it later or add another product for the same business.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveProduct}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#0E92A3] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#E1603F]"
+                    >
+                      <Save className="h-4 w-4" />
+                      Save Product
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/products")}
+                      className="rounded-xl bg-[#E1603F] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#C94E32]"
+                    >
+                      View All Products
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddAnotherProduct}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#F0A92E] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#D99119]"
+                    >
+                      <PackagePlus className="h-4 w-4" />
+                      Add Another Product
+                    </button>
+                  </div>
+                </div>
+                {saveNotice && (
+                  <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-[#BDE9D0] bg-[#F3F8F4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-extrabold text-[#24784F]">{saveNotice}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate("/products")}
+                        className="rounded-lg bg-[#28A66A] px-3 py-1.5 text-xs font-bold text-white"
+                      >
+                        View all products
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddAnotherProduct}
+                        className="rounded-lg bg-[#0E92A3] px-3 py-1.5 text-xs font-bold text-white"
+                      >
+                        Add another product
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate("/setup")}
+                        className="rounded-lg bg-[#E1603F] px-3 py-1.5 text-xs font-bold text-white"
+                      >
+                        Continue editing
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </section>
+
               <section className="priceit-feature-cta no-print rounded-3xl bg-white px-5 py-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-4">
