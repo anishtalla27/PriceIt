@@ -175,7 +175,7 @@ export default function PricingPage() {
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#CDEBF0] bg-white sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup/variable-costs")}
-          className="min-h-11 px-3 text-[#0E92A3] font-semibold text-sm hover:text-[#E1603F] transition-colors"
+          className="min-h-11 rounded-xl bg-[#0E92A3] px-4 text-white font-semibold text-sm hover:bg-[#E1603F] transition-colors"
         >
           Back
         </button>
@@ -391,8 +391,8 @@ export default function PricingPage() {
               text="Back"
               onClick={() => navigate("/setup/variable-costs")}
               hoverColor="#0E92A3"
-              customBackground="#ECF7F9"
-              customForeground="#0E92A3"
+              customBackground="#0E92A3"
+              customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="140px"
               borderRadius="10px"

@@ -135,16 +135,16 @@ export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
                         <button
                             type="button"
                             onClick={() => start("create")}
-                            className="group rounded-3xl border border-[#9BD8E2] bg-white p-6 shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:border-[#0E92A3]"
+                            className="group rounded-3xl border border-[#087D8C] bg-[#0E92A3] p-6 text-white shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:bg-[#0A7685]"
                         >
-                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF8FA] text-[#0E92A3]">
+                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E1603F] text-white">
                                 <Lightbulb className="h-6 w-6" />
                             </span>
-                            <span className="block text-xl font-extrabold text-[#2B2B2B]">Create a new product</span>
-                            <span className="mt-2 block text-sm leading-relaxed text-[#4F747C]">
+                            <span className="block text-xl font-extrabold text-white">Create a new product</span>
+                            <span className="mt-2 block text-sm leading-relaxed text-white">
                                 Turn an idea into a product plan, calculate costs, choose a price, and test it.
                             </span>
-                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-[#0E92A3]">
+                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-white">
                                 Start creating <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                             </span>
                         </button>
@@ -152,16 +152,16 @@ export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
                         <button
                             type="button"
                             onClick={() => start("improve")}
-                            className="group rounded-3xl border border-[#F0B39C] bg-white p-6 shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:border-[#E1603F]"
+                            className="group rounded-3xl border border-[#D74F31] bg-[#E1603F] p-6 text-white shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:bg-[#C94E32]"
                         >
-                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFEDE3] text-[#C94E32]">
+                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0E92A3] text-white">
                                 <TrendingUp className="h-6 w-6" />
                             </span>
-                            <span className="block text-xl font-extrabold text-[#2B2B2B]">Improve a current product</span>
-                            <span className="mt-2 block text-sm leading-relaxed text-[#4F747C]">
+                            <span className="block text-xl font-extrabold text-white">Improve a current product</span>
+                            <span className="mt-2 block text-sm leading-relaxed text-white">
                                 Review what you sell today, identify the problem, rework costs and pricing, and compare improvements.
                             </span>
-                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-[#C94E32]">
+                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-white">
                                 Start improving <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                             </span>
                         </button>

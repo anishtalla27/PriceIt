@@ -72,9 +72,9 @@ function Btn({
   const sizes = { sm: "text-xs px-3 py-1.5", md: "text-sm px-4 py-2.5" };
   const styles = {
     primary: "bg-[#0E92A3] text-white hover:bg-[#0A7685] active:scale-95",
-    outline: "border-2 border-[#0E92A3] text-[#0E92A3] hover:bg-[#EAF8FA] active:scale-95",
-    ghost: "bg-transparent text-[#71939B] hover:text-[#0E92A3]",
-    danger: "bg-transparent text-[#D1D5DB] hover:text-red-500",
+    outline: "bg-[#E1603F] text-white hover:bg-[#C94E32] active:scale-95",
+    ghost: "bg-[#0E92A3] text-white hover:bg-[#0A7685] active:scale-95",
+    danger: "bg-[#D84A40] text-white hover:bg-red-600 active:scale-95",
   };
   return (
     <button
@@ -1254,7 +1254,7 @@ export default function TrackerPage() {
         <button
           type="button"
           onClick={() => navigate("/results")}
-          className="min-w-[80px] cursor-pointer text-left text-sm font-semibold text-[#0E92A3] transition-colors hover:text-[#E1603F]"
+          className="min-w-[80px] cursor-pointer rounded-xl bg-[#0E92A3] px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-[#E1603F]"
         >
           Results
         </button>
@@ -1280,11 +1280,11 @@ export default function TrackerPage() {
                   onClick={() => setTab(tab.key)}
                   className={`flex min-w-[92px] flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl border px-3 py-2 transition-all ${
                     isActive
-                      ? "border-[#0E92A3] bg-[#EAF7FB] text-[#2B2B2B] shadow-sm"
-                      : "border-transparent bg-transparent text-[#5C7F87] hover:border-[#D0EAF0] hover:bg-white"
+                      ? "border-[#E1603F] bg-[#E1603F] text-white shadow-sm"
+                      : "border-[#0E92A3] bg-[#0E92A3] text-white hover:border-[#E1603F] hover:bg-[#E1603F]"
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? "text-[#0E92A3]" : ""}`} />
+                  <Icon className="h-4 w-4 text-white" />
                   <span className="text-xs font-extrabold leading-tight">{tab.label}</span>
                 </button>
               );

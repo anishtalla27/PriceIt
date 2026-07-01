@@ -997,7 +997,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
       <header className="no-print flex items-center justify-between px-6 py-4 border-b border-[#CDEBF0] bg-white sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup/pricing")}
-          className="min-h-11 px-3 text-[#0E92A3] font-semibold text-sm hover:text-[#E1603F] transition-colors"
+          className="min-h-11 rounded-xl bg-[#0E92A3] px-4 text-white font-semibold text-sm hover:bg-[#E1603F] transition-colors"
         >
           Back
         </button>
@@ -1078,8 +1078,8 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                       text="Tweak My Pricing"
                       onClick={() => navigate("/setup/pricing")}
                       hoverColor="#E1603F"
-                      customBackground="#EAF8FA"
-                      customForeground="#0E92A3"
+                      customBackground="#0E92A3"
+                      customForeground="#ffffff"
                       hoverForeground="#ffffff"
                       width="200px"
                       borderRadius="999px"
@@ -1255,7 +1255,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="flex items-center gap-2 rounded-xl border-2 border-[#CDEBF0] bg-white px-5 py-2.5 text-sm font-bold text-[#5C7F87] hover:border-[#0E92A3] hover:text-[#0E92A3] transition-colors"
+                  className="flex items-center gap-2 rounded-xl bg-[#0E92A3] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#E1603F] transition-colors"
                 >
                   <Printer className="h-4 w-4" />
                   Print Business Plan

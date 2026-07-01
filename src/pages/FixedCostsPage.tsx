@@ -136,7 +136,7 @@ function CompactCard({
         <button
           type="button"
           onClick={onEdit}
-          className="min-h-10 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#E8F8FA] text-[#0E92A3] hover:bg-[#0E92A3] hover:text-white transition-colors"
+          className="min-h-10 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#0E92A3] text-white hover:bg-[#E1603F] transition-colors"
         >
           Edit
         </button>
@@ -144,7 +144,7 @@ function CompactCard({
         <button
           type="button"
           onClick={onDelete}
-          className="min-h-10 flex items-center justify-center rounded-lg bg-[#FFEDE3] text-[#E1603F] hover:bg-[#E1603F] hover:text-white transition-colors text-xs font-bold px-3"
+          className="min-h-10 flex items-center justify-center rounded-lg bg-[#E1603F] text-white hover:bg-[#C94E32] transition-colors text-xs font-bold px-3"
           aria-label="Delete"
         >
           Delete
@@ -232,7 +232,7 @@ function EditCard({
         <button
           type="button"
           onClick={onDelete}
-          className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#FFEDE3] text-[#E1603F] hover:bg-[#E1603F] hover:text-white transition-colors text-xs font-bold px-3"
+          className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#E1603F] text-white hover:bg-[#C94E32] transition-colors text-xs font-bold px-3"
           aria-label="Delete cost item"
         >
           Delete
@@ -290,7 +290,7 @@ function EditCard({
               className={`flex-1 min-h-10 text-xs font-bold transition-colors ${
                 item.type === "one-time"
                   ? "bg-[#0E92A3] text-white"
-                  : "bg-[#ECF7F9] text-[#5C7F87] hover:bg-[#D7ECF0]"
+                  : "bg-[#E1603F] text-white hover:bg-[#C94E32]"
               }`}
             >
               One-Time
@@ -301,7 +301,7 @@ function EditCard({
               className={`flex-1 min-h-10 text-xs font-bold transition-colors ${
                 item.type === "monthly"
                   ? "bg-[#0E92A3] text-white"
-                  : "bg-[#ECF7F9] text-[#5C7F87] hover:bg-[#D7ECF0]"
+                  : "bg-[#E1603F] text-white hover:bg-[#C94E32]"
               }`}
             >
               Monthly
@@ -471,7 +471,7 @@ export default function FixedCostsPage() {
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#CDEBF0] bg-white sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup")}
-          className="min-h-11 px-3 flex items-center gap-2 text-[#0E92A3] font-semibold text-sm hover:text-[#E1603F] transition-colors"
+          className="min-h-11 rounded-xl bg-[#0E92A3] px-4 flex items-center gap-2 text-white font-semibold text-sm hover:bg-[#E1603F] transition-colors"
         >
           Back
         </button>
@@ -510,7 +510,7 @@ export default function FixedCostsPage() {
                 <button
                   type="button"
                   onClick={() => navigate("/setup/variable-costs")}
-                  className="mt-1 rounded-xl border-2 border-[#AEDBE3] bg-white px-5 py-2.5 text-sm font-bold text-[#0E92A3] hover:border-[#0E92A3] hover:bg-[#EAF8FA] transition-colors"
+                  className="mt-1 rounded-xl bg-[#0E92A3] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#E1603F] transition-colors"
                 >
                   I have no fixed costs — skip this step →
                 </button>
@@ -542,8 +542,8 @@ export default function FixedCostsPage() {
                 text="+ Add Fixed Cost"
                 onClick={handleAdd}
                 hoverColor="#E1603F"
-                customBackground="#EAF8FA"
-                customForeground="#0E92A3"
+                customBackground="#0E92A3"
+                customForeground="#ffffff"
                 hoverForeground="#ffffff"
                 width="100%"
                 borderRadius="14px"
@@ -575,8 +575,8 @@ export default function FixedCostsPage() {
               text="Back"
               onClick={() => navigate("/setup")}
               hoverColor="#0E92A3"
-              customBackground="#ECF7F9"
-              customForeground="#0E92A3"
+              customBackground="#0E92A3"
+              customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="140px"
               borderRadius="10px"

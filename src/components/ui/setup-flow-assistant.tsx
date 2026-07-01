@@ -796,7 +796,7 @@ User request: ${userInput}`;
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="h-7 w-7 rounded-full text-[#5C7F87] hover:text-[#E1603F] hover:bg-white transition-colors flex items-center justify-center"
+              className="h-7 w-7 rounded-full bg-[#E1603F] text-white hover:bg-[#C94E32] transition-colors flex items-center justify-center"
               aria-label="Close assistant"
             >
               <X className="h-4 w-4" />
@@ -871,7 +871,7 @@ User request: ${userInput}`;
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder={isResponding ? "LaunchPad is thinking..." : "Type a message..."}
                 disabled={isResponding}
-                className="flex-1 bg-transparent outline-none text-sm text-[#2B2B2B] placeholder-[#5C7F87] px-2"
+                className="flex-1 bg-white outline-none text-sm text-[#2B2B2B] placeholder-[#5C7F87] px-2"
               />
               <button
                 type="submit"
@@ -887,7 +887,7 @@ User request: ${userInput}`;
                 <button
                   type="button"
                   onClick={handleRetry}
-                  className="min-h-11 rounded-full border border-[#E1603F] px-3 text-xs font-bold text-[#E1603F] hover:bg-[#FFEDE3] transition-colors"
+                  className="min-h-11 rounded-full bg-[#E1603F] px-3 text-xs font-bold text-white hover:bg-[#C94E32] transition-colors"
                 >
                   Retry Last Message
                 </button>

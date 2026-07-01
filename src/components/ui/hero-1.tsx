@@ -72,7 +72,7 @@ const Hero1 = ({
       <header className="flex items-center justify-between px-6 py-3 border-b border-[#CDEBF0] bg-white sticky top-0 z-20">
         <button
           onClick={onBack}
-          className="min-h-11 px-3 text-[#0E92A3] font-semibold text-sm hover:text-[#E1603F] transition-colors"
+          className="min-h-11 rounded-xl bg-[#0E92A3] px-4 text-white font-semibold text-sm hover:bg-[#E1603F] transition-colors"
         >
           Back
         </button>
@@ -135,7 +135,7 @@ const Hero1 = ({
                   }`}
                 >
                   <button
-                    className="h-9 w-9 rounded-xl bg-[#FFF0E7] text-[#E1603F] flex items-center justify-center transition-all flex-shrink-0"
+                    className="h-9 w-9 rounded-xl bg-[#E1603F] text-white flex items-center justify-center transition-all flex-shrink-0"
                     type="button"
                     tabIndex={-1}
                   >
@@ -157,7 +157,7 @@ const Hero1 = ({
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
-                    className="bg-transparent flex-1 outline-none text-[#2B2B2B] placeholder-[#5C7F87] pl-3 pr-2 text-[15px]"
+                    className="bg-white flex-1 outline-none text-[#2B2B2B] placeholder-[#5C7F87] pl-3 pr-2 text-[15px]"
                   />
                   {controlled && (
                     <button

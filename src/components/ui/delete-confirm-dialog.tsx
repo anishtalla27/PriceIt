@@ -33,11 +33,11 @@ export function DeleteConfirmDialog({
           This removes the {itemType} from your plan. You can add it again later if you need it.
         </p>
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="min-h-11 rounded-xl border border-[#D4DDE0] bg-white px-4 py-2 text-sm font-bold text-[#0E92A3] transition hover:border-[#0E92A3] hover:bg-[#EAF8FA]"
-          >
+        <button
+          type="button"
+          onClick={onCancel}
+          className="min-h-11 rounded-xl bg-[#0E92A3] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0A7685]"
+        >
             Cancel
           </button>
           <button

@@ -121,19 +121,16 @@ body {
 
 .priceit-feature-cta {
   position: relative;
-  border: 1px solid #8DD7E2 !important;
+  background: #0E92A3 !important;
+  border: 1px solid #087D8C !important;
+  color: #ffffff !important;
   box-shadow:
     0 12px 28px rgba(31, 44, 50, 0.13),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .priceit-feature-cta::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(14, 146, 163, 0.12), rgba(225, 96, 63, 0.08));
+  content: none;
 }
 
 .priceit-feature-cta > * {
@@ -141,8 +138,19 @@ body {
   z-index: 1;
 }
 
+.priceit-feature-cta :is(p, h2, span, strong, svg) {
+  color: #ffffff !important;
+}
+
+.priceit-feature-cta :is(.bg-white, .bg-\[\#EAF7FB\], .bg-\[\#EAF8FA\], .bg-\[\#FFF4D6\]) {
+  background: #E1603F !important;
+  border-color: #F6B29F !important;
+}
+
 .priceit-feature-cta:hover {
   transform: translateY(-3px);
+  background: #E1603F !important;
+  border-color: #D74F31 !important;
   box-shadow:
     0 14px 30px rgba(31, 44, 50, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
@@ -174,9 +182,9 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #FFF4D6;
-  color: #0E92A3;
-  border: 1px solid #F2C85B;
+  background: #E1603F;
+  color: #ffffff;
+  border: 1px solid #F6B29F;
   padding: 0.45rem 0.7rem;
   font-weight: 900;
   box-shadow: 0 6px 14px rgba(43, 43, 43, 0.10);

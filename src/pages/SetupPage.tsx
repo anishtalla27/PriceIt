@@ -264,7 +264,7 @@ When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas 
                 key={option}
                 type="button"
                 onClick={() => sendAnswer(option)}
-                className="min-h-11 rounded-xl border border-[#0E92A3] bg-white px-4 py-2 text-sm font-bold text-[#0E92A3] shadow-sm transition hover:bg-[#EAF8FA]"
+                className="min-h-11 rounded-xl bg-[#0E92A3] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#E1603F]"
               >
                 {option}
               </button>
@@ -282,7 +282,7 @@ When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas 
                   key={option}
                   type="button"
                   onClick={() => setInput(option)}
-                  className="rounded-xl border border-[#D2EAF0] bg-[#F8FCFD] px-3.5 py-1.5 text-sm text-[#486B73] hover:border-[#0E92A3] hover:bg-[#EAF8FA] hover:text-[#0B7180] transition-colors"
+                  className="rounded-xl bg-[#E1603F] px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-[#C94E32] transition-colors"
                 >
                   {option}
                 </button>

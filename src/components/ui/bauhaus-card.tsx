@@ -28,7 +28,7 @@ const BAUHAUS_CARD_STYLES = `
   height: 100%;
   border-radius: 2.25rem;
   z-index: -1;
-  border: 0.155rem solid transparent;
+  border: 0.155rem solid var(--card-separator, #2F2B2A);
   -webkit-mask-composite: destination-out;
   mask-composite: exclude;
 }

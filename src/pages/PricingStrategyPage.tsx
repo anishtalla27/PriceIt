@@ -254,7 +254,7 @@ export default function PricingStrategyPage() {
   return (
     <div className="min-h-screen priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#CDEBF0] bg-white px-6 py-4">
-        <button onClick={() => navigate("/setup/pricing-lab/strategies")} className="min-h-11 px-3 text-sm font-semibold text-[#0E92A3] transition-colors hover:text-[#E1603F]">
+        <button onClick={() => navigate("/setup/pricing-lab/strategies")} className="min-h-11 rounded-xl bg-[#0E92A3] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#E1603F]">
           Methods
         </button>
         <img src={logo} alt="LaunchPad logo" className="h-14 w-auto" />
@@ -463,8 +463,8 @@ export default function PricingStrategyPage() {
               text="Back to Methods"
               onClick={() => navigate("/setup/pricing-lab/strategies")}
               hoverColor="#0E92A3"
-              customBackground="#ECF7F9"
-              customForeground="#0E92A3"
+              customBackground="#0E92A3"
+              customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="150px"
               borderRadius="10px"

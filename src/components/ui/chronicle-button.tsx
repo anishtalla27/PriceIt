@@ -72,18 +72,18 @@ const styles = `
 }
 
 .chronicleButton.outlined {
-  background: transparent;
+  background: var(--chronicle-button-background);
   border: 2px solid var(--chronicle-button-background);
   padding: calc(1rem - var(--outline-padding-adjustment)) 0;
-  color: var(--chronicle-button-background);
+  color: var(--chronicle-button-foreground);
   transition: border 0.4s linear, color 0.4s linear, background-color 0.4s linear;
   will-change: border, color;
 }
 
 .chronicleButton.outlined:hover:not(:disabled) {
-  background: var(--outlined-button-background-on-hover, transparent);
+  background: var(--chronicle-button-hover-background);
   border-color: var(--chronicle-button-hover-background);
-  color: var(--chronicle-button-hover-background);
+  color: var(--chronicle-button-hover-foreground);
 }
 
 .chronicleButton.outlined span:nth-of-type(1) em,
@@ -93,7 +93,7 @@ const styles = `
 
 .chronicleButton.outlined:hover:not(:disabled) span:nth-of-type(1) em,
 .chronicleButton.outlined:hover:not(:disabled) span:nth-of-type(2) em {
-  color: var(--chronicle-button-hover-background);
+  color: var(--chronicle-button-hover-foreground);
 }
 `;
 
@@ -120,7 +120,7 @@ export const ChronicleButton: React.FC<ChronicleButtonProps> = ({
   outlined = false,
   outlinePaddingAdjustment = "2px",
   borderRadius = "8px",
-  outlinedButtonBackgroundOnHover = "transparent",
+  outlinedButtonBackgroundOnHover = "#E1603F",
   customBackground = "#0E92A3",
   customForeground = "#ffffff",
   hoverForeground = "#ffffff",

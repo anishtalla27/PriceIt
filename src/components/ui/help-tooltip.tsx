@@ -30,7 +30,7 @@ export function HelpTooltip({ term }: { term: string }) {
         onMouseLeave={() => setOpen(false)}
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setOpen(false)}
-        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border border-[#9BD8E2] bg-[#EAF8FA] text-[9px] font-bold text-[#0E92A3] hover:border-[#0E92A3] hover:bg-[#0E92A3] hover:text-white transition-colors"
+        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-[#0E92A3] text-[9px] font-bold text-white hover:bg-[#E1603F] transition-colors"
         aria-label={`What is ${term}?`}
       >
         ?
