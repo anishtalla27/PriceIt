@@ -121,7 +121,13 @@ const Hero1 = ({
             <div>{children}</div>
 
             {/* Input bar */}
-            <div className="flex justify-center mt-3">
+            <form
+              className="flex justify-center mt-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleSubmit();
+              }}
+            >
               <div className="relative w-full">
                 <div
                   className={`bg-white rounded-2xl px-2.5 py-2.5 flex items-center border-2 border-[#D7E8EC] focus-within:border-[#5DB7C4] shadow-sm transition-all ${
@@ -141,7 +147,10 @@ const Hero1 = ({
                     value={value}
                     onChange={(e) => handleChange(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && !inputDisabled) handleSubmit();
+                      if (e.key === "Enter" && !inputDisabled) {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
                     }}
                     disabled={inputDisabled}
                     placeholder={inputPlaceholder}
@@ -152,17 +161,18 @@ const Hero1 = ({
                   />
                   {controlled && (
                     <button
-                      onClick={handleSubmit}
                       disabled={inputDisabled || !value.trim()}
-                      className="h-9 w-9 rounded-xl bg-[#5DB7C4] text-white hover:bg-[#4aa5b2] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
-                      type="button"
+                      className="min-h-10 rounded-xl bg-[#5DB7C4] px-3 text-sm font-extrabold text-white hover:bg-[#4aa5b2] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0 inline-flex items-center gap-1.5"
+                      type="submit"
+                      aria-label="Send message"
                     >
-                      <Send className="w-4 h-4 mx-auto" />
+                      <Send className="w-4 h-4" />
+                      <span>Send</span>
                     </button>
                   )}
                 </div>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </main>

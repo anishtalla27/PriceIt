@@ -101,6 +101,16 @@ function buildIdeaSuggestions(answers: SetupAnswers): string[] {
   return [physicalIdeas[0], physicalIdeas[1], serviceIdeas[0], serviceIdeas[1]];
 }
 
+function looksLikeServiceIdea(answers: SetupAnswers) {
+  if (answers.productType === "service") return true;
+  const text = [
+    answers.selectedIdea,
+    answers.description,
+    answers.name,
+  ].filter(Boolean).join(" ").toLowerCase();
+  return /service|coach|coaching|lesson|class|tutor|program|helper|helping|walk|wash|planning/.test(text);
+}
+
 function normalizeSetupAnswer(
   stage: keyof SetupAnswers,
   value: string,
@@ -183,7 +193,20 @@ export function getSetupExamples(
     return ["Kids my age (8–12)", "Parents and families", "Students and teachers", "Pet owners"];
   }
   if (stage === "specialFeature") {
-    return ["It's fully custom-made", "It costs less than stores", "It saves time", "It looks way better"];
+    if (looksLikeServiceIdea(answers)) {
+      return [
+        "It is personalized for each customer",
+        "It saves customers time",
+        "I explain things clearly",
+        "Customers can choose the session style",
+      ];
+    }
+    return [
+      "It is fully custom-made",
+      "It uses better materials",
+      "It saves time",
+      "It looks more personal",
+    ];
   }
   if (stage === "improvementGoal") {
     return ["Get 5 more customers per month", "Cut costs by $3 per item", "Improve packaging", "Get better reviews"];

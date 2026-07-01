@@ -7,6 +7,7 @@ import { ProgressSteps } from "@/components/ui/progress-steps";
 import { injectBauhausCardStyles } from "@/components/ui/bauhaus-card";
 import { injectFieldCardStyles } from "@/components/ui/field-card";
 import { SaveStatus } from "@/components/ui/save-status";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import logo from "../../logo.png";
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -91,12 +92,10 @@ function CompactCard({
   item,
   onEdit,
   onDelete,
-  confirmingDelete,
 }: {
   item: FixedCostItem;
   onEdit: () => void;
   onDelete: () => void;
-  confirmingDelete: boolean;
 }) {
   const monthly = monthlyPortion(item);
 
@@ -145,7 +144,7 @@ function CompactCard({
           className="min-h-10 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete"
         >
-          {confirmingDelete ? "Sure?" : "Delete"}
+          Delete
         </button>
         </div>
       </div>
@@ -160,13 +159,11 @@ function EditCard({
   onUpdate,
   onDelete,
   onDone,
-  confirmingDelete,
 }: {
   item: FixedCostItem;
   onUpdate: (updates: Partial<FixedCostItem>) => void;
   onDelete: () => void;
   onDone: () => void;
-  confirmingDelete: boolean;
 }) {
   const [touched, setTouched] = useState({
     name: false,
@@ -235,7 +232,7 @@ function EditCard({
           className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete cost item"
         >
-          {confirmingDelete ? "Sure?" : "Delete"}
+          Delete
         </button>
       </div>
 
@@ -413,9 +410,8 @@ export default function FixedCostsPage() {
   // IDs of cards currently open in edit mode
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string>>(new Set());
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
   const [assistantHighlight, setAssistantHighlight] = useState(false);
-  const deleteConfirmTimerRef = useRef<number | null>(null);
   const addedRowTimersRef = useRef<number[]>([]);
 
   const expand = (id: string) =>
@@ -442,25 +438,8 @@ export default function FixedCostsPage() {
     deleteFixedCost(id);
   };
 
-  const handleDeletePress = (id: string) => {
-    if (confirmDeleteId !== id) {
-      setConfirmDeleteId(id);
-      if (deleteConfirmTimerRef.current) {
-        window.clearTimeout(deleteConfirmTimerRef.current);
-      }
-      deleteConfirmTimerRef.current = window.setTimeout(() => {
-        setConfirmDeleteId((current) => (current === id ? null : current));
-      }, 2000);
-      return;
-    }
-
-    if (deleteConfirmTimerRef.current) {
-      window.clearTimeout(deleteConfirmTimerRef.current);
-      deleteConfirmTimerRef.current = null;
-    }
-    setConfirmDeleteId(null);
-    handleDelete(id);
-  };
+  const handleDeletePress = (id: string) => setDeleteCandidateId(id);
+  const deleteCandidate = fixedCosts.find((item) => item.id === deleteCandidateId) ?? null;
 
   useEffect(() => {
     const handleStateChange = (event: Event) => {
@@ -475,7 +454,6 @@ export default function FixedCostsPage() {
 
   useEffect(() => {
     return () => {
-      if (deleteConfirmTimerRef.current) window.clearTimeout(deleteConfirmTimerRef.current);
       addedRowTimersRef.current.forEach((id) => window.clearTimeout(id));
       addedRowTimersRef.current = [];
     };
@@ -543,14 +521,12 @@ export default function FixedCostsPage() {
                     onUpdate={(updates) => updateFixedCost(item.id, updates)}
                     onDelete={() => handleDeletePress(item.id)}
                     onDone={() => collapse(item.id)}
-                    confirmingDelete={confirmDeleteId === item.id}
                   />
                 ) : (
                   <CompactCard
                     item={item}
                     onEdit={() => expand(item.id)}
                     onDelete={() => handleDeletePress(item.id)}
-                    confirmingDelete={confirmDeleteId === item.id}
                   />
                 )}
               </div>
@@ -616,6 +592,18 @@ export default function FixedCostsPage() {
           <SaveStatus />
         </div>
       </main>
+      {deleteCandidate && (
+        <DeleteConfirmDialog
+          itemName={deleteCandidate.name}
+          itemType="fixed cost"
+          onCancel={() => setDeleteCandidateId(null)}
+          onConfirm={() => {
+            const id = deleteCandidate.id;
+            setDeleteCandidateId(null);
+            handleDelete(id);
+          }}
+        />
+      )}
     </div>
   );
 }

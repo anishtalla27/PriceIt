@@ -7,6 +7,7 @@ import { ProgressSteps } from "@/components/ui/progress-steps";
 import { injectBauhausCardStyles } from "@/components/ui/bauhaus-card";
 import { injectFieldCardStyles } from "@/components/ui/field-card";
 import { SaveStatus } from "@/components/ui/save-status";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import logo from "../../logo.png";
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -197,12 +198,10 @@ function CompactCard({
   item,
   onEdit,
   onDelete,
-  confirmingDelete,
 }: {
   item: VariableCostItem;
   onEdit: () => void;
   onDelete: () => void;
-  confirmingDelete: boolean;
 }) {
   const cpp = costPerProduct(item);
 
@@ -233,7 +232,7 @@ function CompactCard({
 
         <div className="shrink-0 text-left sm:text-right">
           <p className="font-extrabold text-[#F36C3D] text-base leading-tight">
-            {cpp > 0 ? `$${cpp.toFixed(3)}` : "—"}
+            {cpp > 0 ? `$${cpp.toFixed(2)}` : "—"}
           </p>
           <p className="text-[10px] text-[#9BBFC3] font-semibold">cost per product</p>
         </div>
@@ -252,7 +251,7 @@ function CompactCard({
             className="min-h-10 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
             aria-label="Delete"
           >
-            {confirmingDelete ? "Sure?" : "Delete"}
+            Delete
           </button>
         </div>
       </div>
@@ -282,13 +281,11 @@ function EditCard({
   onUpdate,
   onDelete,
   onDone,
-  confirmingDelete,
 }: {
   item: VariableCostItem;
   onUpdate: (updates: Partial<VariableCostItem>) => void;
   onDelete: () => void;
   onDone: () => void;
-  confirmingDelete: boolean;
 }) {
   const [touched, setTouched] = useState({
     name: false,
@@ -357,7 +354,7 @@ function EditCard({
           className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#FFF0EA] text-[#F36C3D] hover:bg-[#F36C3D] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete"
         >
-          {confirmingDelete ? "Sure?" : "Delete"}
+          Delete
         </button>
       </div>
 
@@ -453,7 +450,7 @@ function EditCard({
               (${Number(item.pricePerPack).toFixed(2)} ÷ {item.unitsPerPack}) × {item.unitsPerProduct}
             </p>
             <p className="text-base sm:text-lg font-extrabold text-[#F36C3D]">
-              ${cpp.toFixed(3)} per product
+              ${cpp.toFixed(2)} per product
             </p>
           </div>
         ) : (
@@ -489,9 +486,8 @@ export default function VariableCostsPage() {
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string>>(new Set());
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
   const [assistantHighlight, setAssistantHighlight] = useState(false);
-  const deleteConfirmTimerRef = useRef<number | null>(null);
   const addRowTimersRef = useRef<number[]>([]);
 
   const expand  = (id: string) => setExpandedIds((p) => new Set([...p, id]));
@@ -516,24 +512,8 @@ export default function VariableCostsPage() {
     deleteVariableCost(id);
   };
 
-  const handleDeletePress = (id: string) => {
-    if (confirmDeleteId !== id) {
-      setConfirmDeleteId(id);
-      if (deleteConfirmTimerRef.current) {
-        window.clearTimeout(deleteConfirmTimerRef.current);
-      }
-      deleteConfirmTimerRef.current = window.setTimeout(() => {
-        setConfirmDeleteId((current) => (current === id ? null : current));
-      }, 2000);
-      return;
-    }
-    if (deleteConfirmTimerRef.current) {
-      window.clearTimeout(deleteConfirmTimerRef.current);
-      deleteConfirmTimerRef.current = null;
-    }
-    setConfirmDeleteId(null);
-    handleDelete(id);
-  };
+  const handleDeletePress = (id: string) => setDeleteCandidateId(id);
+  const deleteCandidate = variableCosts.find((item) => item.id === deleteCandidateId) ?? null;
 
   useEffect(() => {
     const handleStateChange = (event: Event) => {
@@ -548,7 +528,6 @@ export default function VariableCostsPage() {
 
   useEffect(() => {
     return () => {
-      if (deleteConfirmTimerRef.current) window.clearTimeout(deleteConfirmTimerRef.current);
       addRowTimersRef.current.forEach((id) => window.clearTimeout(id));
       addRowTimersRef.current = [];
     };
@@ -615,14 +594,12 @@ export default function VariableCostsPage() {
                     onUpdate={(u) => updateVariableCost(item.id, u)}
                     onDelete={() => handleDeletePress(item.id)}
                     onDone={() => collapse(item.id)}
-                    confirmingDelete={confirmDeleteId === item.id}
                   />
                 ) : (
                   <CompactCard
                     item={item}
                     onEdit={() => expand(item.id)}
                     onDelete={() => handleDeletePress(item.id)}
-                    confirmingDelete={confirmDeleteId === item.id}
                   />
                 )}
               </div>
@@ -654,7 +631,7 @@ export default function VariableCostsPage() {
                 </p>
               </div>
               <p className="text-2xl font-extrabold text-[#F36C3D]">
-                ${total.toFixed(3)}
+                ${total.toFixed(2)}
                 <span className="text-sm font-bold text-[#9BBFC3]">/product</span>
               </p>
             </div>
@@ -687,6 +664,18 @@ export default function VariableCostsPage() {
           <SaveStatus />
         </div>
       </main>
+      {deleteCandidate && (
+        <DeleteConfirmDialog
+          itemName={deleteCandidate.name}
+          itemType="variable cost"
+          onCancel={() => setDeleteCandidateId(null)}
+          onConfirm={() => {
+            const id = deleteCandidate.id;
+            setDeleteCandidateId(null);
+            handleDelete(id);
+          }}
+        />
+      )}
     </div>
   );
 }

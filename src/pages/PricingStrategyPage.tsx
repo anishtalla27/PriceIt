@@ -42,21 +42,50 @@ function priceStepFor(amount: number): number {
   return 0.25;
 }
 
+function stripEndingPunctuation(value: string): string {
+  return value.trim().replace(/[.!?]+$/, "");
+}
+
+function valueReasonFromAnswers(
+  answers: {
+    custom: boolean;
+    unique: boolean;
+    quality: boolean;
+    solvesProblem: boolean;
+    giftable: boolean;
+  },
+  specialFeature: string
+): string {
+  if (answers.custom) return "it is made for each customer";
+  if (answers.unique) return "customers cannot easily find the same thing somewhere else";
+  if (answers.quality) return "it uses better materials or looks higher quality";
+  if (answers.solvesProblem) return "it solves a problem customers care about";
+  if (answers.giftable) return "it feels special enough to give as a gift";
+
+  const feature = stripEndingPunctuation(specialFeature);
+  if (/costs? less|cheaper|affordable|low price|discount/i.test(feature)) {
+    return "it gives customers good value while still covering your costs";
+  }
+  return feature || "customers can see what makes it special";
+}
+
 function Metric({
   label,
   value,
   helper,
   accent = "#5DB7C4",
   term,
+  warning,
 }: {
   label: string;
   value: string;
   helper: string;
   accent?: string;
   term?: string;
+  warning?: string | null;
 }) {
   return (
-    <div className="rounded-2xl border border-[#DCE9EC] bg-white px-4 py-4 shadow-sm">
+    <div className={`rounded-2xl border bg-white px-4 py-4 shadow-sm ${warning ? "border-[#F36C3D]" : "border-[#DCE9EC]"}`}>
       <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#6F8A91]">
         {label}
         {term && <HelpTooltip term={term} />}
@@ -65,6 +94,11 @@ function Metric({
         {value}
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[#6F8A91]">{helper}</p>
+      {warning && (
+        <p className="mt-2 rounded-xl border border-[#F36C3D]/25 bg-[#FFF5F0] px-3 py-2 text-xs font-bold leading-relaxed text-[#F36C3D]">
+          {warning}
+        </p>
+      )}
     </div>
   );
 }
@@ -107,6 +141,22 @@ export default function PricingStrategyPage() {
   const valueLow = roundMoney(costPerProduct + Math.max(1, desiredProfit) + valueScore * 0.75);
   const valueHigh = roundMoney(valueLow + Math.max(1.5, valueScore * 1.2));
   const priceStep = priceStepFor(Math.max(costPerProduct, currentPrice, highPrice, desiredProfit));
+  const marketWarning = (price: number) =>
+    costPerProduct > 0 && price < costPerProduct
+      ? `Below your $${fmt(costPerProduct)} cost. This would lose money unless your costs change.`
+      : null;
+  const selectedStrategyPrice =
+    strategy === "cost-plus" ? costPlusPrice : strategy === "market" ? averagePrice : valueLow;
+  const canUseStrategyPrice =
+    selectedStrategyPrice > 0 &&
+    (costPerProduct <= 0 || selectedStrategyPrice >= costPerProduct);
+  const strategyPriceWarning =
+    selectedStrategyPrice <= 0
+      ? "Choose a price above $0 before saving it."
+      : !canUseStrategyPrice
+        ? `This price is below your $${fmt(costPerProduct)} cost per product. Raise it before saving.`
+        : null;
+  const valueReason = valueReasonFromAnswers(valueAnswers, productInfo.specialFeature);
 
   const meta = {
     "cost-plus": {
@@ -257,9 +307,27 @@ export default function PricingStrategyPage() {
               <LessonBox>
                 <h2 className="text-xl font-extrabold text-[#2B2B2B]">Choose your position</h2>
                 <div className="mt-3 grid gap-3">
-                  <Metric label="Budget option" value={`$${fmt(lowPrice)}`} helper="Good if you want customers to try you easily." />
-                  <Metric label="Average option" value={`$${fmt(averagePrice)}`} helper="Good if your product is similar to others." accent="#F59E0B" />
-                  <Metric label="Premium option" value={`$${fmt(highPrice)}`} helper="Good only if your product looks or feels better." accent="#F36C3D" />
+                  <Metric
+                    label="Budget option"
+                    value={`$${fmt(lowPrice)}`}
+                    helper="Good if you want customers to try you easily."
+                    accent={marketWarning(lowPrice) ? "#F36C3D" : "#5DB7C4"}
+                    warning={marketWarning(lowPrice)}
+                  />
+                  <Metric
+                    label="Average option"
+                    value={`$${fmt(averagePrice)}`}
+                    helper="Good if your product is similar to others."
+                    accent={marketWarning(averagePrice) ? "#F36C3D" : "#F59E0B"}
+                    warning={marketWarning(averagePrice)}
+                  />
+                  <Metric
+                    label="Premium option"
+                    value={`$${fmt(highPrice)}`}
+                    helper="Good only if your product looks or feels better."
+                    accent="#F36C3D"
+                    warning={marketWarning(highPrice)}
+                  />
                 </div>
                 <p className="mt-3 text-sm text-[#6F8A91]">Watch out: if a competitor is cheaper because their costs are lower, copying them may hurt your profit.</p>
               </LessonBox>
@@ -298,7 +366,7 @@ export default function PricingStrategyPage() {
                 </div>
                 <p className="mt-3 text-sm text-[#6F8A91]">This is not a magic answer. It is a test range. Customers need to understand the extra value before they pay more.</p>
                 <p className="mt-3 rounded-2xl bg-[#F7F9FA] px-3 py-2 text-sm text-[#2B2B2B]">
-                  Try saying: “This costs more because {productInfo.specialFeature || "it has a special feature"}.”
+                  Try saying: “This price works because {valueReason}.”
                 </p>
               </LessonBox>
             </div>
@@ -318,9 +386,8 @@ export default function PricingStrategyPage() {
             <ChronicleButton
               text="Use This Price"
               onClick={() => {
-                const nextPrice =
-                  strategy === "cost-plus" ? costPlusPrice : strategy === "market" ? averagePrice : valueLow;
-                updatePricing({ sellingPrice: roundMoney(nextPrice) });
+                if (!canUseStrategyPrice) return;
+                updatePricing({ sellingPrice: roundMoney(selectedStrategyPrice) });
                 navigate("/setup/pricing-lab");
               }}
               hoverColor="#F36C3D"
@@ -329,8 +396,14 @@ export default function PricingStrategyPage() {
               hoverForeground="#ffffff"
               width="170px"
               borderRadius="10px"
+              disabled={!canUseStrategyPrice}
             />
           </div>
+          {strategyPriceWarning && (
+            <p className="mt-3 rounded-2xl border border-[#F36C3D]/25 bg-white px-4 py-3 text-sm font-bold text-[#F36C3D]">
+              {strategyPriceWarning}
+            </p>
+          )}
           <SaveStatus />
         </div>
       </main>

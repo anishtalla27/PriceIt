@@ -165,6 +165,14 @@ export default function PricingLabPage() {
   const monthlyProfit = revenue - costPerUnitAtSales * expectedSales;
   const margin = labPrice > 0 ? (profitPerSale / labPrice) * 100 : 0;
   const breakEven = labPrice > variableCost ? Math.ceil(fixedMonthlyTotal / (labPrice - variableCost)) : null;
+  const canSaveTestPrice =
+    labPrice > 0 && (costPerUnitAtSales <= 0 || labPrice >= costPerUnitAtSales);
+  const saveTestPriceWarning =
+    labPrice <= 0
+      ? "Set a price above $0 before saving it to your plan."
+      : !canSaveTestPrice
+        ? `This test price is below your $${fmt(costPerUnitAtSales)} cost per sale. Raise it before saving.`
+        : null;
 
   const feedback = useMemo(() => {
     if (labPrice <= variableCost) return "Too low: this price does not cover the cost to make one product.";
@@ -318,6 +326,11 @@ export default function PricingLabPage() {
                       <span>$0</span>
                       <span>${fmt(labPriceMax)}</span>
                     </div>
+                    {saveTestPriceWarning && (
+                      <p className="rounded-xl border border-[#F36C3D]/25 bg-[#FFF5F0] px-3 py-2 text-xs font-bold leading-relaxed text-[#F36C3D]">
+                        {saveTestPriceWarning}
+                      </p>
+                    )}
                   </div>
                 </FieldCard>
                 <FieldCard label="Expected sales per month" accentColor="#F36C3D">
@@ -371,13 +384,17 @@ export default function PricingLabPage() {
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <ChronicleButton
               text="Use Test Price"
-              onClick={() => updatePricing({ sellingPrice: roundMoney(labPrice), unitsPerMonth: Math.round(expectedSales) })}
+              onClick={() => {
+                if (!canSaveTestPrice) return;
+                updatePricing({ sellingPrice: roundMoney(labPrice), unitsPerMonth: Math.round(expectedSales) });
+              }}
               hoverColor="#F36C3D"
               customBackground="#5DB7C4"
               customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="170px"
               borderRadius="10px"
+              disabled={!canSaveTestPrice}
             />
             <ChronicleButton
               text="See My Results"
@@ -390,6 +407,11 @@ export default function PricingLabPage() {
               borderRadius="10px"
             />
           </div>
+          {saveTestPriceWarning && (
+            <p className="mb-3 rounded-2xl border border-[#F36C3D]/25 bg-white px-4 py-3 text-sm font-bold text-[#F36C3D]">
+              {saveTestPriceWarning}
+            </p>
+          )}
           <SaveStatus />
         </div>
       </main>
