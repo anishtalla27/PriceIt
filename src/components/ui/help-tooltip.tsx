@@ -5,6 +5,8 @@ const DEFINITIONS: Record<string, string> = {
   "Cost per unit": "About how much it costs to make or deliver one item or session.",
   "Fixed costs": "Costs you pay even if you do not sell anything this month.",
   "Variable costs": "Costs that happen each time you make a product or run a session.",
+  "Pricing": "Choosing what customers pay, then checking whether that price covers costs and leaves profit.",
+  "Price test": "A pretend scenario where you change price and sales to see what might happen.",
   "Monthly revenue": "All the money you earn from sales in one month.",
   "Monthly costs": "Everything you spend in a month — fixed costs plus what it costs to make products.",
   "Monthly profit": "The money left over after paying all costs. This is what you keep!",

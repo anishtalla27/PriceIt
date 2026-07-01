@@ -8,7 +8,7 @@ import { injectBauhausCardStyles } from "@/components/ui/bauhaus-card";
 import { injectFieldCardStyles } from "@/components/ui/field-card";
 import { SaveStatus } from "@/components/ui/save-status";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
-import { StepHelp } from "@/components/ui/step-help";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import logo from "../../logo.png";
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -487,6 +487,7 @@ export default function FixedCostsPage() {
           <div className="mb-4 text-center">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
               {mode === "improve" ? "Review your current fixed costs" : "What are your fixed costs?"}
+              <HelpTooltip term="Fixed costs" />
             </h1>
             <p className="mt-1 text-[#7B9EA3] text-sm">
               {mode === "improve"
@@ -494,21 +495,6 @@ export default function FixedCostsPage() {
                 : "These are costs you pay no matter how many you sell — like rent, equipment, or subscriptions. Service businesses with no overhead can skip this step."}
             </p>
           </div>
-
-          <StepHelp
-            storageKey="priceit_help_fixed_costs_v1"
-            title="Fixed cost basics"
-            items={[
-              {
-                term: "Fixed cost",
-                description: "Money you spend even if you sell zero products, like equipment, booth fees, facility rental, or subscriptions.",
-              },
-              {
-                term: "Monthly portion",
-                description: "One-time costs are spread across months so your price plan is easier to compare.",
-              },
-            ]}
-          />
 
           {/* Cost item cards */}
           <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>

@@ -7,7 +7,6 @@ import { FieldCard } from "@/components/ui/field-card";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { SaveStatus } from "@/components/ui/save-status";
-import { StepHelp } from "@/components/ui/step-help";
 import { useAppState } from "@/context/AppStateContext";
 import type { FixedCostItem, VariableCostItem } from "@/context/AppStateContext";
 import logo from "../../logo.png";
@@ -242,30 +241,12 @@ export default function PricingLabPage() {
             <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#5DB7C4]">Pricing Lab</p>
             <h1 className="mt-1 text-3xl font-extrabold leading-tight text-[#2B2B2B] sm:text-[2.35rem]">
               Understand your current price, then run a quick test.
+              <HelpTooltip term="Price test" />
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#6F8A91]">
               This first screen focuses on what your current price does for {productInfo.productName || "your product"}. The next screen helps you choose a pricing method.
             </p>
           </div>
-
-          <StepHelp
-            storageKey="priceit_help_pricing_lab_v1"
-            title="Lab terms"
-            items={[
-              {
-                term: "Price test",
-                description: "A pretend scenario where you change price and sales to see what might happen.",
-              },
-              {
-                term: "Break-even",
-                description: "The number of sales needed before your monthly profit turns positive.",
-              },
-              {
-                term: "Margin",
-                description: "A quick way to see whether each sale has a strong profit cushion.",
-              },
-            ]}
-          />
 
           <section className="mb-4 rounded-3xl border border-[#DCE9EC] bg-white/95 px-4 py-4 shadow-sm">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
