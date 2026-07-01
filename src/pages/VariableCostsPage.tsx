@@ -607,7 +607,7 @@ export default function VariableCostsPage() {
   const canProceed = variableCosts.every(isRowComplete);
 
   return (
-    <div className="min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
+    <div className="priceit-cost-page min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#E0EFF1] bg-white/80 backdrop-blur-sm sticky top-0 z-20">
         <button
@@ -621,7 +621,7 @@ export default function VariableCostsPage() {
       </header>
 
       <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5">
-        <div className="w-full max-w-lg">
+        <div className="priceit-cost-inner w-full max-w-lg">
           <ProgressSteps currentStep={3} mode={mode} />
 
           <div className="mb-4 text-center">
