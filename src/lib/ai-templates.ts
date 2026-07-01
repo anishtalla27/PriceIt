@@ -1,3 +1,5 @@
+import { PRODUCT_NAME_MAX_LENGTH } from "@/lib/product-name";
+
 export interface TemplateChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -64,7 +66,7 @@ function acceptsSetupAnswer(stage: keyof SetupAnswers, value: string) {
   if (stage === "productType") return /physical|service|either/i.test(value);
   if (stage === "interests" || stage === "audience") return value.length >= 2;
   if (stage === "selectedIdea") return value.length >= 1;
-  if (stage === "name") return wordCount(value) <= 8 && value.length <= 60;
+  if (stage === "name") return wordCount(value) <= 8 && value.length <= PRODUCT_NAME_MAX_LENGTH;
   if (stage === "description") return wordCount(value) >= 4 && value.length >= 18;
   if (stage === "targetCustomer") return wordCount(value) <= 15 && value.length <= 100;
   if (stage === "currentChallenge") return value.length >= 3 && value.length <= 120;
@@ -234,7 +236,7 @@ function invalidAnswerResponse(stage: keyof SetupAnswers, value: string, mode: S
       : value
         ? "That doesn't look like the product detail I need yet. "
         : "";
-  if (stage === "name") return `${prefix}${mode === "improve" ? "What is the **name** of the product you want to improve?" : "What is the **name** of your product?"}`;
+  if (stage === "name") return `${prefix}${mode === "improve" ? "What is the **name** of the product you want to improve?" : "What is the **name** of your product?"} Keep it short, ${PRODUCT_NAME_MAX_LENGTH} characters or fewer.`;
   if (stage === "ideaPath") return `${prefix}Do you already have a product idea, or would you like help creating one?`;
   if (stage === "interests") return `${prefix}What are some things you enjoy or care about? For example: sports, pets, art, gaming, school, food, music, technology, helping people, or the environment.`;
   if (stage === "audience") return `${prefix}Who would you like to help or sell to? For example: kids your age, parents, teachers, athletes, pet owners, families, or students.`;
@@ -279,7 +281,7 @@ export function setupConversationTemplate(history: TemplateChatMessage[], mode: 
       const ideas = buildIdeaSuggestions(answers);
       return `Here are some ideas made for you:\n\n${ideas.map((idea, index) => `${index + 1}. ${idea}`).join("\n")}\n\nWhich idea would you like to choose? You can also combine parts of different ideas.`;
     }
-    if (!answers.name) return "What would you like to call this product or business?";
+    if (!answers.name) return `What would you like to call this product or business? Keep the name ${PRODUCT_NAME_MAX_LENGTH} characters or fewer.`;
     if (!answers.demandReason) return "Why do you think people would want it?";
     if (!answers.specialFeature) return "What makes it different from other options?";
 
@@ -299,8 +301,8 @@ export function setupConversationTemplate(history: TemplateChatMessage[], mode: 
 
   if (!answers.name) {
     return mode === "improve"
-      ? "Let's make a product you already have even better. 📈 What is the **name** of the product you want to improve?"
-      : "Hi! I'm excited to help build your business idea! 🚀 What is the **name** of your product?";
+      ? `Let's make a product you already have even better. 📈 What is the **name** of the product you want to improve? Keep it ${PRODUCT_NAME_MAX_LENGTH} characters or fewer.`
+      : `Hi! I'm excited to help build your business idea! 🚀 What is the **name** of your product? Keep it ${PRODUCT_NAME_MAX_LENGTH} characters or fewer.`;
   }
   if (!answers.description) {
     return mode === "improve"

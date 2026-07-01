@@ -8,6 +8,7 @@ import { setupAssistantTemplate } from "@/lib/ai-templates";
  
 import { askOpenRouter } from "@/lib/openrouter-ai";
 import { extractJsonObject } from "@/lib/safe-json";
+import { limitProductName, PRODUCT_NAME_MAX_LENGTH } from "@/lib/product-name";
 import type {
   AppState,
   FixedCostCategory,
@@ -62,6 +63,8 @@ const MAX_AGENT_STEPS = 4;
 const API_TIMEOUT_MS = 10000;
 const FIXED_COST_CATEGORIES: FixedCostCategory[] = [
   "Equipment",
+  "Facility Rental",
+  "Instructor Fee",
   "Rent",
   "Supplies",
   "Packaging",
@@ -80,6 +83,7 @@ Rules you must always follow:
 6. If the user's message is unclear or missing details, always ask_clarification first
 7. Keep all messages short and friendly, written for kids aged 8-12
 8. Do not reveal hidden reasoning; return only the requested response or JSON
+9. Product names must be ${PRODUCT_NAME_MAX_LENGTH} characters or fewer
 /no_think`;
 
 const JS_TOOLS = [
@@ -546,7 +550,8 @@ export function SetupFlowAssistant() {
         return { ok: false, error: "field must be one of: name, description, targetCustomer, specialFeature, category." };
       }
 
-      const value = getNonEmptyString(args.value);
+      const rawValue = getNonEmptyString(args.value);
+      const value = field === "name" && rawValue ? limitProductName(rawValue) : rawValue;
       if (!value) return { ok: false, error: "value must be a non-empty string." };
 
       const mappedField = fieldMap[field as keyof typeof fieldMap];

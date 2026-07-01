@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Calculator, CheckCircle2, Sparkles, Store } from "lucide-react";
 import { ChronicleButton } from "@/components/ui/chronicle-button";
@@ -9,6 +9,25 @@ import type { FixedCostItem, VariableCostItem } from "@/context/AppStateContext"
 import logo from "../../logo.png";
 
 type Strategy = "cost-plus" | "market" | "value";
+type PriceInputValue = number | "";
+
+interface ValueAnswers {
+  custom: boolean;
+  unique: boolean;
+  quality: boolean;
+  solvesProblem: boolean;
+  giftable: boolean;
+}
+
+interface PricingStrategyDraft {
+  markupPct?: number;
+  lowPrice?: PriceInputValue;
+  averagePrice?: PriceInputValue;
+  highPrice?: PriceInputValue;
+  valueAnswers?: ValueAnswers;
+}
+
+const PRICING_STRATEGY_DRAFT_KEY = "priceit_pricing_strategy_draft_v1";
 
 function fixedMonthly(item: FixedCostItem): number {
   if (item.totalCost === "" || Number(item.totalCost) <= 0) return 0;
@@ -42,20 +61,50 @@ function priceStepFor(amount: number): number {
   return 0.25;
 }
 
+function readPriceInput(value: unknown): PriceInputValue | undefined {
+  if (value === "") return "";
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
+  return undefined;
+}
+
+function priceNumber(value: PriceInputValue): number {
+  return value === "" ? 0 : value;
+}
+
+function readPricingStrategyDraft(): PricingStrategyDraft {
+  if (typeof window === "undefined") return {};
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PRICING_STRATEGY_DRAFT_KEY) ?? "{}") as Record<string, unknown>;
+    const answers = parsed.valueAnswers && typeof parsed.valueAnswers === "object"
+      ? parsed.valueAnswers as Partial<ValueAnswers>
+      : null;
+    return {
+      markupPct: typeof parsed.markupPct === "number" && Number.isFinite(parsed.markupPct)
+        ? parsed.markupPct
+        : undefined,
+      lowPrice: readPriceInput(parsed.lowPrice),
+      averagePrice: readPriceInput(parsed.averagePrice),
+      highPrice: readPriceInput(parsed.highPrice),
+      valueAnswers: answers
+        ? {
+            custom: Boolean(answers.custom),
+            unique: Boolean(answers.unique),
+            quality: Boolean(answers.quality),
+            solvesProblem: Boolean(answers.solvesProblem),
+            giftable: Boolean(answers.giftable),
+          }
+        : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 function stripEndingPunctuation(value: string): string {
   return value.trim().replace(/[.!?]+$/, "");
 }
 
-function valueReasonFromAnswers(
-  answers: {
-    custom: boolean;
-    unique: boolean;
-    quality: boolean;
-    solvesProblem: boolean;
-    giftable: boolean;
-  },
-  specialFeature: string
-): string {
+function valueReasonFromAnswers(answers: ValueAnswers, specialFeature: string): string {
   if (answers.custom) return "it is made for each customer";
   if (answers.unique) return "customers cannot easily find the same thing somewhere else";
   if (answers.quality) return "it uses better materials or looks higher quality";
@@ -90,7 +139,7 @@ function Metric({
         {label}
         {term && <HelpTooltip term={term} />}
       </p>
-      <p className="mt-2 text-2xl font-extrabold text-[#2B2B2B]" style={{ color: accent }}>
+      <p className="mt-2 break-words text-2xl font-extrabold text-[#2B2B2B]" style={{ color: accent }}>
         {value}
       </p>
       <p className="mt-1 text-xs leading-relaxed text-[#6F8A91]">{helper}</p>
@@ -123,12 +172,18 @@ export default function PricingStrategyPage() {
   const fixedMonthlyTotal = fixedCosts.reduce((sum, item) => sum + fixedMonthly(item), 0);
   const variableCost = variableCosts.reduce((sum, item) => sum + variableCPP(item), 0);
   const costPerProduct = variableCost + fixedMonthlyTotal / unitsPerMonth;
-  const [markupPct, setMarkupPct] = useState(50);
+  const [markupPct, setMarkupPct] = useState(() => readPricingStrategyDraft().markupPct ?? 50);
   const desiredProfit = roundMoney(costPerProduct * markupPct / 100);
-  const [lowPrice, setLowPrice] = useState(Math.max(1, roundMoney(currentPrice * 0.8 || costPerProduct + 1)));
-  const [averagePrice, setAveragePrice] = useState(Math.max(2, roundMoney(currentPrice || costPerProduct + 2)));
-  const [highPrice, setHighPrice] = useState(Math.max(3, roundMoney(currentPrice * 1.25 || costPerProduct + 4)));
-  const [valueAnswers, setValueAnswers] = useState({
+  const [lowPrice, setLowPrice] = useState<PriceInputValue>(() =>
+    readPricingStrategyDraft().lowPrice ?? Math.max(1, roundMoney(currentPrice * 0.8 || costPerProduct + 1))
+  );
+  const [averagePrice, setAveragePrice] = useState<PriceInputValue>(() =>
+    readPricingStrategyDraft().averagePrice ?? Math.max(2, roundMoney(currentPrice || costPerProduct + 2))
+  );
+  const [highPrice, setHighPrice] = useState<PriceInputValue>(() =>
+    readPricingStrategyDraft().highPrice ?? Math.max(3, roundMoney(currentPrice * 1.25 || costPerProduct + 4))
+  );
+  const [valueAnswers, setValueAnswers] = useState<ValueAnswers>(() => readPricingStrategyDraft().valueAnswers ?? {
     custom: false,
     unique: false,
     quality: false,
@@ -136,22 +191,34 @@ export default function PricingStrategyPage() {
     giftable: false,
   });
 
+  useEffect(() => {
+    window.localStorage.setItem(
+      PRICING_STRATEGY_DRAFT_KEY,
+      JSON.stringify({ markupPct, lowPrice, averagePrice, highPrice, valueAnswers })
+    );
+  }, [averagePrice, highPrice, lowPrice, markupPct, valueAnswers]);
+
   const costPlusPrice = roundMoney(costPerProduct + desiredProfit);
   const valueScore = Object.values(valueAnswers).filter(Boolean).length;
   const valueLow = roundMoney(costPerProduct + Math.max(1, desiredProfit) + valueScore * 0.75);
   const valueHigh = roundMoney(valueLow + Math.max(1.5, valueScore * 1.2));
-  const priceStep = priceStepFor(Math.max(costPerProduct, currentPrice, highPrice, desiredProfit));
-  const marketWarning = (price: number) =>
-    costPerProduct > 0 && price < costPerProduct
+  const priceStep = priceStepFor(Math.max(costPerProduct, currentPrice, priceNumber(highPrice), desiredProfit));
+  const marketWarning = (price: PriceInputValue) => {
+    if (price === "") return "Add a competitor price to compare it with your costs.";
+    return costPerProduct > 0 && price < costPerProduct
       ? `Below your $${fmt(costPerProduct)} cost. This would lose money unless your costs change.`
       : null;
+  };
   const selectedStrategyPrice =
-    strategy === "cost-plus" ? costPlusPrice : strategy === "market" ? averagePrice : valueLow;
+    strategy === "cost-plus" ? costPlusPrice : strategy === "market" ? priceNumber(averagePrice) : valueLow;
   const canUseStrategyPrice =
+    (strategy !== "market" || averagePrice !== "") &&
     selectedStrategyPrice > 0 &&
     (costPerProduct <= 0 || selectedStrategyPrice >= costPerProduct);
   const strategyPriceWarning =
-    selectedStrategyPrice <= 0
+    strategy === "market" && averagePrice === ""
+      ? "Add an average competitor price before saving this method."
+      : selectedStrategyPrice <= 0
       ? "Choose a price above $0 before saving it."
       : !canUseStrategyPrice
         ? `This price is below your $${fmt(costPerProduct)} cost per product. Raise it before saving.`
@@ -286,7 +353,12 @@ export default function PricingStrategyPage() {
                     { label: "Average", dot: "#F59E0B", value: averagePrice, setter: setAveragePrice },
                     { label: "High", dot: "#F36C3D", value: highPrice, setter: setHighPrice },
                   ] as const).map(({ label, dot, value, setter }) => (
-                    <div key={label} className="flex items-center gap-3 rounded-2xl border border-[#E0EFF1] bg-[#F7FCFD] px-4 py-3">
+                    <div
+                      key={label}
+                      className={`flex items-center gap-3 rounded-2xl border bg-[#F7FCFD] px-4 py-3 ${
+                        value === "" ? "border-[#F36C3D]" : "border-[#E0EFF1]"
+                      }`}
+                    >
                       <span className="h-2.5 w-2.5 flex-none rounded-full" style={{ backgroundColor: dot }} />
                       <span className="w-16 text-xs font-bold uppercase tracking-wider text-[#6F8A91]">{label}</span>
                       <div className="flex flex-1 items-center gap-1">
@@ -296,8 +368,22 @@ export default function PricingStrategyPage() {
                           min="0"
                           step={priceStep}
                           value={value}
-                          onChange={(e) => setter(Math.max(0, Number(e.target.value) || 0))}
-                          className="w-full rounded-xl border border-[#A9DDE3] bg-white px-3 py-2 text-sm font-bold text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#5DB7C4]"
+                          placeholder="0.00"
+                          onChange={(e) => {
+                            if (e.target.value === "") {
+                              setter("");
+                              return;
+                            }
+                            const next = Number(e.target.value);
+                            if (!Number.isFinite(next)) return;
+                            setter(Math.max(0, next));
+                          }}
+                          onBlur={() => {
+                            if (value !== "") setter(roundMoney(value));
+                          }}
+                          className={`w-full rounded-xl border bg-white px-3 py-2 text-sm font-bold text-[#2B2B2B] placeholder:text-[#B0C4C7] focus:outline-none focus:ring-2 focus:ring-[#5DB7C4] ${
+                            value === "" ? "border-[#F36C3D]" : "border-[#A9DDE3]"
+                          }`}
                         />
                       </div>
                     </div>
@@ -309,21 +395,21 @@ export default function PricingStrategyPage() {
                 <div className="mt-3 grid gap-3">
                   <Metric
                     label="Budget option"
-                    value={`$${fmt(lowPrice)}`}
+                    value={lowPrice === "" ? "Add price" : `$${fmt(lowPrice)}`}
                     helper="Good if you want customers to try you easily."
                     accent={marketWarning(lowPrice) ? "#F36C3D" : "#5DB7C4"}
                     warning={marketWarning(lowPrice)}
                   />
                   <Metric
                     label="Average option"
-                    value={`$${fmt(averagePrice)}`}
+                    value={averagePrice === "" ? "Add price" : `$${fmt(averagePrice)}`}
                     helper="Good if your product is similar to others."
                     accent={marketWarning(averagePrice) ? "#F36C3D" : "#F59E0B"}
                     warning={marketWarning(averagePrice)}
                   />
                   <Metric
                     label="Premium option"
-                    value={`$${fmt(highPrice)}`}
+                    value={highPrice === "" ? "Add price" : `$${fmt(highPrice)}`}
                     helper="Good only if your product looks or feels better."
                     accent="#F36C3D"
                     warning={marketWarning(highPrice)}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { BadgeDollarSign, ClipboardCheck, TrendingUp } from "lucide-react";
@@ -7,6 +7,7 @@ import { FieldCard } from "@/components/ui/field-card";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { SaveStatus } from "@/components/ui/save-status";
+import { StepHelp } from "@/components/ui/step-help";
 import { useAppState } from "@/context/AppStateContext";
 import type { FixedCostItem, VariableCostItem } from "@/context/AppStateContext";
 import logo from "../../logo.png";
@@ -53,6 +54,26 @@ function unitsStepFor(amount: number): number {
   if (amount >= 150) return 10;
   if (amount >= 60) return 5;
   return 1;
+}
+
+const PRICING_LAB_DRAFT_KEY = "priceit_pricing_lab_draft_v1";
+
+interface PricingLabDraft {
+  labPrice?: number;
+  expectedSales?: number;
+}
+
+function readPricingLabDraft(): PricingLabDraft {
+  if (typeof window === "undefined") return {};
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PRICING_LAB_DRAFT_KEY) ?? "{}") as PricingLabDraft;
+    return {
+      labPrice: typeof parsed.labPrice === "number" && Number.isFinite(parsed.labPrice) ? parsed.labPrice : undefined,
+      expectedSales: typeof parsed.expectedSales === "number" && Number.isFinite(parsed.expectedSales) ? parsed.expectedSales : undefined,
+    };
+  } catch {
+    return {};
+  }
 }
 
 function RangeInput({
@@ -142,8 +163,21 @@ export default function PricingLabPage() {
   const currentBreakEven =
     currentPrice > variableCost ? Math.ceil(fixedMonthlyTotal / (currentPrice - variableCost)) : null;
 
-  const [labPrice, setLabPrice] = useState(currentPrice || Math.max(5, roundMoney(currentCostPerProduct + 2)));
-  const [expectedSales, setExpectedSales] = useState(currentUnits || 20);
+  const [labPrice, setLabPrice] = useState(() => {
+    const draft = readPricingLabDraft();
+    return draft.labPrice ?? (currentPrice || Math.max(5, roundMoney(currentCostPerProduct + 2)));
+  });
+  const [expectedSales, setExpectedSales] = useState(() => {
+    const draft = readPricingLabDraft();
+    return draft.expectedSales ?? (currentUnits || 20);
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PRICING_LAB_DRAFT_KEY,
+      JSON.stringify({ labPrice, expectedSales })
+    );
+  }, [expectedSales, labPrice]);
 
   // Stable slider bounds — never include the current slider value so there's no feedback loop
   const [labPriceMax, labPriceStep] = useMemo(() => {
@@ -213,6 +247,25 @@ export default function PricingLabPage() {
               This first screen focuses on what your current price does for {productInfo.productName || "your product"}. The next screen helps you choose a pricing method.
             </p>
           </div>
+
+          <StepHelp
+            storageKey="priceit_help_pricing_lab_v1"
+            title="Lab terms"
+            items={[
+              {
+                term: "Price test",
+                description: "A pretend scenario where you change price and sales to see what might happen.",
+              },
+              {
+                term: "Break-even",
+                description: "The number of sales needed before your monthly profit turns positive.",
+              },
+              {
+                term: "Margin",
+                description: "A quick way to see whether each sale has a strong profit cushion.",
+              },
+            ]}
+          />
 
           <section className="mb-4 rounded-3xl border border-[#DCE9EC] bg-white/95 px-4 py-4 shadow-sm">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

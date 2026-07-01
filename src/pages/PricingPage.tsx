@@ -8,6 +8,7 @@ import { ChronicleButton } from "@/components/ui/chronicle-button";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { FieldCard } from "@/components/ui/field-card";
 import { SaveStatus } from "@/components/ui/save-status";
+import { StepHelp } from "@/components/ui/step-help";
 import logo from "../../logo.png";
 
 // ─── cost math ────────────────────────────────────────────────────────────────
@@ -201,6 +202,25 @@ export default function PricingPage() {
                 : "Pick a price and how many you plan to sell, then see if your business makes money."}
             </p>
           </div>
+
+          <StepHelp
+            storageKey="priceit_help_pricing_v1"
+            title="Pricing terms"
+            items={[
+              {
+                term: "Profit",
+                description: "The money left after subtracting all fixed and variable costs.",
+              },
+              {
+                term: "Profit margin",
+                description: "The percent of your selling price that becomes profit.",
+              },
+              {
+                term: "Break-even",
+                description: "How many sales you need before the business covers its costs.",
+              },
+            ]}
+          />
 
           <div className={`flex flex-col gap-3 ${assistantHighlight ? "priceit-agent-highlight p-1 rounded-2xl" : ""}`}>
             {/* ── Price input ── */}

@@ -14,7 +14,14 @@ export interface ProductInfo {
 
 export type JourneyMode = "create" | "improve";
 
-export type FixedCostCategory = "Equipment" | "Rent" | "Supplies" | "Packaging" | "Other";
+export type FixedCostCategory =
+  | "Equipment"
+  | "Facility Rental"
+  | "Instructor Fee"
+  | "Rent"
+  | "Supplies"
+  | "Packaging"
+  | "Other";
 export type CostType = "one-time" | "monthly";
 
 export interface FixedCostItem {

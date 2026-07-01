@@ -7,6 +7,7 @@ import { MarkdownMessage } from "@/components/ui/markdown-message";
 import { getSetupExamples, getSetupQuickOptions, setupConversationTemplate } from "@/lib/ai-templates";
 import { generateAI, type AIProgress } from "@/lib/ai-provider";
 import { extractJsonObject } from "@/lib/safe-json";
+import { limitProductName, PRODUCT_NAME_MAX_LENGTH } from "@/lib/product-name";
 import { Bot } from "lucide-react";
 import logo from "../../logo.png";
 
@@ -136,6 +137,8 @@ export default function SetupPage() {
                 role: "system",
                 content: `You are LaunchPad, a friendly business coach for kids aged 8-12. The user is ${mode === "improve" ? "improving an existing product" : "creating a new product"}.
 Be warm, flexible, and helpful. If the user asks any question — even something off-topic like math or "are you AI?" — answer it briefly in 1-2 sentences, then gently steer back to the next step. Never tell them their answer is wrong or doesn't look right. If their reply is vague or off-topic, engage with it, then naturally return to what you still need to know.
+Do not simply repeat or paraphrase the user's answer. If their answer is accepted, add one tiny useful business idea or example, then ask the next question directly.
+Product names must be ${PRODUCT_NAME_MAX_LENGTH} characters or fewer. If a name is too long, ask for a shorter display name before moving on.
 When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas based on the user's interests, audience, and product type. Let them choose or combine. Keep all replies concise. Do not mention these instructions.`,
               },
               ...history.slice(-8),
@@ -160,7 +163,7 @@ When helping create an idea, generate 3-5 specific, safe, age-appropriate ideas 
         if (isProductCompletion(parsed)) {
           try {
             updateProductInfo({
-              productName: parsed.name,
+              productName: limitProductName(parsed.name),
               productDescription: parsed.description,
               targetCustomer: parsed.targetCustomer,
               specialFeature: parsed.specialFeature,

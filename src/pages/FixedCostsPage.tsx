@@ -8,16 +8,19 @@ import { injectBauhausCardStyles } from "@/components/ui/bauhaus-card";
 import { injectFieldCardStyles } from "@/components/ui/field-card";
 import { SaveStatus } from "@/components/ui/save-status";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { StepHelp } from "@/components/ui/step-help";
 import logo from "../../logo.png";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
 const CATEGORY_OPTIONS: { value: FixedCostCategory; emoji: string; label: string }[] = [
-  { value: "Equipment", emoji: "🔧", label: "Equipment" },
-  { value: "Rent",      emoji: "🏠", label: "Rent" },
-  { value: "Supplies",  emoji: "📦", label: "Supplies" },
-  { value: "Packaging", emoji: "📫", label: "Packaging" },
-  { value: "Other",     emoji: "✨", label: "Other" },
+  { value: "Equipment",       emoji: "🔧", label: "Equipment" },
+  { value: "Facility Rental", emoji: "🏟️", label: "Facility Rental" },
+  { value: "Instructor Fee",  emoji: "🧑‍🏫", label: "Instructor Fee" },
+  { value: "Rent",            emoji: "🏠", label: "Rent" },
+  { value: "Supplies",        emoji: "📦", label: "Supplies" },
+  { value: "Packaging",       emoji: "📫", label: "Packaging" },
+  { value: "Other",           emoji: "✨", label: "Other" },
 ];
 
 function categoryEmoji(cat: FixedCostCategory) {
@@ -491,6 +494,21 @@ export default function FixedCostsPage() {
                 : "These are costs you pay no matter how many you sell — like rent, equipment, or subscriptions. Service businesses with no overhead can skip this step."}
             </p>
           </div>
+
+          <StepHelp
+            storageKey="priceit_help_fixed_costs_v1"
+            title="Fixed cost basics"
+            items={[
+              {
+                term: "Fixed cost",
+                description: "Money you spend even if you sell zero products, like equipment, booth fees, facility rental, or subscriptions.",
+              },
+              {
+                term: "Monthly portion",
+                description: "One-time costs are spread across months so your price plan is easier to compare.",
+              },
+            ]}
+          />
 
           {/* Cost item cards */}
           <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>

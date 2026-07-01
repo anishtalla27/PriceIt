@@ -8,6 +8,7 @@ import { injectBauhausCardStyles } from "@/components/ui/bauhaus-card";
 import { injectFieldCardStyles } from "@/components/ui/field-card";
 import { SaveStatus } from "@/components/ui/save-status";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { StepHelp } from "@/components/ui/step-help";
 import logo from "../../logo.png";
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -95,6 +96,49 @@ function NumInput({
   invalid?: boolean;
 }) {
   const numericValue = value === "" ? 0 : Number(value);
+  const currentValueRef = useRef(numericValue);
+  const repeatTimeoutRef = useRef<number | null>(null);
+  const repeatIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    currentValueRef.current = numericValue;
+  }, [numericValue]);
+
+  const applyStep = (delta: number) => {
+    const next = Math.max(min, Number((currentValueRef.current + delta).toFixed(4)));
+    currentValueRef.current = next;
+    onChange(next);
+  };
+
+  const stopPress = () => {
+    if (repeatTimeoutRef.current !== null) {
+      window.clearTimeout(repeatTimeoutRef.current);
+      repeatTimeoutRef.current = null;
+    }
+    if (repeatIntervalRef.current !== null) {
+      window.clearInterval(repeatIntervalRef.current);
+      repeatIntervalRef.current = null;
+    }
+  };
+
+  const startPress = (delta: number) => {
+    stopPress();
+    applyStep(delta);
+    repeatTimeoutRef.current = window.setTimeout(() => {
+      repeatIntervalRef.current = window.setInterval(() => applyStep(delta), 90);
+    }, 350);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (repeatTimeoutRef.current !== null) {
+        window.clearTimeout(repeatTimeoutRef.current);
+      }
+      if (repeatIntervalRef.current !== null) {
+        window.clearInterval(repeatIntervalRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="relative">
@@ -127,17 +171,43 @@ function NumInput({
         <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
           <button
             type="button"
-            onClick={() => onChange(Math.max(min, Number((numericValue - stepAmount).toFixed(4))))}
-            className="h-7 w-7 rounded-md border border-[#D5E3E6] bg-white text-[#7B9EA3] text-sm font-extrabold hover:border-[#5DB7C4] hover:text-[#5DB7C4] transition-colors"
-            aria-label="Decrease value"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              startPress(-stepAmount);
+            }}
+            onPointerUp={stopPress}
+            onPointerCancel={stopPress}
+            onPointerLeave={stopPress}
+            onBlur={stopPress}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                applyStep(-stepAmount);
+              }
+            }}
+            className="h-8 w-8 rounded-lg border border-[#D5E3E6] bg-white text-[#7B9EA3] text-base font-extrabold hover:border-[#5DB7C4] hover:text-[#5DB7C4] transition-colors"
+            aria-label={`Decrease value by ${stepAmount}`}
           >
             −
           </button>
           <button
             type="button"
-            onClick={() => onChange(Number((numericValue + stepAmount).toFixed(4)))}
-            className="h-7 w-7 rounded-md border border-[#D5E3E6] bg-white text-[#7B9EA3] text-sm font-extrabold hover:border-[#5DB7C4] hover:text-[#5DB7C4] transition-colors"
-            aria-label="Increase value"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              startPress(stepAmount);
+            }}
+            onPointerUp={stopPress}
+            onPointerCancel={stopPress}
+            onPointerLeave={stopPress}
+            onBlur={stopPress}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                applyStep(stepAmount);
+              }
+            }}
+            className="h-8 w-8 rounded-lg border border-[#D5E3E6] bg-white text-[#7B9EA3] text-base font-extrabold hover:border-[#5DB7C4] hover:text-[#5DB7C4] transition-colors"
+            aria-label={`Increase value by ${stepAmount}`}
           >
             +
           </button>
@@ -402,7 +472,7 @@ function EditCard({
             placeholder="4"
             step="any"
             showStepper
-            stepAmount={1}
+            stepAmount={10}
             invalid={perPackError}
           />
           {perPackError && (
@@ -426,7 +496,7 @@ function EditCard({
             placeholder="2"
             step="any"
             showStepper
-            stepAmount={0.5}
+            stepAmount={1}
             invalid={unitsPerProductError}
           />
           {unitsPerProductError && (
@@ -564,6 +634,21 @@ export default function VariableCostsPage() {
                 : "Add every material, ingredient, or supply you use per product or service session. Pure service businesses (tutoring, consulting, etc.) with no per-session costs can skip this step."}
             </p>
           </div>
+
+          <StepHelp
+            storageKey="priceit_help_variable_costs_v1"
+            title="Variable cost basics"
+            items={[
+              {
+                term: "Variable cost",
+                description: "Money you spend each time you make one product or run one session, like materials, packaging, or labor.",
+              },
+              {
+                term: "Cost per product",
+                description: "LaunchPad divides pack price by pack size, then multiplies by how much you use.",
+              },
+            ]}
+          />
 
           {/* Item cards */}
           <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
