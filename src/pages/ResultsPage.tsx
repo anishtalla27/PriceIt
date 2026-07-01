@@ -80,7 +80,7 @@ function isCustomerReview(value: unknown): value is CustomerReview {
 function Stars({
   rating,
   size = "md",
-  color = "#A65A3F",
+  color = "#E1603F",
 }: {
   rating: number;
   size?: "sm" | "md" | "lg";
@@ -131,15 +131,15 @@ function LoadingScreen({ progress }: { progress: AIProgress | null }) {
 
   return (
     <div className="flex flex-col items-center justify-center gap-6 py-20 priceit-fade-in">
-      <div className="w-full max-w-sm rounded-2xl border border-[#DCE5E8] bg-white px-5 py-5 shadow-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-[#CDEBF0] bg-white px-5 py-5 shadow-sm">
         <div className="flex items-center justify-center gap-2 mb-4 text-2xl" aria-hidden="true">
           <span className="animate-bounce">🧠</span>
           <span className="animate-bounce" style={{ animationDelay: "150ms" }}>📈</span>
           <span className="animate-bounce" style={{ animationDelay: "300ms" }}>✨</span>
         </div>
-        <div className="h-2 rounded-full bg-[#DCE5E8] overflow-hidden">
+        <div className="h-2 rounded-full bg-[#CDEBF0] overflow-hidden">
           <div
-            className="h-full rounded-full bg-[#2F6F7A]"
+            className="h-full rounded-full bg-[#0E92A3]"
             style={{ width: `${progress ? progress.progress * 100 : ((msgIdx + 1) / LOADING_MESSAGES.length) * 100}%`, transition: "width 900ms ease" }}
           />
         </div>
@@ -152,7 +152,7 @@ function LoadingScreen({ progress }: { progress: AIProgress | null }) {
         >
           {progress?.text || LOADING_MESSAGES[msgIdx]}
         </p>
-        <p className="text-sm text-[#84999E] mt-1">
+        <p className="text-sm text-[#71939B] mt-1">
           {progress ? `${Math.round(progress.progress * 100)}% loaded` : "Getting your results ready"}
         </p>
       </div>
@@ -170,7 +170,7 @@ function ErrorScreen({ onRetry, isTimeout }: { onRetry: () => void; isTimeout: b
         <p className="text-xl font-extrabold text-[#2B2B2B]">
           {isTimeout ? "That took longer than expected" : "Oops! Something went wrong"}
         </p>
-        <p className="text-sm text-[#84999E] mt-1 max-w-xs">
+        <p className="text-sm text-[#71939B] mt-1 max-w-xs">
           {isTimeout
             ? "No worries - tap Try Again and we'll fetch your results one more time."
             : "Our AI experts had a hiccup. Check your connection and try again!"}
@@ -179,8 +179,8 @@ function ErrorScreen({ onRetry, isTimeout }: { onRetry: () => void; isTimeout: b
       <ChronicleButton
         text="Try Again"
         onClick={onRetry}
-        hoverColor="#A65A3F"
-        customBackground="#2F6F7A"
+        hoverColor="#E1603F"
+        customBackground="#0E92A3"
         customForeground="#ffffff"
         hoverForeground="#ffffff"
         width="140px"
@@ -196,27 +196,27 @@ function ReviewCard({ review }: { review: CustomerReview }) {
   const positive = review.tag === "Love it ❤️";
   return (
     <div
-      className="bg-white rounded-2xl px-4 py-4 border border-[#DCE5E8] flex flex-col gap-2"
-      style={{ borderLeft: `4px solid ${positive ? "#2F7D52" : "#A65A3F"}` }}
+      className="bg-white rounded-2xl px-4 py-4 border border-[#CDEBF0] flex flex-col gap-2"
+      style={{ borderLeft: `4px solid ${positive ? "#28A66A" : "#E1603F"}` }}
     >
       <div className="flex items-center justify-between">
         <div>
           <p className="font-bold text-sm text-[#2B2B2B]">
             {review.name}, {review.age}
           </p>
-          <Stars rating={review.rating} size="sm" color={positive ? "#2F7D52" : "#A65A3F"} />
+          <Stars rating={review.rating} size="sm" color={positive ? "#28A66A" : "#E1603F"} />
         </div>
         <span
           className="text-xs font-bold px-2 py-1 rounded-full"
           style={{
-            background: positive ? "#F3F8F4" : "#F7F0EC",
-            color: positive ? "#2E7D52" : "#A65A3F",
+            background: positive ? "#F3F8F4" : "#FFF0E7",
+            color: positive ? "#28A66A" : "#E1603F",
           }}
         >
           {review.tag}
         </span>
       </div>
-      <p className="text-xs text-[#54666C] leading-relaxed">{review.text}</p>
+      <p className="text-xs text-[#486B73] leading-relaxed">{review.text}</p>
     </div>
   );
 }
@@ -226,10 +226,10 @@ function ReviewCard({ review }: { review: CustomerReview }) {
 function ChatTypingIndicator() {
   return (
     <div className="flex justify-start items-end gap-2">
-      <div className="h-8 w-8 rounded-full border border-[#B9C9CE] bg-white flex items-center justify-center shadow-sm flex-shrink-0">
-        <Bot className="h-4 w-4 text-[#2F6F7A]" />
+      <div className="h-8 w-8 rounded-full border border-[#9BD8E2] bg-white flex items-center justify-center shadow-sm flex-shrink-0">
+        <Bot className="h-4 w-4 text-[#0E92A3]" />
       </div>
-      <div className="bg-white border border-[#B9C9CE] rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1.5 items-center shadow-sm">
+      <div className="bg-white border border-[#9BD8E2] rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1.5 items-center shadow-sm">
         <style>{`
           @keyframes typingBounce {
             0%, 60%, 100% { transform: translateY(0); }
@@ -239,7 +239,7 @@ function ChatTypingIndicator() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="w-2 h-2 rounded-full bg-[#2F6F7A]"
+            className="w-2 h-2 rounded-full bg-[#0E92A3]"
             style={{ animation: `typingBounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
           />
         ))}
@@ -253,10 +253,10 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
   if (isAI) {
     return (
       <div className="flex justify-start items-end gap-2">
-        <div className="h-8 w-8 rounded-full border border-[#B9C9CE] bg-white flex items-center justify-center shadow-sm flex-shrink-0">
-          <Bot className="h-4 w-4 text-[#2F6F7A]" />
+        <div className="h-8 w-8 rounded-full border border-[#9BD8E2] bg-white flex items-center justify-center shadow-sm flex-shrink-0">
+          <Bot className="h-4 w-4 text-[#0E92A3]" />
         </div>
-        <div className="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm bg-white border border-[#B9C9CE] text-[#2B2B2B] rounded-tl-sm">
+        <div className="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm bg-white border border-[#9BD8E2] text-[#2B2B2B] rounded-tl-sm">
           <MarkdownMessage>{msg.content}</MarkdownMessage>
         </div>
       </div>
@@ -264,7 +264,7 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
   }
   return (
     <div className="flex justify-end">
-      <div className="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm bg-[#2F6F7A] text-white rounded-tr-sm">
+      <div className="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm bg-[#0E92A3] text-white rounded-tr-sm">
         {msg.content}
       </div>
     </div>
@@ -276,22 +276,22 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
 const costBreakdownChartConfig = {
   fixed: {
     label: "Fixed Costs",
-    color: "#2F6F7A",
+    color: "#0E92A3",
   },
   variable: {
     label: "Variable Costs",
-    color: "#A65A3F",
+    color: "#E1603F",
   },
 } satisfies ChartConfig;
 
 const monthlyBreakdownChartConfig = {
   revenue: {
     label: "Revenue",
-    color: "#2F6F7A",
+    color: "#0E92A3",
   },
   cost: {
     label: "Cost",
-    color: "#A65A3F",
+    color: "#E1603F",
   },
   profit: {
     label: "Profit",
@@ -327,10 +327,10 @@ function CostPieChart({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#DCE5E8] px-4 py-4 flex flex-col gap-2 h-full">
+    <div className="bg-white rounded-2xl border border-[#CDEBF0] px-4 py-4 flex flex-col gap-2 h-full">
       <div>
         <h2 className="text-sm font-extrabold text-[#2B2B2B]">Where Your Money Goes</h2>
-        <p className="text-[11px] text-[#6C7E83]">Fixed vs variable monthly costs</p>
+        <p className="text-[11px] text-[#5C7F87]">Fixed vs variable monthly costs</p>
       </div>
       <ChartContainer config={costBreakdownChartConfig} className="h-[230px] sm:h-[250px] w-full">
         <PieChart margin={{ top: 4, right: 20, bottom: 4, left: 20 }}>
@@ -378,32 +378,32 @@ function MonthlyBarChart({
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-[#DCE5E8] px-4 py-4 flex flex-col gap-2 h-full">
+    <div className="bg-white rounded-2xl border border-[#CDEBF0] px-4 py-4 flex flex-col gap-2 h-full">
       <div>
         <h2 className="text-sm font-extrabold text-[#2B2B2B]">Your Monthly Breakdown</h2>
-        <p className="text-[11px] text-[#6C7E83]">Revenue, costs, and profit side-by-side</p>
+        <p className="text-[11px] text-[#5C7F87]">Revenue, costs, and profit side-by-side</p>
       </div>
       {revenue > 0 && (
-        <p className="text-xs text-[#54666C] leading-relaxed">
+        <p className="text-xs text-[#486B73] leading-relaxed">
           Each month, you make{" "}
-          <strong className="text-[#2F6F7A]">${Math.round(revenue)}</strong> in sales, spend{" "}
-          <strong className="text-[#A65A3F]">${Math.round(cost)}</strong>, and{" "}
+          <strong className="text-[#0E92A3]">${Math.round(revenue)}</strong> in sales, spend{" "}
+          <strong className="text-[#E1603F]">${Math.round(cost)}</strong>, and{" "}
           {profit >= 0 ? (
-            <>keep <strong className="text-[#2E7D52]">${Math.round(profit)}</strong> as profit.</>
+            <>keep <strong className="text-[#28A66A]">${Math.round(profit)}</strong> as profit.</>
           ) : (
-            <>lose <strong className="text-[#A8443E]">${Math.round(Math.abs(profit))}</strong>.</>
+            <>lose <strong className="text-[#D84A40]">${Math.round(Math.abs(profit))}</strong>.</>
           )}
         </p>
       )}
       <ChartContainer config={monthlyBreakdownChartConfig} className="h-[230px] sm:h-[250px] w-full">
         <BarChart data={monthlyData} margin={{ top: 20, right: 16, bottom: 0, left: 16 }}>
-          <CartesianGrid vertical={false} stroke="#DCE5E8" strokeDasharray="2 2" />
+          <CartesianGrid vertical={false} stroke="#CDEBF0" strokeDasharray="2 2" />
           <XAxis
             dataKey="name"
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            tick={{ fill: "#6C7E83", fontWeight: 700, fontSize: 12 }}
+            tick={{ fill: "#5C7F87", fontWeight: 700, fontSize: 12 }}
           />
           <ChartTooltip content={<ChartTooltipContent />} />
           <ChartLegend content={<ChartLegendContent />} />
@@ -413,7 +413,7 @@ function MonthlyBarChart({
               position="top"
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               formatter={(v: any) => Number(v) > 0 ? `$${Math.round(Number(v))}` : ""}
-              style={{ fontSize: 11, fontWeight: 700, fill: "#2F6F7A" }}
+              style={{ fontSize: 11, fontWeight: 700, fill: "#0E92A3" }}
             />
           </Bar>
           <Bar dataKey="cost" fill="var(--color-cost)" radius={[8, 8, 0, 0]}>
@@ -422,7 +422,7 @@ function MonthlyBarChart({
               position="top"
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               formatter={(v: any) => Number(v) > 0 ? `$${Math.round(Number(v))}` : ""}
-              style={{ fontSize: 11, fontWeight: 700, fill: "#A65A3F" }}
+              style={{ fontSize: 11, fontWeight: 700, fill: "#E1603F" }}
             />
           </Bar>
           <Bar dataKey="profit" fill="var(--color-profit)" radius={[8, 8, 0, 0]}>
@@ -437,7 +437,7 @@ function MonthlyBarChart({
         </BarChart>
       </ChartContainer>
       {profit < 0 && (
-        <p className="text-[10px] text-[#A65A3F] font-semibold text-center">
+        <p className="text-[10px] text-[#E1603F] font-semibold text-center">
           You're spending more than you earn. Try a higher price or lower costs next.
         </p>
       )}
@@ -480,20 +480,20 @@ function buildNextStepsFallback(
 function NextStepsSection({ steps }: { steps: string[] }) {
   if (steps.length === 0) return null;
   return (
-    <section className="rounded-3xl border border-[#DCE5E8] bg-white px-4 py-4 shadow-sm no-print">
+    <section className="rounded-3xl border border-[#CDEBF0] bg-white px-4 py-4 shadow-sm no-print">
       <div className="mb-3">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-[#84999E]">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[#71939B]">
           Action Plan
         </p>
         <h2 className="text-base font-extrabold text-[#2B2B2B]">Your next steps</h2>
-        <p className="text-[11px] text-[#6C7E83] mt-0.5">
+        <p className="text-[11px] text-[#5C7F87] mt-0.5">
           Try these to make your business stronger.
         </p>
       </div>
       <ul className="flex flex-col gap-2.5">
         {steps.map((step, i) => (
           <li key={i} className="flex items-start gap-3">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#EFF4F5] text-[#2F6F7A] text-xs font-extrabold flex-shrink-0 mt-0.5">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#EAF8FA] text-[#0E92A3] text-xs font-extrabold flex-shrink-0 mt-0.5">
               {i + 1}
             </span>
             <p className="text-sm text-[#2B2B2B] leading-relaxed">{step}</p>
@@ -994,10 +994,10 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
       />
 
       {/* Header */}
-      <header className="no-print flex items-center justify-between px-6 py-4 border-b border-[#DCE5E8] bg-white sticky top-0 z-20">
+      <header className="no-print flex items-center justify-between px-6 py-4 border-b border-[#CDEBF0] bg-white sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup/pricing")}
-          className="min-h-11 px-3 text-[#2F6F7A] font-semibold text-sm hover:text-[#A65A3F] transition-colors"
+          className="min-h-11 px-3 text-[#0E92A3] font-semibold text-sm hover:text-[#E1603F] transition-colors"
         >
           Back
         </button>
@@ -1005,7 +1005,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
         <button
           type="button"
           onClick={() => navigate("/tracker")}
-          className="no-print flex items-center gap-2 rounded-xl bg-[#2F6F7A] px-3 py-1.5 text-white shadow-[0_8px_18px_rgba(31,44,50,0.16)] hover:bg-[#285F69] hover:shadow-[0_10px_20px_rgba(31,44,50,0.18)] active:scale-95 transition-all"
+          className="no-print flex items-center gap-2 rounded-xl bg-[#0E92A3] px-3 py-1.5 text-white shadow-[0_8px_18px_rgba(31,44,50,0.16)] hover:bg-[#0A7685] hover:shadow-[0_10px_20px_rgba(31,44,50,0.18)] active:scale-95 transition-all"
         >
           <ClipboardList className="h-4 w-4 flex-none" />
           <span className="text-left leading-tight">
@@ -1023,7 +1023,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2B2B2B]">
               {mode === "improve" ? "Your Improvement Plan" : "Your Results!"}
             </h1>
-            <p className="mt-1 text-[#6C7E83] text-sm">
+            <p className="mt-1 text-[#5C7F87] text-sm">
               {mode === "improve" ? "Here's how the updated plan looks for " : "Here's what our AI business experts think of "}
               <strong>{productInfo.productName || "your product"}</strong>.
             </p>
@@ -1037,7 +1037,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
               <section className="priceit-feature-cta no-print rounded-3xl bg-white px-5 py-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl border-2 border-[#B9C9CE] bg-white text-[#2F6F7A] shadow-sm">
+                    <div className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl border-2 border-[#9BD8E2] bg-white text-[#0E92A3] shadow-sm">
                       <ClipboardList className="h-6 w-6" />
                     </div>
                     <div>
@@ -1045,7 +1045,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                       <h2 className="text-xl font-extrabold text-[#2B2B2B]">
                         Track your real business progress
                       </h2>
-                      <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#54666C]">
+                      <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#486B73]">
                         Now that your plan is done, use Track My Business to record sales, inventory, expenses, events, goals, and customer feedback.
                       </p>
                     </div>
@@ -1053,7 +1053,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                   <button
                     type="button"
                     onClick={() => navigate("/tracker")}
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-[#2F6F7A] px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_20px_rgba(31,44,50,0.14)] transition hover:bg-[#A65A3F]"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-[#0E92A3] px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_20px_rgba(31,44,50,0.14)] transition hover:bg-[#E1603F]"
                   >
                     Open Tracker <span aria-hidden="true">→</span>
                   </button>
@@ -1061,25 +1061,25 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
               </section>
 
               {/* ── Overall rating ── */}
-              <section className="rounded-3xl border border-[#DCE5E8] bg-white px-4 py-4 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#84999E] mb-2 text-center">
+              <section className="rounded-3xl border border-[#CDEBF0] bg-white px-4 py-4 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#71939B] mb-2 text-center">
                   Business Rating
                 </p>
-                <div className="bg-white rounded-3xl border border-[#E5EAEC] px-5 py-5 text-center">
-                  <Stars rating={businessRating.rating} size="lg" color="#A65A3F" />
+                <div className="bg-white rounded-3xl border border-[#E3F1F4] px-5 py-5 text-center">
+                  <Stars rating={businessRating.rating} size="lg" color="#E1603F" />
                   <p className="text-4xl font-extrabold text-[#2B2B2B] mt-1">
                     {businessRating.rating} / 5
                   </p>
-                  <p className="text-[15px] text-[#54666C] mt-2 leading-relaxed max-w-2xl mx-auto">
+                  <p className="text-[15px] text-[#486B73] mt-2 leading-relaxed max-w-2xl mx-auto">
                     {businessRating.verdict}
                   </p>
                   <div className="mt-3 flex justify-center">
                     <ChronicleButton
                       text="Tweak My Pricing"
                       onClick={() => navigate("/setup/pricing")}
-                      hoverColor="#A65A3F"
-                      customBackground="#EFF4F5"
-                      customForeground="#2F6F7A"
+                      hoverColor="#E1603F"
+                      customBackground="#EAF8FA"
+                      customForeground="#0E92A3"
                       hoverForeground="#ffffff"
                       width="200px"
                       borderRadius="999px"
@@ -1090,9 +1090,9 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
 
               {/* ── AI Feedback Summary ── */}
               {feedbackSummary && (
-                <section className="rounded-3xl border border-[#DCE5E8] bg-white px-4 py-4 shadow-sm">
+                <section className="rounded-3xl border border-[#CDEBF0] bg-white px-4 py-4 shadow-sm">
                   <div className="mb-3">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#84999E]">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#71939B]">
                       AI Feedback
                     </p>
                     <h2 className="text-base font-extrabold text-[#2B2B2B]">
@@ -1101,26 +1101,26 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Praises */}
-                    <div className="rounded-2xl border border-[#D7EBDD] bg-[#F3F8F4] px-4 py-4 flex flex-col gap-3">
+                    <div className="rounded-2xl border border-[#D8F3E1] bg-[#F3F8F4] px-4 py-4 flex flex-col gap-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-full bg-[#2F7D52] flex items-center justify-center flex-shrink-0">
+                        <div className="h-7 w-7 rounded-full bg-[#28A66A] flex items-center justify-center flex-shrink-0">
                           <ThumbsUp className="h-3.5 w-3.5 text-white" />
                         </div>
-                        <p className="text-sm font-extrabold text-[#2E7D52]">What's going great 🎉</p>
+                        <p className="text-sm font-extrabold text-[#28A66A]">What's going great 🎉</p>
                       </div>
                       <ul className="flex flex-col gap-2">
                         {feedbackSummary.praises.map((praise, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <span className="text-[#2F7D52] font-bold text-sm mt-0.5 flex-shrink-0">✓</span>
-                            <p className="text-xs text-[#2B6848] leading-relaxed">{praise}</p>
+                            <span className="text-[#28A66A] font-bold text-sm mt-0.5 flex-shrink-0">✓</span>
+                            <p className="text-xs text-[#24784F] leading-relaxed">{praise}</p>
                           </li>
                         ))}
                       </ul>
                     </div>
                     {/* Improvements */}
-                    <div className="rounded-2xl border border-[#D8B99D] bg-[#F7F1EA] px-4 py-4 flex flex-col gap-3">
+                    <div className="rounded-2xl border border-[#F2C18A] bg-[#FFF5E8] px-4 py-4 flex flex-col gap-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-full bg-[#A65A3F] flex items-center justify-center flex-shrink-0">
+                        <div className="h-7 w-7 rounded-full bg-[#E1603F] flex items-center justify-center flex-shrink-0">
                           <Lightbulb className="h-3.5 w-3.5 text-white" />
                         </div>
                         <p className="text-sm font-extrabold text-[#8C4B2C]">Ideas to level up 🚀</p>
@@ -1128,7 +1128,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                       <ul className="flex flex-col gap-2">
                         {feedbackSummary.improvements.map((tip, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <span className="text-[#A65A3F] font-bold text-sm mt-0.5 flex-shrink-0">{i + 1}.</span>
+                            <span className="text-[#E1603F] font-bold text-sm mt-0.5 flex-shrink-0">{i + 1}.</span>
                             <p className="text-xs text-[#6F3F2B] leading-relaxed">{tip}</p>
                           </li>
                         ))}
@@ -1140,16 +1140,16 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                   <div className="mt-3">
 	                    <button
 	                      onClick={chatOpen ? () => setChatOpen(false) : openChat}
-	                      className="priceit-feature-cta w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-[#F4F7F8] transition-all group"
+	                      className="priceit-feature-cta w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-[#EAF7FB] transition-all group"
 	                    >
 	                      <div className="flex items-center gap-3">
-	                        <div className="h-10 w-10 rounded-full border-2 border-[#B9C9CE] bg-white flex items-center justify-center shadow-sm">
-	                          <Bot className="h-4 w-4 text-[#2F6F7A]" />
+	                        <div className="h-10 w-10 rounded-full border-2 border-[#9BD8E2] bg-white flex items-center justify-center shadow-sm">
+	                          <Bot className="h-4 w-4 text-[#0E92A3]" />
 	                        </div>
 	                        <div className="text-left">
 	                          <p className="priceit-cta-badge mb-1">Ask for help</p>
 	                          <p className="text-base font-extrabold text-[#2B2B2B]">Chat with your AI mentor</p>
-	                          <p className="text-xs text-[#54666C]">Ask what to improve, test, or try next</p>
+	                          <p className="text-xs text-[#486B73]">Ask what to improve, test, or try next</p>
 	                        </div>
 	                      </div>
 	                      {chatOpen
@@ -1160,7 +1160,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
 
                     {/* Chat panel */}
                     {chatOpen && (
-                      <div className="mt-2 rounded-2xl border border-[#DCE5E8] bg-white overflow-hidden priceit-fade-in">
+                      <div className="mt-2 rounded-2xl border border-[#CDEBF0] bg-white overflow-hidden priceit-fade-in">
                         {/* Messages */}
                         <div className="flex flex-col gap-3 px-4 py-4 max-h-80 overflow-y-auto">
                           {chatMessages.map((msg, i) => (
@@ -1171,7 +1171,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                         </div>
 
                         {/* Input */}
-                        <div className="border-t border-[#DCE5E8] px-3 py-3 flex items-center gap-2 bg-[#F9FAFB]">
+                        <div className="border-t border-[#CDEBF0] px-3 py-3 flex items-center gap-2 bg-[#F9FCFD]">
                           <input
                             ref={chatInputRef}
                             type="text"
@@ -1185,12 +1185,12 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                             }}
                             placeholder="Ask about your business..."
                             disabled={chatTyping}
-                            className="flex-1 rounded-xl border border-[#D6E0E3] bg-white px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#84969B] focus:outline-none focus:border-[#2F6F7A] disabled:opacity-50"
+                            className="flex-1 rounded-xl border border-[#D4EBF0] bg-white px-3 py-2 text-sm text-[#2B2B2B] placeholder:text-[#78949B] focus:outline-none focus:border-[#0E92A3] disabled:opacity-50"
                           />
                           <button
                             onClick={sendChatMessage}
                             disabled={!chatInput.trim() || chatTyping}
-                            className="h-9 w-9 rounded-xl bg-[#2F6F7A] flex items-center justify-center hover:bg-[#A65A3F] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                            className="h-9 w-9 rounded-xl bg-[#0E92A3] flex items-center justify-center hover:bg-[#E1603F] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
                             aria-label="Send message"
                           >
                             <Send className="h-4 w-4 text-white" />
@@ -1203,12 +1203,12 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
               )}
 
               {/* ── Business data ── */}
-              <section className="rounded-3xl border border-[#DCE5E8] bg-white px-4 py-4 shadow-sm">
+              <section className="rounded-3xl border border-[#CDEBF0] bg-white px-4 py-4 shadow-sm">
                 <div className="mb-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#84999E]">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#71939B]">
                     Business Data
                   </p>
-                  <p className="text-sm text-[#65777D] font-semibold">
+                  <p className="text-sm text-[#4F747C] font-semibold">
                     See how your pricing turns into money, costs, and profit.
                   </p>
                 </div>
@@ -1227,15 +1227,15 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
 
               {/* ── Customer reviews ── */}
               {reviews.length > 0 && (
-                <section className="rounded-3xl border border-[#DCE5E8] bg-white px-4 py-4 shadow-sm">
+                <section className="rounded-3xl border border-[#CDEBF0] bg-white px-4 py-4 shadow-sm">
                   <div className="mb-3">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#84999E]">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#71939B]">
                       Customer Reviews
                     </p>
                     <h2 className="text-base font-extrabold text-[#2B2B2B]">
                       What people might say ({reviews.length})
                     </h2>
-                    <p className="text-[11px] text-[#6C7E83] mt-0.5">
+                    <p className="text-[11px] text-[#5C7F87] mt-0.5">
                       AI-generated reviews based on your product and pricing
                     </p>
                   </div>
@@ -1255,7 +1255,7 @@ Return ONLY valid JSON: {"steps": ["...", "...", "...", "..."]}`;
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="flex items-center gap-2 rounded-xl border-2 border-[#DCE5E8] bg-white px-5 py-2.5 text-sm font-bold text-[#6C7E83] hover:border-[#2F6F7A] hover:text-[#2F6F7A] transition-colors"
+                  className="flex items-center gap-2 rounded-xl border-2 border-[#CDEBF0] bg-white px-5 py-2.5 text-sm font-bold text-[#5C7F87] hover:border-[#0E92A3] hover:text-[#0E92A3] transition-colors"
                 >
                   <Printer className="h-4 w-4" />
                   Print Business Plan

@@ -15,7 +15,7 @@ const FIELD_CARD_STYLES = `
   place-items: unset !important;
   box-shadow: 0 2px 10px rgba(31,44,50,0.08);
   border-radius: var(--card-radius, 1rem);
-  border: var(--card-border-width, 2px) solid #D4DEE1;
+  border: var(--card-border-width, 2px) solid #CDE3E8;
   --rotation: 4.2rad;
   background: var(--card-bg, #ffffff);
   padding: 1.1rem 1.4rem 1.35rem;
@@ -24,7 +24,7 @@ const FIELD_CARD_STYLES = `
 }
 
 .bauhaus-field-card:focus-within {
-  border-color: var(--card-accent, #2F6F7A);
+  border-color: var(--card-accent, #0E92A3);
   box-shadow: 0 4px 16px rgba(31,44,50,0.10);
 }
 
@@ -34,14 +34,14 @@ const FIELD_CARD_STYLES = `
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6C7E83;
+  color: #5C7F87;
   margin-bottom: 0.6rem;
 }
 
 .bauhaus-field-input {
   width: 100%;
-  background: #E7EBED;
-  border: 1.5px solid #D2DADD;
+  background: #ECF7F9;
+  border: 1.5px solid #C8DDE2;
   border-radius: 0.55rem;
   padding: 0.65rem 0.9rem;
   color: #2B2B2B;
@@ -53,12 +53,12 @@ const FIELD_CARD_STYLES = `
 }
 
 .bauhaus-field-input:focus {
-  border-color: var(--card-accent, #2F6F7A);
-  background: #F0F2F3;
+  border-color: var(--card-accent, #0E92A3);
+  background: #F4FAFB;
 }
 
 .bauhaus-field-input::placeholder {
-  color: #9AA9AD;
+  color: #8CA5AB;
 }
 
 .bauhaus-field-input option {
@@ -79,7 +79,7 @@ export function injectFieldCardStyles() {
 
 export function FieldCard({
   label,
-  accentColor = "#2F6F7A",
+  accentColor = "#0E92A3",
   children,
 }: {
   label: React.ReactNode;

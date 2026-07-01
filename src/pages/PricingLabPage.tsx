@@ -108,7 +108,7 @@ function RangeInput({
       style={
         {
           "--range-accent": accent,
-          background: `linear-gradient(90deg, ${accent} 0%, ${accent} ${pct}%, #DCE3E5 ${pct}%, #DCE3E5 100%)`,
+          background: `linear-gradient(90deg, ${accent} 0%, ${accent} ${pct}%, #D9EEF2 ${pct}%, #D9EEF2 100%)`,
         } as CSSProperties
       }
     />
@@ -119,7 +119,7 @@ function MetricCard({
   label,
   value,
   helper,
-  accent = "#2F6F7A",
+  accent = "#0E92A3",
   term,
 }: {
   label: string;
@@ -129,16 +129,16 @@ function MetricCard({
   term?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[#D9E2E5] bg-white px-4 py-4 shadow-sm">
+    <div className="rounded-2xl border border-[#D0EAF0] bg-white px-4 py-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#65777D]">
+        <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#4F747C]">
           {label}
           {term && <HelpTooltip term={term} />}
         </p>
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: accent }} />
       </div>
       <p className="mt-2 text-2xl font-extrabold leading-tight text-[#2B2B2B]">{value}</p>
-      <p className="mt-1 text-xs leading-relaxed text-[#65777D]">{helper}</p>
+      <p className="mt-1 text-xs leading-relaxed text-[#4F747C]">{helper}</p>
     </div>
   );
 }
@@ -225,8 +225,8 @@ export default function PricingLabPage() {
 
   return (
     <div className="min-h-screen priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#DCE5E8] bg-white px-6 py-4">
-        <button onClick={() => navigate("/setup/pricing")} className="min-h-11 px-3 text-sm font-semibold text-[#2F6F7A] transition-colors hover:text-[#A65A3F]">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#CDEBF0] bg-white px-6 py-4">
+        <button onClick={() => navigate("/setup/pricing")} className="min-h-11 px-3 text-sm font-semibold text-[#0E92A3] transition-colors hover:text-[#E1603F]">
           Back
         </button>
         <img src={logo} alt="LaunchPad logo" className="h-14 w-auto" />
@@ -238,140 +238,140 @@ export default function PricingLabPage() {
           <ProgressSteps currentStep={4} mode={mode} />
 
           <div className="mb-5">
-            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#2F6F7A]">Pricing Lab</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#0E92A3]">Pricing Lab</p>
             <h1 className="mt-1 text-3xl font-extrabold leading-tight text-[#2B2B2B] sm:text-[2.35rem]">
               Understand your current price, then run a quick test.
               <HelpTooltip term="Price test" />
             </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#65777D]">
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#4F747C]">
               This first screen focuses on what your current price does for {productInfo.productName || "your product"}. The next screen helps you choose a pricing method.
             </p>
           </div>
 
-          <section className="mb-4 rounded-3xl border border-[#D9E2E5] bg-white px-4 py-4 shadow-sm">
+          <section className="mb-4 rounded-3xl border border-[#D0EAF0] bg-white px-4 py-4 shadow-sm">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <BadgeDollarSign className="h-6 w-6 text-[#2F6F7A]" />
+                  <BadgeDollarSign className="h-6 w-6 text-[#0E92A3]" />
                   <h2 className="text-2xl font-extrabold text-[#2B2B2B]">Current Pricing Snapshot</h2>
                 </div>
-                <p className="mt-1 text-base leading-relaxed text-[#65777D]">
+                <p className="mt-1 text-base leading-relaxed text-[#4F747C]">
                   These numbers use your saved price, costs, and monthly sales estimate.
                 </p>
               </div>
-              <p className="rounded-2xl border border-[#B9C9CE] bg-[#F4F7F8] px-4 py-3 text-base font-extrabold leading-snug text-[#2B2B2B] sm:max-w-sm">
+              <p className="rounded-2xl border border-[#9BD8E2] bg-[#EAF7FB] px-4 py-3 text-base font-extrabold leading-snug text-[#2B2B2B] sm:max-w-sm">
                 {currentDiagnosis}
               </p>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
-              <div className="rounded-3xl border border-[#B9C9CE] bg-[#F4F7F8] px-5 py-5 sm:px-6 sm:py-6">
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#2F6F7A]">
+              <div className="rounded-3xl border border-[#9BD8E2] bg-[#EAF7FB] px-5 py-5 sm:px-6 sm:py-6">
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#0E92A3]">
                   Main takeaway
                 </p>
                 <p className="mt-3 text-5xl font-extrabold leading-none text-[#2B2B2B] sm:text-6xl">
                   {currentProfitPerProduct >= 0 ? "+" : ""}${fmt(currentProfitPerProduct)}
                 </p>
-                <p className="mt-3 text-lg font-semibold leading-snug text-[#54666C]">
+                <p className="mt-3 text-lg font-semibold leading-snug text-[#486B73]">
                   profit each time you sell one at ${fmt(currentPrice)}.
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl bg-white px-4 py-4">
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-[#65777D]">
+                    <p className="text-xs font-extrabold uppercase tracking-wider text-[#4F747C]">
                       Monthly profit<HelpTooltip term="Monthly profit" />
                     </p>
-                    <p className="mt-2 text-3xl font-extrabold leading-tight" style={{ color: currentMonthlyProfit >= 0 ? "#2E7D52" : "#A65A3F" }}>
+                    <p className="mt-2 text-3xl font-extrabold leading-tight" style={{ color: currentMonthlyProfit >= 0 ? "#28A66A" : "#E1603F" }}>
                       {currentMonthlyProfit >= 0 ? "+" : ""}${fmt(currentMonthlyProfit)}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white px-4 py-4">
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-[#65777D]">
+                    <p className="text-xs font-extrabold uppercase tracking-wider text-[#4F747C]">
                       Margin<HelpTooltip term="Profit margin" />
                     </p>
-                    <p className="mt-2 text-3xl font-extrabold leading-tight text-[#A65A3F]">
+                    <p className="mt-2 text-3xl font-extrabold leading-tight text-[#E1603F]">
                       {fmt(currentMargin)}%
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-[#D9E2E5] bg-white px-5 py-5 sm:px-6 sm:py-6">
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#65777D]">
+              <div className="rounded-3xl border border-[#D0EAF0] bg-white px-5 py-5 sm:px-6 sm:py-6">
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#4F747C]">
                   Price check
                 </p>
-                <div className="mt-4 grid grid-cols-2 gap-3 border-b border-[#E5EAEC] pb-4">
+                <div className="mt-4 grid grid-cols-2 gap-3 border-b border-[#E3F1F4] pb-4">
                   <div>
-                    <p className="text-sm font-bold text-[#65777D]">Price</p>
+                    <p className="text-sm font-bold text-[#4F747C]">Price</p>
                     <p className="mt-1 text-3xl font-extrabold leading-tight text-[#2B2B2B]">${fmt(currentPrice)}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#65777D]">Cost</p>
+                    <p className="text-sm font-bold text-[#4F747C]">Cost</p>
                     <p className="mt-1 text-3xl font-extrabold leading-tight text-[#2B2B2B]">${fmt(currentCostPerProduct)}</p>
                   </div>
                 </div>
                 <div className="mt-4 grid gap-3 text-base">
                   <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-                    <span className="text-[#65777D]">Monthly revenue</span>
+                    <span className="text-[#4F747C]">Monthly revenue</span>
                     <strong className="text-[#2B2B2B]">${fmt(currentRevenue)}</strong>
                   </div>
                   <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-                    <span className="text-[#65777D]">Break-even</span>
+                    <span className="text-[#4F747C]">Break-even</span>
                     <strong className="text-[#2B2B2B]">
                       {currentBreakEven === null ? "Not yet" : `${currentBreakEven} units`}
                     </strong>
                   </div>
                   <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-                    <span className="text-[#65777D]">Materials per item</span>
+                    <span className="text-[#4F747C]">Materials per item</span>
                     <strong className="text-[#2B2B2B]">${fmt(variableCost)}</strong>
                   </div>
                   <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-                    <span className="text-[#65777D]">Fixed costs/month</span>
+                    <span className="text-[#4F747C]">Fixed costs/month</span>
                     <strong className="text-[#2B2B2B]">${fmt(fixedMonthlyTotal)}</strong>
                   </div>
                 </div>
-                <p className="mt-4 rounded-2xl bg-[#F7F9FA] px-4 py-3 text-sm leading-relaxed text-[#65777D]">
+                <p className="mt-4 rounded-2xl bg-[#F8FBFC] px-4 py-3 text-sm leading-relaxed text-[#4F747C]">
                   Cost per product includes ${fmt(variableCost)} in materials plus about ${fmt(fixedPerUnit)} from fixed costs.
                 </p>
               </div>
             </div>
           </section>
 
-          <section className="mb-4 rounded-3xl border border-[#D9E2E5] bg-white px-4 py-4 shadow-sm">
+          <section className="mb-4 rounded-3xl border border-[#D0EAF0] bg-white px-4 py-4 shadow-sm">
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-[#A65A3F]" />
+                  <TrendingUp className="h-5 w-5 text-[#E1603F]" />
                   <h2 className="text-xl font-extrabold text-[#2B2B2B]">Quick Price Test</h2>
                 </div>
-                <p className="mt-1 text-sm text-[#65777D]">Only two controls: price and expected monthly sales.</p>
+                <p className="mt-1 text-sm text-[#4F747C]">Only two controls: price and expected monthly sales.</p>
               </div>
-              <div className="rounded-2xl border border-[#B9C9CE] bg-[#F4F7F8] px-3 py-2 text-sm font-extrabold text-[#2B2B2B]">
+              <div className="rounded-2xl border border-[#9BD8E2] bg-[#EAF7FB] px-3 py-2 text-sm font-extrabold text-[#2B2B2B]">
                 {feedback}
               </div>
             </div>
 
             <div className="grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="grid gap-3">
-                <FieldCard label="Selling price" accentColor="#2F6F7A">
+                <FieldCard label="Selling price" accentColor="#0E92A3">
                   <div className="grid gap-2">
                     <input className="bauhaus-field-input" type="number" min="0" step={labPriceStep} value={labPrice} onChange={(event) => setLabPrice(Math.max(0, Number(event.target.value) || 0))} />
-                    <RangeInput value={labPrice} min={0} max={labPriceMax} step={labPriceStep} accent="#2F6F7A" ariaLabel="Lab selling price" onChange={(value) => setLabPrice(roundMoney(value))} />
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-[#6C7E83]">
+                    <RangeInput value={labPrice} min={0} max={labPriceMax} step={labPriceStep} accent="#0E92A3" ariaLabel="Lab selling price" onChange={(value) => setLabPrice(roundMoney(value))} />
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-[#5C7F87]">
                       <span>$0</span>
                       <span>${fmt(labPriceMax)}</span>
                     </div>
                     {saveTestPriceWarning && (
-                      <p className="rounded-xl border border-[#A65A3F]/25 bg-[#F7F0EC] px-3 py-2 text-xs font-bold leading-relaxed text-[#A65A3F]">
+                      <p className="rounded-xl border border-[#E1603F]/25 bg-[#FFF0E7] px-3 py-2 text-xs font-bold leading-relaxed text-[#E1603F]">
                         {saveTestPriceWarning}
                       </p>
                     )}
                   </div>
                 </FieldCard>
-                <FieldCard label="Expected sales per month" accentColor="#A65A3F">
+                <FieldCard label="Expected sales per month" accentColor="#E1603F">
                   <div className="grid gap-2">
                     <input className="bauhaus-field-input" type="number" min="1" step={expectedSalesStep} value={expectedSales} onChange={(event) => setExpectedSales(Math.max(1, Math.round(Number(event.target.value) || 1)))} />
-                    <RangeInput value={expectedSales} min={1} max={expectedSalesMax} step={expectedSalesStep} accent="#A65A3F" ariaLabel="Expected sales volume" onChange={(value) => setExpectedSales(Math.round(value))} />
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-[#6C7E83]">
+                    <RangeInput value={expectedSales} min={1} max={expectedSalesMax} step={expectedSalesStep} accent="#E1603F" ariaLabel="Expected sales volume" onChange={(value) => setExpectedSales(Math.round(value))} />
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-[#5C7F87]">
                       <span>1</span>
                       <span>{expectedSalesMax.toLocaleString()} sales</span>
                     </div>
@@ -380,10 +380,10 @@ export default function PricingLabPage() {
               </div>
 
               <div className="grid content-start gap-3 sm:grid-cols-2">
-                <MetricCard label="Monthly revenue" value={`$${fmt(revenue)}`} helper={`${expectedSales.toLocaleString()} sales x $${fmt(labPrice)}`} accent="#2F6F7A" term="Monthly revenue" />
-                <MetricCard label="Monthly profit" value={`${monthlyProfit >= 0 ? "+" : ""}$${fmt(monthlyProfit)}`} helper="Revenue minus monthly costs." accent={monthlyProfit >= 0 ? "#2E7D52" : "#A65A3F"} term="Monthly profit" />
-                <MetricCard label="Profit per sale" value={`${profitPerSale >= 0 ? "+" : ""}$${fmt(profitPerSale)}`} helper="Average money kept per sale." accent={profitPerSale >= 0 ? "#2E7D52" : "#A65A3F"} />
-                <MetricCard label="Break-even" value={breakEven === null ? "Not yet" : `${breakEven} units`} helper="Sales needed before profit starts." accent="#A86F20" term="Break-even point" />
+                <MetricCard label="Monthly revenue" value={`$${fmt(revenue)}`} helper={`${expectedSales.toLocaleString()} sales x $${fmt(labPrice)}`} accent="#0E92A3" term="Monthly revenue" />
+                <MetricCard label="Monthly profit" value={`${monthlyProfit >= 0 ? "+" : ""}$${fmt(monthlyProfit)}`} helper="Revenue minus monthly costs." accent={monthlyProfit >= 0 ? "#28A66A" : "#E1603F"} term="Monthly profit" />
+                <MetricCard label="Profit per sale" value={`${profitPerSale >= 0 ? "+" : ""}$${fmt(profitPerSale)}`} helper="Average money kept per sale." accent={profitPerSale >= 0 ? "#28A66A" : "#E1603F"} />
+                <MetricCard label="Break-even" value={breakEven === null ? "Not yet" : `${breakEven} units`} helper="Sales needed before profit starts." accent="#F0A92E" term="Break-even point" />
               </div>
             </div>
           </section>
@@ -391,13 +391,13 @@ export default function PricingLabPage() {
           <section className="priceit-feature-cta mb-4 rounded-3xl bg-white px-4 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 flex-none items-center justify-center rounded-xl border-2 border-[#B9C9CE] bg-white text-[#2F6F7A] shadow-sm">
+                <div className="flex h-11 w-11 flex-none items-center justify-center rounded-xl border-2 border-[#9BD8E2] bg-white text-[#0E92A3] shadow-sm">
                   <ClipboardCheck className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="priceit-cta-badge mb-1">Next screen</p>
                   <h2 className="text-xl font-extrabold text-[#2B2B2B]">Next: choose a pricing method</h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#65777D]">
+                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#4F747C]">
                     After you understand the quick test, move to the next lab screen to compare cost-plus, market-based, and value-based pricing.
                   </p>
                 </div>
@@ -405,8 +405,8 @@ export default function PricingLabPage() {
               <ChronicleButton
                 text="Choose Method"
                 onClick={() => navigate("/setup/pricing-lab/strategies")}
-                hoverColor="#A65A3F"
-                customBackground="#2F6F7A"
+                hoverColor="#E1603F"
+                customBackground="#0E92A3"
                 customForeground="#ffffff"
                 hoverForeground="#ffffff"
                 width="175px"
@@ -422,8 +422,8 @@ export default function PricingLabPage() {
                 if (!canSaveTestPrice) return;
                 updatePricing({ sellingPrice: roundMoney(labPrice), unitsPerMonth: Math.round(expectedSales) });
               }}
-              hoverColor="#A65A3F"
-              customBackground="#2F6F7A"
+              hoverColor="#E1603F"
+              customBackground="#0E92A3"
               customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="170px"
@@ -433,8 +433,8 @@ export default function PricingLabPage() {
             <ChronicleButton
               text="See My Results"
               onClick={() => navigate("/results")}
-              hoverColor="#A65A3F"
-              customBackground="#2F6F7A"
+              hoverColor="#E1603F"
+              customBackground="#0E92A3"
               customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="190px"
@@ -442,7 +442,7 @@ export default function PricingLabPage() {
             />
           </div>
           {saveTestPriceWarning && (
-            <p className="mb-3 rounded-2xl border border-[#A65A3F]/25 bg-white px-4 py-3 text-sm font-bold text-[#A65A3F]">
+            <p className="mb-3 rounded-2xl border border-[#E1603F]/25 bg-white px-4 py-3 text-sm font-bold text-[#E1603F]">
               {saveTestPriceWarning}
             </p>
           )}

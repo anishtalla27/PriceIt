@@ -77,7 +77,7 @@ function RangeInput({
       style={
         {
           "--range-accent": accent,
-          background: `linear-gradient(90deg, ${accent} 0%, ${accent} ${pct}%, #DCE3E5 ${pct}%, #DCE3E5 100%)`,
+          background: `linear-gradient(90deg, ${accent} 0%, ${accent} ${pct}%, #D9EEF2 ${pct}%, #D9EEF2 100%)`,
         } as CSSProperties
       }
     />
@@ -172,10 +172,10 @@ export default function PricingPage() {
       style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}
     >
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[#DCE5E8] bg-white sticky top-0 z-20">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-[#CDEBF0] bg-white sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup/variable-costs")}
-          className="min-h-11 px-3 text-[#2F6F7A] font-semibold text-sm hover:text-[#A65A3F] transition-colors"
+          className="min-h-11 px-3 text-[#0E92A3] font-semibold text-sm hover:text-[#E1603F] transition-colors"
         >
           Back
         </button>
@@ -189,7 +189,7 @@ export default function PricingPage() {
 
           <div className="mt-3 mb-4">
             {flowNotice && (
-              <div className="mb-3 rounded-xl border border-[#B9C9CE] bg-white px-4 py-2 text-sm font-semibold text-[#2B2B2B]">
+              <div className="mb-3 rounded-xl border border-[#9BD8E2] bg-white px-4 py-2 text-sm font-semibold text-[#2B2B2B]">
                 {flowNotice}
               </div>
             )}
@@ -197,7 +197,7 @@ export default function PricingPage() {
               {mode === "improve" ? "Test a new price" : "Set your price"}
               <HelpTooltip term="Pricing" />
             </h1>
-            <p className="mt-1 text-[#65777D] text-sm">
+            <p className="mt-1 text-[#4F747C] text-sm">
               {mode === "improve"
                 ? "Try a better price and see the effect on your profit instantly."
                 : "Pick a price and how many you plan to sell, then see if your business makes money."}
@@ -206,10 +206,10 @@ export default function PricingPage() {
 
           <div className={`flex flex-col gap-3 ${assistantHighlight ? "priceit-agent-highlight p-1 rounded-2xl" : ""}`}>
             {/* ── Price input ── */}
-            <FieldCard label="Selling price per item" accentColor="#2F6F7A">
+            <FieldCard label="Selling price per item" accentColor="#0E92A3">
               <div className="space-y-2">
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6C7E83] font-semibold select-none pointer-events-none">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5C7F87] font-semibold select-none pointer-events-none">
                     $
                   </span>
                   <input
@@ -230,7 +230,7 @@ export default function PricingPage() {
                         updatePricing({ sellingPrice: Number(Number(pricing.sellingPrice).toFixed(2)) });
                     }}
                     placeholder="0.00"
-                    style={{ paddingLeft: "1.75rem", ...(sellingPriceError ? { borderColor: "#A65A3F", background: "#F7F0EC" } : {}) }}
+                    style={{ paddingLeft: "1.75rem", ...(sellingPriceError ? { borderColor: "#E1603F", background: "#FFF0E7" } : {}) }}
                   />
                 </div>
                 <RangeInput
@@ -238,35 +238,35 @@ export default function PricingPage() {
                   min={0}
                   max={priceMax}
                   step={priceStep}
-                  accent="#2F6F7A"
+                  accent="#0E92A3"
                   ariaLabel="Selling price slider"
                   onChange={(v) => {
                     setTouched((p) => ({ ...p, sellingPrice: true }));
                     updatePricing({ sellingPrice: Number(v.toFixed(2)) });
                   }}
                 />
-                <div className="flex items-center justify-between text-[11px] font-semibold text-[#6C7E83]">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-[#5C7F87]">
                   <span>$0</span>
                   <span>${fmt(priceMax)}</span>
                 </div>
                 {sellingPriceError ? (
-                  <p className="text-xs font-semibold text-[#A65A3F]">Enter a selling price above $0.00.</p>
+                  <p className="text-xs font-semibold text-[#E1603F]">Enter a selling price above $0.00.</p>
                 ) : priceBelowCostWarning ? (
-                  <p className="text-xs font-semibold text-[#A65A3F]">
+                  <p className="text-xs font-semibold text-[#E1603F]">
                     This is below your cost of ${fmt(costPerUnit)} per item — you'd lose money on every sale.
                   </p>
                 ) : costPerUnit > 0 ? (
-                  <p className="text-xs text-[#6C7E83]">
+                  <p className="text-xs text-[#5C7F87]">
                     Your cost per item is <strong className="text-[#2B2B2B]">${fmt(costPerUnit)}</strong>. Price above that to make a profit.
                   </p>
                 ) : (
-                  <p className="text-xs text-[#6C7E83]">Add costs in previous steps to see your break-even price.</p>
+                  <p className="text-xs text-[#5C7F87]">Add costs in previous steps to see your break-even price.</p>
                 )}
               </div>
             </FieldCard>
 
             {/* ── Units per month ── */}
-            <FieldCard label="How many do you plan to sell per month?" accentColor="#A65A3F">
+            <FieldCard label="How many do you plan to sell per month?" accentColor="#E1603F">
               <div className="space-y-2">
                 <input
                   className="bauhaus-field-input"
@@ -286,28 +286,28 @@ export default function PricingPage() {
                       updatePricing({ unitsPerMonth: Math.round(Number(pricing.unitsPerMonth)) });
                   }}
                   placeholder="e.g. 20"
-                  style={unitsError ? { borderColor: "#A65A3F", background: "#F7F0EC" } : undefined}
+                  style={unitsError ? { borderColor: "#E1603F", background: "#FFF0E7" } : undefined}
                 />
                 <RangeInput
                   value={unitsSliderValue}
                   min={1}
                   max={unitsMax}
                   step={unitsStep}
-                  accent="#A65A3F"
+                  accent="#E1603F"
                   ariaLabel="Units sold per month slider"
                   onChange={(v) => {
                     setTouched((p) => ({ ...p, unitsPerMonth: true }));
                     updatePricing({ unitsPerMonth: Math.round(v) });
                   }}
                 />
-                <div className="flex items-center justify-between text-[11px] font-semibold text-[#6C7E83]">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-[#5C7F87]">
                   <span>1</span>
                   <span>{unitsMax.toLocaleString()} items</span>
                 </div>
                 {unitsError ? (
-                  <p className="text-xs font-semibold text-[#A65A3F]">Enter at least 1 item per month.</p>
+                  <p className="text-xs font-semibold text-[#E1603F]">Enter at least 1 item per month.</p>
                 ) : (
-                  <p className="text-xs text-[#6C7E83]">Think about how many customers you can realistically reach each month.</p>
+                  <p className="text-xs text-[#5C7F87]">Think about how many customers you can realistically reach each month.</p>
                 )}
               </div>
             </FieldCard>
@@ -320,14 +320,14 @@ export default function PricingPage() {
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#65777D]">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#4F747C]">
                     Profit per item sold
                   </p>
                   <span
                     className="text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-full"
                     style={{
                       background: profitable ? "rgba(34,197,94,0.16)" : "rgba(239,68,68,0.16)",
-                      color: profitable ? "#2E7D52" : "#A8443E",
+                      color: profitable ? "#28A66A" : "#D84A40",
                     }}
                   >
                     {profitable ? "Profitable ✓" : "Losing money"}
@@ -335,30 +335,30 @@ export default function PricingPage() {
                 </div>
                 <p
                   className="text-4xl font-extrabold leading-none"
-                  style={{ color: profitable ? "#2E7D52" : "#A8443E" }}
+                  style={{ color: profitable ? "#28A66A" : "#D84A40" }}
                 >
                   {profitPerUnit >= 0 ? "+" : "−"}${fmt(Math.abs(profitPerUnit))}
                 </p>
                 <div className="mt-3 pt-3 border-t border-black/[0.06] grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <p className="text-[11px] text-[#65777D] font-semibold uppercase tracking-wide">Monthly revenue</p>
-                    <p className="font-extrabold text-[#2F6F7A]">${fmt(monthlyRevenue)}</p>
+                    <p className="text-[11px] text-[#4F747C] font-semibold uppercase tracking-wide">Monthly revenue</p>
+                    <p className="font-extrabold text-[#0E92A3]">${fmt(monthlyRevenue)}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-[#65777D] font-semibold uppercase tracking-wide">Monthly profit</p>
-                    <p className="font-extrabold" style={{ color: profitable ? "#2E7D52" : "#A8443E" }}>
+                    <p className="text-[11px] text-[#4F747C] font-semibold uppercase tracking-wide">Monthly profit</p>
+                    <p className="font-extrabold" style={{ color: profitable ? "#28A66A" : "#D84A40" }}>
                       {monthlyProfit >= 0 ? "+" : "−"}${fmt(Math.abs(monthlyProfit))}
                     </p>
                   </div>
                 </div>
                 {profitable && (
-                  <p className="mt-2 text-[11px] text-[#2E7D52] font-semibold">
+                  <p className="mt-2 text-[11px] text-[#28A66A] font-semibold">
                     Profit margin: {marginPct.toFixed(1)}%
                     {marginPct >= 20 ? " — healthy! 🎉" : marginPct >= 10 ? " — getting there." : " — try raising your price a little."}
                   </p>
                 )}
                 {!profitable && (
-                  <p className="mt-2 text-[11px] text-[#A8443E] font-semibold">
+                  <p className="mt-2 text-[11px] text-[#D84A40] font-semibold">
                     Raise your price or lower your costs to start making money.
                   </p>
                 )}
@@ -370,16 +370,16 @@ export default function PricingPage() {
           <button
             type="button"
             onClick={() => navigate("/setup/pricing-lab")}
-            className="priceit-feature-cta mt-3 w-full flex items-center justify-between gap-3 rounded-2xl bg-[#F4F7F8] px-4 py-3 transition-all group"
+            className="priceit-feature-cta mt-3 w-full flex items-center justify-between gap-3 rounded-2xl bg-[#EAF7FB] px-4 py-3 transition-all group"
           >
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-white border-2 border-[#B9C9CE] flex items-center justify-center shadow-sm flex-shrink-0 group-hover:border-[#2F6F7A] transition-colors">
-                <FlaskConical className="h-4 w-4 text-[#2F6F7A]" />
+              <div className="h-10 w-10 rounded-xl bg-white border-2 border-[#9BD8E2] flex items-center justify-center shadow-sm flex-shrink-0 group-hover:border-[#0E92A3] transition-colors">
+                <FlaskConical className="h-4 w-4 text-[#0E92A3]" />
               </div>
               <div className="text-left">
                 <p className="priceit-cta-badge mb-1">Recommended</p>
                 <p className="text-base font-extrabold text-[#2B2B2B]">Open Pricing Lab</p>
-                <p className="text-xs text-[#54666C]">Test your price before moving to final results</p>
+                <p className="text-xs text-[#486B73]">Test your price before moving to final results</p>
               </div>
             </div>
             <span className="priceit-cta-arrow">Start →</span>
@@ -390,9 +390,9 @@ export default function PricingPage() {
             <ChronicleButton
               text="Back"
               onClick={() => navigate("/setup/variable-costs")}
-              hoverColor="#2F6F7A"
-              customBackground="#E7EBED"
-              customForeground="#2F6F7A"
+              hoverColor="#0E92A3"
+              customBackground="#ECF7F9"
+              customForeground="#0E92A3"
               hoverForeground="#ffffff"
               width="140px"
               borderRadius="10px"
@@ -400,8 +400,8 @@ export default function PricingPage() {
             <ChronicleButton
               text="See My Results →"
               onClick={() => { if (canProceed) navigate("/results"); }}
-              hoverColor="#A65A3F"
-              customBackground="#2F6F7A"
+              hoverColor="#E1603F"
+              customBackground="#0E92A3"
               customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="200px"

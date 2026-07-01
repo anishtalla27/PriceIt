@@ -49,7 +49,7 @@ function fmtDate(d: string): string {
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-[#D9E2E5] bg-white px-5 py-5 shadow-[0_14px_34px_rgba(50,50,93,0.08)] ${className}`}>
+    <div className={`rounded-2xl border border-[#D0EAF0] bg-white px-5 py-5 shadow-[0_14px_34px_rgba(50,50,93,0.08)] ${className}`}>
       {children}
     </div>
   );
@@ -71,9 +71,9 @@ function Btn({
   const base = "font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed";
   const sizes = { sm: "text-xs px-3 py-1.5", md: "text-sm px-4 py-2.5" };
   const styles = {
-    primary: "bg-[#2F6F7A] text-white hover:bg-[#285F69] active:scale-95",
-    outline: "border-2 border-[#2F6F7A] text-[#2F6F7A] hover:bg-[#EFF4F5] active:scale-95",
-    ghost: "bg-transparent text-[#84999E] hover:text-[#2F6F7A]",
+    primary: "bg-[#0E92A3] text-white hover:bg-[#0A7685] active:scale-95",
+    outline: "border-2 border-[#0E92A3] text-[#0E92A3] hover:bg-[#EAF8FA] active:scale-95",
+    ghost: "bg-transparent text-[#71939B] hover:text-[#0E92A3]",
     danger: "bg-transparent text-[#D1D5DB] hover:text-red-500",
   };
   return (
@@ -89,7 +89,7 @@ function Btn({
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs font-semibold text-[#465E66] mb-1">{children}</p>;
+  return <p className="text-xs font-semibold text-[#3C6872] mb-1">{children}</p>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -101,13 +101,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const inputCls = "w-full rounded-xl border border-[#DDE3E5] px-3 py-2.5 text-sm text-[#2B2B2B] placeholder:text-[#B8C6CA] focus:outline-none focus:border-[#2F6F7A] focus:ring-2 focus:ring-[#2F6F7A]/15 transition bg-white";
+const inputCls = "w-full rounded-xl border border-[#DDE3E5] px-3 py-2.5 text-sm text-[#2B2B2B] placeholder:text-[#98B2BA] focus:outline-none focus:border-[#0E92A3] focus:ring-2 focus:ring-[#0E92A3]/15 transition bg-white";
 const selectCls = `${inputCls} cursor-pointer`;
 
 function MoneyInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-[#65777D]">$</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-[#4F747C]">$</span>
       <input
         type="number"
         min="0"
@@ -127,7 +127,7 @@ function Badge({ label, color }: { label: string; color: "green" | "amber" | "gr
     amber: "bg-amber-50 text-amber-700 border border-amber-200",
     gray: "bg-gray-100 text-gray-500 border border-gray-200",
     blue: "bg-blue-50 text-blue-700 border border-blue-200",
-    teal: "bg-[#EFF4F5] text-[#2F6F7A] border border-[#C6D7DB]",
+    teal: "bg-[#EAF8FA] text-[#0E92A3] border border-[#B2E0E7]",
     red: "bg-red-50 text-red-600 border border-red-200",
   };
   return (
@@ -149,13 +149,13 @@ function EmptyState({
   onCta?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-3xl border-2 border-dashed border-[#CFDDE0] bg-white px-5 py-12 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#C6D7DB] bg-[#F4F7F8] text-[#2F6F7A]">
+    <div className="flex flex-col items-center gap-4 rounded-3xl border-2 border-dashed border-[#CFE8EE] bg-white px-5 py-12 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#B2E0E7] bg-[#EAF7FB] text-[#0E92A3]">
         {icon}
       </div>
       <div>
         <p className="text-lg font-extrabold text-[#2B2B2B]">{title}</p>
-        <p className="mt-1 max-w-sm text-sm leading-relaxed text-[#65777D]">{description}</p>
+        <p className="mt-1 max-w-sm text-sm leading-relaxed text-[#4F747C]">{description}</p>
       </div>
       {cta && onCta && (
         <Btn onClick={onCta} variant="outline" size="md">{cta}</Btn>
@@ -166,14 +166,14 @@ function EmptyState({
 
 function TabHero({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="mb-5 rounded-3xl border border-[#D9E2E5] bg-white px-5 py-5 shadow-[0_14px_34px_rgba(50,50,93,0.08)]">
+    <div className="mb-5 rounded-3xl border border-[#D0EAF0] bg-white px-5 py-5 shadow-[0_14px_34px_rgba(50,50,93,0.08)]">
       <div className="mb-2 flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F4F7F8] text-[#2F6F7A]">
+        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EAF7FB] text-[#0E92A3]">
           {icon}
         </span>
         <h1 className="text-2xl font-extrabold text-[#2B2B2B]">{title}</h1>
       </div>
-      <p className="text-base leading-relaxed text-[#65777D]">{description}</p>
+      <p className="text-base leading-relaxed text-[#4F747C]">{description}</p>
     </div>
   );
 }
@@ -182,7 +182,7 @@ function StatRow({ stats }: { stats: Array<{ label: string; value: string; sub?:
   const accentMap = {
     green: { border: "border-l-green-400", value: "text-green-600" },
     red: { border: "border-l-red-400", value: "text-red-500" },
-    teal: { border: "border-l-[#2F6F7A]", value: "text-[#2F6F7A]" },
+    teal: { border: "border-l-[#0E92A3]", value: "text-[#0E92A3]" },
     default: { border: "border-l-[#DDE3E5]", value: "text-[#2B2B2B]" },
   };
   return (
@@ -190,10 +190,10 @@ function StatRow({ stats }: { stats: Array<{ label: string; value: string; sub?:
       {stats.map((s, i) => {
         const a = accentMap[s.accent ?? "default"];
         return (
-          <div key={i} className={`rounded-2xl border border-[#D9E2E5] border-l-4 bg-white px-4 py-4 shadow-sm ${a.border}`}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6C7E83]">{s.label}</p>
+          <div key={i} className={`rounded-2xl border border-[#D0EAF0] border-l-4 bg-white px-4 py-4 shadow-sm ${a.border}`}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#5C7F87]">{s.label}</p>
             <p className={`mt-0.5 text-2xl font-extrabold ${a.value}`}>{s.value}</p>
-            {s.sub && <p className="text-[10px] text-[#84999E] mt-0.5">{s.sub}</p>}
+            {s.sub && <p className="text-[10px] text-[#71939B] mt-0.5">{s.sub}</p>}
           </div>
         );
       })}
@@ -230,12 +230,12 @@ function OverviewTab() {
     return (
       <div>
         <TabHero icon={<BarChart3 className="h-6 w-6" />} title="Overview" description="Your business dashboard. Once you add activity, this page shows revenue, profit, inventory, and the most important updates." />
-        <div className="rounded-2xl border-2 border-dashed border-[#CFDDE0] bg-[#F7FAFA] px-6 py-10 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-[#2F6F7A] shadow-sm">
+        <div className="rounded-2xl border-2 border-dashed border-[#CFE8EE] bg-[#F3FBFC] px-6 py-10 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-[#0E92A3] shadow-sm">
             <ClipboardList className="h-8 w-8" />
           </div>
           <p className="font-bold text-[#2B2B2B] text-lg mb-2">Your business tracker is set up!</p>
-          <p className="text-sm text-[#65777D] max-w-sm mx-auto leading-relaxed mb-6">
+          <p className="text-sm text-[#4F747C] max-w-sm mx-auto leading-relaxed mb-6">
             Start by adding products to inventory, then record a sale. Your dashboard updates as you log real business activity.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
@@ -276,17 +276,17 @@ function OverviewTab() {
       {(bestSeller || nextEvent) && (
         <div className="grid sm:grid-cols-2 gap-3">
           {bestSeller && (
-            <div className="rounded-2xl bg-[#F1F5F6] border border-[#C6D7DB] px-4 py-4">
-              <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#2F6F7A]"><Star className="h-3.5 w-3.5" /> Best Seller</p>
+            <div className="rounded-2xl bg-[#E8F8FA] border border-[#B2E0E7] px-4 py-4">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#0E92A3]"><Star className="h-3.5 w-3.5" /> Best Seller</p>
               <p className="font-bold text-[#2B2B2B]">{bestSeller[0]}</p>
-              <p className="text-xs text-[#65777D] mt-0.5">{bestSeller[1]} unit{bestSeller[1] !== 1 ? "s" : ""} sold</p>
+              <p className="text-xs text-[#4F747C] mt-0.5">{bestSeller[1]} unit{bestSeller[1] !== 1 ? "s" : ""} sold</p>
             </div>
           )}
           {nextEvent && (
-            <div className="rounded-2xl bg-[#F7F0EC] border border-[#DDBF9D] px-4 py-4">
-              <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#A65A3F]"><CalendarDays className="h-3.5 w-3.5" /> Next Event</p>
+            <div className="rounded-2xl bg-[#FFF0E7] border border-[#F0C36F] px-4 py-4">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#E1603F]"><CalendarDays className="h-3.5 w-3.5" /> Next Event</p>
               <p className="font-bold text-[#2B2B2B]">{nextEvent.name}</p>
-              <p className="text-xs text-[#65777D] mt-0.5">{fmtDate(nextEvent.date)}{nextEvent.location ? ` · ${nextEvent.location}` : ""}</p>
+              <p className="text-xs text-[#4F747C] mt-0.5">{fmtDate(nextEvent.date)}{nextEvent.location ? ` · ${nextEvent.location}` : ""}</p>
             </div>
           )}
         </div>
@@ -294,13 +294,13 @@ function OverviewTab() {
 
       {recentSales.length > 0 && (
         <Card>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#6C7E83] mb-3">Recent Sales</p>
-          <div className="flex flex-col divide-y divide-[#F2F4F5]">
+          <p className="text-xs font-bold uppercase tracking-wider text-[#5C7F87] mb-3">Recent Sales</p>
+          <div className="flex flex-col divide-y divide-[#EDF7F9]">
             {recentSales.map((s) => (
               <div key={s.id} className="py-3 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#2B2B2B] truncate">{s.productName}</p>
-                  <p className="text-xs text-[#65777D]">{s.quantity} × {fmt$(s.pricePerUnit)} · {fmtDate(s.date)}</p>
+                  <p className="text-xs text-[#4F747C]">{s.quantity} × {fmt$(s.pricePerUnit)} · {fmtDate(s.date)}</p>
                 </div>
                 <p className="text-sm font-bold text-[#2B2B2B] flex-shrink-0">{fmt$(s.quantity * s.pricePerUnit)}</p>
               </div>
@@ -311,7 +311,7 @@ function OverviewTab() {
 
       {activeGoals.length > 0 && (
         <Card>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#6C7E83] mb-4">Your Goals</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#5C7F87] mb-4">Your Goals</p>
           <div className="flex flex-col gap-4">
             {activeGoals.map((g) => {
               const current = g.type === "money" ? totalRevenue : g.type === "units" ? totalUnitsSold : 0;
@@ -321,10 +321,10 @@ function OverviewTab() {
                 <div key={g.id}>
                   <div className="flex items-center justify-between mb-1.5">
                     <p className="text-sm font-semibold text-[#2B2B2B]">{g.name}</p>
-                    <span className="text-xs font-bold text-[#2F6F7A]">{pct}%</span>
+                    <span className="text-xs font-bold text-[#0E92A3]">{pct}%</span>
                   </div>
-                  <div className="h-2.5 rounded-full bg-[#EFF4F5] overflow-hidden">
-                    <div className="h-full rounded-full bg-[#2F6F7A] transition-all duration-500" style={{ width: `${pct}%` }} />
+                  <div className="h-2.5 rounded-full bg-[#EAF8FA] overflow-hidden">
+                    <div className="h-full rounded-full bg-[#0E92A3] transition-all duration-500" style={{ width: `${pct}%` }} />
                   </div>
                   {pct >= 100 && <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-green-600"><CheckCircle2 className="h-3.5 w-3.5" /> Goal reached</p>}
                 </div>
@@ -399,7 +399,7 @@ function InventoryTab() {
   }
 
   const AddForm = (
-    <div className="rounded-2xl bg-[#F7FAFA] border border-[#C6D7DB] px-4 py-4 flex flex-col gap-3 mb-4">
+    <div className="rounded-2xl bg-[#F3FBFC] border border-[#B2E0E7] px-4 py-4 flex flex-col gap-3 mb-4">
       <p className="text-sm font-bold text-[#2B2B2B]">Add a Product</p>
       <Field label="Product name *">
         <input className={inputCls} placeholder="e.g. Friendship Bracelet" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
@@ -449,7 +449,7 @@ function InventoryTab() {
 
               if (editId === item.id) {
                 return (
-                  <Card key={item.id} className="border-[#2F6F7A]">
+                  <Card key={item.id} className="border-[#0E92A3]">
                     <p className="text-sm font-bold text-[#2B2B2B] mb-3">Edit Product</p>
                     <div className="flex flex-col gap-3">
                       <Field label="Product name">
@@ -484,11 +484,11 @@ function InventoryTab() {
                         <Badge label={status.label} color={status.color} />
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-0.5">
-                        <p className="text-xs text-[#65777D]">Made: <strong className="text-[#2B2B2B]">{item.quantityMade}</strong></p>
-                        <p className="text-xs text-[#65777D]">Sold: <strong className="text-[#2B2B2B]">{item.quantitySold}</strong></p>
-                        <p className="text-xs text-[#65777D]">Left: <strong className={remaining <= 0 ? "text-red-500" : remaining <= 3 ? "text-amber-600" : "text-green-600"}>{Math.max(0, remaining)}</strong></p>
-                        {item.costPerItem !== "" && <p className="text-xs text-[#65777D]">Cost: <strong>{fmt$(Number(item.costPerItem))}</strong></p>}
-                        {item.sellingPrice !== "" && <p className="text-xs text-[#65777D]">Price: <strong>{fmt$(Number(item.sellingPrice))}</strong></p>}
+                        <p className="text-xs text-[#4F747C]">Made: <strong className="text-[#2B2B2B]">{item.quantityMade}</strong></p>
+                        <p className="text-xs text-[#4F747C]">Sold: <strong className="text-[#2B2B2B]">{item.quantitySold}</strong></p>
+                        <p className="text-xs text-[#4F747C]">Left: <strong className={remaining <= 0 ? "text-red-500" : remaining <= 3 ? "text-amber-600" : "text-green-600"}>{Math.max(0, remaining)}</strong></p>
+                        {item.costPerItem !== "" && <p className="text-xs text-[#4F747C]">Cost: <strong>{fmt$(Number(item.costPerItem))}</strong></p>}
+                        {item.sellingPrice !== "" && <p className="text-xs text-[#4F747C]">Price: <strong>{fmt$(Number(item.sellingPrice))}</strong></p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
@@ -567,7 +567,7 @@ function SalesTab() {
         )}
 
         {showForm && (
-          <div className="rounded-2xl bg-[#F5F8F1] border border-[#BCD7C2] px-4 py-4 flex flex-col gap-3 mb-4">
+          <div className="rounded-2xl bg-[#F2FAE8] border border-[#A9DDB9] px-4 py-4 flex flex-col gap-3 mb-4">
             <p className="text-sm font-bold text-[#2B2B2B]">Record a Sale</p>
             <Field label="Date of sale">
               <input type="date" className={inputCls} value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
@@ -612,8 +612,8 @@ function SalesTab() {
           <EmptyState icon={<DollarSign className="h-7 w-7" />} title="No sales yet" description="When you sell something, record it here. Revenue, units sold, and insights will update automatically." cta="Record your first sale" onCta={() => setShowForm(true)} />
         ) : (
           <Card>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#6C7E83] mb-3">Sale History</p>
-            <div className="flex flex-col divide-y divide-[#F2F4F5]">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#5C7F87] mb-3">Sale History</p>
+            <div className="flex flex-col divide-y divide-[#EDF7F9]">
               {sortedSales.map((s) => (
                 <div key={s.id} className="py-3 flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -621,8 +621,8 @@ function SalesTab() {
                       <p className="text-sm font-semibold text-[#2B2B2B]">{s.productName}</p>
                       <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{fmt$(s.quantity * s.pricePerUnit)}</span>
                     </div>
-                    <p className="text-xs text-[#65777D] mt-0.5">{fmtDate(s.date)} · {s.quantity} × {fmt$(s.pricePerUnit)}</p>
-                    {s.note && <p className="text-xs text-[#84999E] mt-0.5 italic">"{s.note}"</p>}
+                    <p className="text-xs text-[#4F747C] mt-0.5">{fmtDate(s.date)} · {s.quantity} × {fmt$(s.pricePerUnit)}</p>
+                    {s.note && <p className="text-xs text-[#71939B] mt-0.5 italic">"{s.note}"</p>}
                   </div>
                   {confirmDeleteId === s.id ? (
                     <DeleteConfirm id={s.id} onConfirm={(id) => { deleteSale(id); setConfirmDeleteId(null); }} onCancel={() => setConfirmDeleteId(null)} />
@@ -678,7 +678,7 @@ function ExpensesTab() {
         )}
 
         {showForm && (
-          <div className="rounded-2xl bg-[#F8F2EC] border border-[#DDBF9D] px-4 py-4 flex flex-col gap-3 mb-4">
+          <div className="rounded-2xl bg-[#FFF5E8] border border-[#F0C36F] px-4 py-4 flex flex-col gap-3 mb-4">
             <p className="text-sm font-bold text-[#2B2B2B]">Add an Expense</p>
             <Field label="Date">
               <input type="date" className={inputCls} value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
@@ -710,8 +710,8 @@ function ExpensesTab() {
           <EmptyState icon={<Receipt className="h-7 w-7" />} title="No expenses logged" description="Add business purchases like materials, packaging, booth fees, or tools. Expenses help calculate real profit." cta="Add your first expense" onCta={() => setShowForm(true)} />
         ) : (
           <Card>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#6C7E83] mb-3">Expense Log</p>
-            <div className="flex flex-col divide-y divide-[#F2F4F5]">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#5C7F87] mb-3">Expense Log</p>
+            <div className="flex flex-col divide-y divide-[#EDF7F9]">
               {sortedExpenses.map((e) => (
                 <div key={e.id} className="py-3 flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -719,7 +719,7 @@ function ExpensesTab() {
                       <p className="text-sm font-semibold text-[#2B2B2B]">{e.name}</p>
                       <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{fmt$(e.amount)}</span>
                     </div>
-                    <p className="text-xs text-[#65777D] mt-0.5">{fmtDate(e.date)} · {e.category}{e.note ? ` · ${e.note}` : ""}</p>
+                    <p className="text-xs text-[#4F747C] mt-0.5">{fmtDate(e.date)} · {e.category}{e.note ? ` · ${e.note}` : ""}</p>
                   </div>
                   {confirmDeleteId === e.id ? (
                     <DeleteConfirm id={e.id} onConfirm={(id) => { deleteExpense(id); setConfirmDeleteId(null); }} onCancel={() => setConfirmDeleteId(null)} />
@@ -778,7 +778,7 @@ function EventsTab() {
         </div>
 
         {showAddForm && (
-          <div className="rounded-2xl bg-[#F7FAFA] border border-[#C6D7DB] px-4 py-4 flex flex-col gap-3 mb-4">
+          <div className="rounded-2xl bg-[#F3FBFC] border border-[#B2E0E7] px-4 py-4 flex flex-col gap-3 mb-4">
             <p className="text-sm font-bold text-[#2B2B2B]">Plan an Event</p>
             <Field label="Event name *">
               <input className={inputCls} placeholder="e.g. School Market, Neighborhood Sale" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
@@ -817,7 +817,7 @@ function EventsTab() {
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1">
                       <p className="text-base font-bold text-[#2B2B2B]">{evt.name}</p>
-                      <p className="text-sm text-[#65777D]">
+                      <p className="text-sm text-[#4F747C]">
                         {fmtDate(evt.date)}{evt.location ? ` · ${evt.location}` : ""}
                       </p>
                       {daysUntil >= 0 && daysUntil <= 7 && (
@@ -825,8 +825,8 @@ function EventsTab() {
                           {daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : `${daysUntil} days away`}
                         </span>
                       )}
-                      {evt.eventGoal && <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-[#2F6F7A]"><Target className="h-3.5 w-3.5" /> Goal: {evt.eventGoal}</p>}
-                      {evt.boothFee !== "" && <p className="text-xs text-[#65777D]">Booth fee: {fmt$(Number(evt.boothFee))}</p>}
+                      {evt.eventGoal && <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-[#0E92A3]"><Target className="h-3.5 w-3.5" /> Goal: {evt.eventGoal}</p>}
+                      {evt.boothFee !== "" && <p className="text-xs text-[#4F747C]">Booth fee: {fmt$(Number(evt.boothFee))}</p>}
                     </div>
                     {confirmDeleteId === evt.id ? (
                       <DeleteConfirm id={evt.id} onConfirm={(id) => { deleteEvent(id); setConfirmDeleteId(null); }} onCancel={() => setConfirmDeleteId(null)} />
@@ -888,7 +888,7 @@ function EventsTab() {
                         <p className="text-sm font-bold text-[#2B2B2B]">{evt.name}</p>
                         <Badge label="Completed" color="green" />
                       </div>
-                      <p className="text-xs text-[#65777D]">{fmtDate(evt.date)}{evt.location ? ` · ${evt.location}` : ""}</p>
+                      <p className="text-xs text-[#4F747C]">{fmtDate(evt.date)}{evt.location ? ` · ${evt.location}` : ""}</p>
                     </div>
                     {confirmDeleteId === evt.id ? (
                       <DeleteConfirm id={evt.id} onConfirm={(id) => { deleteEvent(id); setConfirmDeleteId(null); }} onCancel={() => setConfirmDeleteId(null)} />
@@ -897,15 +897,15 @@ function EventsTab() {
                     )}
                   </div>
                   {(rev > 0 || exp > 0) && (
-                    <div className="flex flex-wrap gap-3 mt-2 rounded-xl bg-[#F9FAFB] border border-[#E5E8EC] px-3 py-2">
-                      <p className="text-xs text-[#65777D]">Revenue: <strong className="text-[#2B2B2B]">{fmt$(rev)}</strong></p>
-                      <p className="text-xs text-[#65777D]">Expenses: <strong className="text-[#2B2B2B]">{fmt$(exp)}</strong></p>
-                      <p className="text-xs text-[#65777D]">Profit: <strong className={profit >= 0 ? "text-green-600" : "text-red-500"}>{fmt$(profit)}</strong></p>
-                      {evt.unitsSold !== "" && <p className="text-xs text-[#65777D]">Sold: <strong className="text-[#2B2B2B]">{evt.unitsSold} units</strong></p>}
+                    <div className="flex flex-wrap gap-3 mt-2 rounded-xl bg-[#F9FCFD] border border-[#E3EEF2] px-3 py-2">
+                      <p className="text-xs text-[#4F747C]">Revenue: <strong className="text-[#2B2B2B]">{fmt$(rev)}</strong></p>
+                      <p className="text-xs text-[#4F747C]">Expenses: <strong className="text-[#2B2B2B]">{fmt$(exp)}</strong></p>
+                      <p className="text-xs text-[#4F747C]">Profit: <strong className={profit >= 0 ? "text-green-600" : "text-red-500"}>{fmt$(profit)}</strong></p>
+                      {evt.unitsSold !== "" && <p className="text-xs text-[#4F747C]">Sold: <strong className="text-[#2B2B2B]">{evt.unitsSold} units</strong></p>}
                     </div>
                   )}
                   {evt.whatWentWell && <p className="mt-2 flex gap-1.5 text-xs text-[#2B2B2B]"><CheckCircle2 className="h-3.5 w-3.5 flex-none text-green-600" /> {evt.whatWentWell}</p>}
-                  {evt.improvements && <p className="mt-0.5 flex gap-1.5 text-xs text-[#65777D]"><Lightbulb className="h-3.5 w-3.5 flex-none text-[#A65A3F]" /> Next time: {evt.improvements}</p>}
+                  {evt.improvements && <p className="mt-0.5 flex gap-1.5 text-xs text-[#4F747C]"><Lightbulb className="h-3.5 w-3.5 flex-none text-[#E1603F]" /> Next time: {evt.improvements}</p>}
                 </Card>
               );
             })}
@@ -954,7 +954,7 @@ function GoalsTab() {
 
   const goalTypeColors: Record<GoalType, { bar: string; bg: string; text: string }> = {
     money: { bar: "bg-green-500", bg: "bg-green-50", text: "text-green-700" },
-    units: { bar: "bg-[#2F6F7A]", bg: "bg-[#EFF4F5]", text: "text-[#2F6F7A]" },
+    units: { bar: "bg-[#0E92A3]", bg: "bg-[#EAF8FA]", text: "text-[#0E92A3]" },
     custom: { bar: "bg-purple-400", bg: "bg-purple-50", text: "text-purple-700" },
   };
 
@@ -970,7 +970,7 @@ function GoalsTab() {
         )}
 
         {showForm && (
-          <div className="rounded-2xl bg-[#F7F6F9] border border-[#D7D3DF] px-4 py-4 flex flex-col gap-3 mb-4">
+          <div className="rounded-2xl bg-[#F7F6F9] border border-[#D8C9F3] px-4 py-4 flex flex-col gap-3 mb-4">
             <p className="text-sm font-bold text-[#2B2B2B]">Set a New Goal</p>
             <Field label="Goal name *">
               <input className={inputCls} placeholder='e.g. "Save up $100" or "Sell 50 bracelets"' value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
@@ -1020,7 +1020,7 @@ function GoalsTab() {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${colors.bg} ${colors.text}`}>{typeLabel}</span>
                       </div>
                       {target > 0 && (
-                        <p className="text-xs text-[#65777D] mt-0.5">
+                        <p className="text-xs text-[#4F747C] mt-0.5">
                           {g.type === "money"
                             ? `${fmt$(current as number)} of ${fmt$(target)}`
                             : g.type === "units"
@@ -1039,10 +1039,10 @@ function GoalsTab() {
 
                   <div className="mb-2">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="flex items-center gap-1.5 text-xs text-[#65777D]"><Flag className="h-3.5 w-3.5" /> {text}</p>
+                      <p className="flex items-center gap-1.5 text-xs text-[#4F747C]"><Flag className="h-3.5 w-3.5" /> {text}</p>
                       <span className={`text-sm font-extrabold ${pct >= 100 ? "text-green-600" : colors.text}`}>{pct}%</span>
                     </div>
-                    <div className="h-3 rounded-full bg-[#F2F4F5] overflow-hidden">
+                    <div className="h-3 rounded-full bg-[#EDF7F9] overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-700 ${pct >= 100 ? "bg-green-500" : colors.bar}`}
                         style={{ width: `${pct}%` }}
@@ -1070,7 +1070,7 @@ type InsightType = "warning" | "success" | "info" | "tip";
 const INSIGHT_STYLES: Record<InsightType, { card: string; label: string; dot: string }> = {
   warning: { card: "bg-amber-50 border-amber-200", label: "text-amber-700", dot: "bg-amber-400" },
   success: { card: "bg-green-50 border-green-200", label: "text-green-700", dot: "bg-green-500" },
-  info:    { card: "bg-[#EFF4F5] border-[#C6D7DB]", label: "text-[#2F6F7A]", dot: "bg-[#2F6F7A]" },
+  info:    { card: "bg-[#EAF8FA] border-[#B2E0E7]", label: "text-[#0E92A3]", dot: "bg-[#0E92A3]" },
   tip:     { card: "bg-purple-50 border-purple-200", label: "text-purple-700", dot: "bg-purple-400" },
 };
 
@@ -1155,7 +1155,7 @@ function InsightsTab() {
         <div className="flex items-start justify-between mb-3">
           <div>
             <p className="text-sm font-bold text-[#2B2B2B]">Customer Feedback</p>
-            <p className="text-xs text-[#65777D] mt-0.5">Notes from customers at events or in person</p>
+            <p className="text-xs text-[#4F747C] mt-0.5">Notes from customers at events or in person</p>
           </div>
           <Btn onClick={() => setShowFeedbackForm((v) => !v)} variant={showFeedbackForm ? "ghost" : "outline"} size="md">
             {showFeedbackForm ? "Cancel" : "Add Note"}
@@ -1163,7 +1163,7 @@ function InsightsTab() {
         </div>
 
         {showFeedbackForm && (
-          <div className="rounded-2xl bg-[#F7F6F9] border border-[#D7D3DF] px-4 py-4 flex flex-col gap-3 mb-4">
+          <div className="rounded-2xl bg-[#F7F6F9] border border-[#D8C9F3] px-4 py-4 flex flex-col gap-3 mb-4">
             <p className="text-sm font-bold text-[#2B2B2B]">Log Customer Feedback</p>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Date">
@@ -1199,7 +1199,7 @@ function InsightsTab() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <Badge label={f.category} color={fbBadgeColor(f.category)} />
                       {f.source && <p className="text-xs font-semibold text-[#2B2B2B]">{f.source}</p>}
-                      <p className="text-xs text-[#84999E]">{fmtDate(f.date)}</p>
+                      <p className="text-xs text-[#71939B]">{fmtDate(f.date)}</p>
                     </div>
                     <p className="text-sm text-[#2B2B2B] leading-relaxed">"{f.comment}"</p>
                   </div>
@@ -1250,24 +1250,24 @@ export default function TrackerPage() {
       style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 28%, #eef8fa 58%, #ffe2d0 100%)" }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-20 flex items-center border-b border-[#D9E2E5] bg-white px-4 py-4 shadow-sm">
+      <header className="sticky top-0 z-20 flex items-center border-b border-[#D0EAF0] bg-white px-4 py-4 shadow-sm">
         <button
           type="button"
           onClick={() => navigate("/results")}
-          className="min-w-[80px] cursor-pointer text-left text-sm font-semibold text-[#2F6F7A] transition-colors hover:text-[#A65A3F]"
+          className="min-w-[80px] cursor-pointer text-left text-sm font-semibold text-[#0E92A3] transition-colors hover:text-[#E1603F]"
         >
           Results
         </button>
         <div className="flex-1 flex justify-center">
           <img src={logo} alt="LaunchPad logo" className="h-12 w-auto" />
         </div>
-        <p className="min-w-[80px] text-right text-[10px] font-medium leading-tight text-[#84999E]">
+        <p className="min-w-[80px] text-right text-[10px] font-medium leading-tight text-[#71939B]">
           Saved on<br />this device
         </p>
       </header>
 
       {/* Tab nav */}
-      <div className="sticky top-[73px] z-10 border-b border-[#D9E2E5] bg-white shadow-sm">
+      <div className="sticky top-[73px] z-10 border-b border-[#D0EAF0] bg-white shadow-sm">
         <div className="mx-auto max-w-5xl px-3">
           <div className="flex gap-2 overflow-x-auto py-2 no-scrollbar">
             {TABS.map((tab) => {
@@ -1280,11 +1280,11 @@ export default function TrackerPage() {
                   onClick={() => setTab(tab.key)}
                   className={`flex min-w-[92px] flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl border px-3 py-2 transition-all ${
                     isActive
-                      ? "border-[#2F6F7A] bg-[#F4F7F8] text-[#2B2B2B] shadow-sm"
-                      : "border-transparent bg-transparent text-[#6C7E83] hover:border-[#D9E2E5] hover:bg-white"
+                      ? "border-[#0E92A3] bg-[#EAF7FB] text-[#2B2B2B] shadow-sm"
+                      : "border-transparent bg-transparent text-[#5C7F87] hover:border-[#D0EAF0] hover:bg-white"
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? "text-[#2F6F7A]" : ""}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? "text-[#0E92A3]" : ""}`} />
                   <span className="text-xs font-extrabold leading-tight">{tab.label}</span>
                 </button>
               );

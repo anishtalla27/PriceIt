@@ -770,7 +770,7 @@ User request: ${userInput}`;
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="max-w-[320px] rounded-xl border border-[#B9C9CE] bg-white px-3 py-2 text-xs font-semibold text-[#2B2B2B] shadow-[0_6px_18px_rgba(43,43,43,0.18)]"
+            className="max-w-[320px] rounded-xl border border-[#9BD8E2] bg-white px-3 py-2 text-xs font-semibold text-[#2B2B2B] shadow-[0_6px_18px_rgba(43,43,43,0.18)]"
           >
             {toast.text}
           </div>
@@ -782,37 +782,37 @@ User request: ${userInput}`;
           isOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-3 opacity-0 pointer-events-none"
         }`}
       >
-        <div className="rounded-2xl border border-[#B9C9CE] bg-white shadow-[0_12px_28px_rgba(43,43,43,0.18)] overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#DCE5E8] bg-[#F4F7F8]">
+        <div className="rounded-2xl border border-[#9BD8E2] bg-white shadow-[0_12px_28px_rgba(43,43,43,0.18)] overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#CDEBF0] bg-[#EAF7FB]">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-full bg-[#2F6F7A] text-white flex items-center justify-center">
+              <div className="h-7 w-7 rounded-full bg-[#0E92A3] text-white flex items-center justify-center">
                 <Bot className="h-4 w-4" />
               </div>
               <div>
                 <p className="text-sm font-bold text-[#2B2B2B] leading-tight">LaunchPad Helper</p>
-                <p className="text-[11px] text-[#6C7E83] leading-tight">Ask me to update anything</p>
+                <p className="text-[11px] text-[#5C7F87] leading-tight">Ask me to update anything</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="h-7 w-7 rounded-full text-[#6C7E83] hover:text-[#A65A3F] hover:bg-white transition-colors flex items-center justify-center"
+              className="h-7 w-7 rounded-full text-[#5C7F87] hover:text-[#E1603F] hover:bg-white transition-colors flex items-center justify-center"
               aria-label="Close assistant"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="h-[340px] overflow-y-auto px-3 py-3 bg-[#FBFCFC]">
+          <div className="h-[340px] overflow-y-auto px-3 py-3 bg-[#FBFEFF]">
             {localAIProgress && (
-              <div className="mb-2 rounded-xl border border-[#B9C9CE] bg-[#F4F7F8] px-3 py-2 text-xs text-[#2B2B2B]">
+              <div className="mb-2 rounded-xl border border-[#9BD8E2] bg-[#EAF7FB] px-3 py-2 text-xs text-[#2B2B2B]">
                 <p className="font-semibold">
                   {`${Math.round(localAIProgress.progress * 100)}% — ${localAIProgress.text}`}
                 </p>
               </div>
             )}
             {conversation.length === 0 && (
-              <div className="rounded-xl border border-[#D8E1E4] bg-white px-3 py-2.5 text-xs text-[#54666C]">
+              <div className="rounded-xl border border-[#D8E1E4] bg-white px-3 py-2.5 text-xs text-[#486B73]">
                 Ask me to add costs, update price, or fix product details.
               </div>
             )}
@@ -826,8 +826,8 @@ User request: ${userInput}`;
                   <div
                     className={`max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed shadow-sm ${
                       message.role === "user"
-                        ? "bg-[#2F6F7A] text-white rounded-tr-sm"
-                        : "bg-white border border-[#B9C9CE] text-[#2B2B2B] rounded-tl-sm"
+                        ? "bg-[#0E92A3] text-white rounded-tr-sm"
+                        : "bg-white border border-[#9BD8E2] text-[#2B2B2B] rounded-tl-sm"
                     }`}
                   >
                     {message.role === "assistant" ? (
@@ -841,18 +841,18 @@ User request: ${userInput}`;
 
               {isResponding && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-[#B9C9CE] rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
+                  <div className="bg-white border border-[#9BD8E2] rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
                     <div className="flex items-center gap-1">
                       <span
-                        className="h-1.5 w-1.5 rounded-full bg-[#2F6F7A] animate-bounce"
+                        className="h-1.5 w-1.5 rounded-full bg-[#0E92A3] animate-bounce"
                         style={{ animationDelay: "0ms" }}
                       />
                       <span
-                        className="h-1.5 w-1.5 rounded-full bg-[#2F6F7A] animate-bounce"
+                        className="h-1.5 w-1.5 rounded-full bg-[#0E92A3] animate-bounce"
                         style={{ animationDelay: "120ms" }}
                       />
                       <span
-                        className="h-1.5 w-1.5 rounded-full bg-[#2F6F7A] animate-bounce"
+                        className="h-1.5 w-1.5 rounded-full bg-[#0E92A3] animate-bounce"
                         style={{ animationDelay: "240ms" }}
                       />
                     </div>
@@ -863,20 +863,20 @@ User request: ${userInput}`;
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="border-t border-[#DCE5E8] p-2.5 bg-white">
-            <div className="flex items-center gap-2 rounded-full border border-[#B9C9CE] px-2 py-1.5">
+          <form onSubmit={handleSubmit} className="border-t border-[#CDEBF0] p-2.5 bg-white">
+            <div className="flex items-center gap-2 rounded-full border border-[#9BD8E2] px-2 py-1.5">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder={isResponding ? "LaunchPad is thinking..." : "Type a message..."}
                 disabled={isResponding}
-                className="flex-1 bg-transparent outline-none text-sm text-[#2B2B2B] placeholder-[#6C7E83] px-2"
+                className="flex-1 bg-transparent outline-none text-sm text-[#2B2B2B] placeholder-[#5C7F87] px-2"
               />
               <button
                 type="submit"
                 disabled={isResponding || inputValue.trim().length === 0}
-                className="h-11 w-11 rounded-full bg-[#2F6F7A] text-white hover:bg-[#285F69] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                className="h-11 w-11 rounded-full bg-[#0E92A3] text-white hover:bg-[#0A7685] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                 aria-label="Send message"
               >
                 <Send className="h-3.5 w-3.5" />
@@ -887,7 +887,7 @@ User request: ${userInput}`;
                 <button
                   type="button"
                   onClick={handleRetry}
-                  className="min-h-11 rounded-full border border-[#A65A3F] px-3 text-xs font-bold text-[#A65A3F] hover:bg-[#F6EDE8] transition-colors"
+                  className="min-h-11 rounded-full border border-[#E1603F] px-3 text-xs font-bold text-[#E1603F] hover:bg-[#FFEDE3] transition-colors"
                 >
                   Retry Last Message
                 </button>
@@ -900,12 +900,12 @@ User request: ${userInput}`;
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-[#2F6F7A] text-white shadow-[0_10px_22px_rgba(31,44,50,0.18)] hover:bg-[#285F69] transition-colors flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-[#0E92A3] text-white shadow-[0_10px_22px_rgba(31,44,50,0.18)] hover:bg-[#0A7685] transition-colors flex items-center justify-center"
         aria-label="Open assistant chat"
       >
         <MessageCircle className="h-6 w-6" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 h-3 w-3 rounded-full bg-[#A65A3F] border-2 border-white" />
+          <span className="absolute top-1 right-1 h-3 w-3 rounded-full bg-[#E1603F] border-2 border-white" />
         )}
       </button>
     </>

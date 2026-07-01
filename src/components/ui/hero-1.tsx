@@ -69,10 +69,10 @@ const Hero1 = ({
           "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)",
       }}
     >
-      <header className="flex items-center justify-between px-6 py-3 border-b border-[#DCE5E8] bg-white sticky top-0 z-20">
+      <header className="flex items-center justify-between px-6 py-3 border-b border-[#CDEBF0] bg-white sticky top-0 z-20">
         <button
           onClick={onBack}
-          className="min-h-11 px-3 text-[#2F6F7A] font-semibold text-sm hover:text-[#A65A3F] transition-colors"
+          className="min-h-11 px-3 text-[#0E92A3] font-semibold text-sm hover:text-[#E1603F] transition-colors"
         >
           Back
         </button>
@@ -84,8 +84,8 @@ const Hero1 = ({
           <ChronicleButton
             text="Continue"
             onClick={onContinue}
-            hoverColor="#A65A3F"
-            customBackground="#2F6F7A"
+            hoverColor="#E1603F"
+            customBackground="#0E92A3"
             customForeground="#ffffff"
             hoverForeground="#ffffff"
             width="130px"
@@ -98,9 +98,9 @@ const Hero1 = ({
       <main className="flex-1 flex flex-col items-center px-4 py-4 sm:py-5 text-center">
         <div className="max-w-6xl mx-auto space-y-3 w-full">
           <div className="flex justify-center mt-1">
-            <div className="bg-white rounded-full px-3.5 py-1.5 flex items-center gap-2 w-fit border border-[#B9C9CE] shadow-sm">
+            <div className="bg-white rounded-full px-3.5 py-1.5 flex items-center gap-2 w-fit border border-[#9BD8E2] shadow-sm">
               <span className="text-xs flex items-center gap-2 text-[#2B2B2B]">
-                <span className="bg-[#A65A3F] p-1 rounded-full text-white">
+                <span className="bg-[#E1603F] p-1 rounded-full text-white">
                   <Sparkles className="w-3 h-3" />
                 </span>
                 {badgeText}
@@ -112,7 +112,7 @@ const Hero1 = ({
             {title}
           </h1>
 
-          <p className="text-base sm:text-xl text-[#54666C]">
+          <p className="text-base sm:text-xl text-[#486B73]">
             {description}
           </p>
 
@@ -130,12 +130,12 @@ const Hero1 = ({
             >
               <div className="relative w-full">
                 <div
-                  className={`bg-white rounded-2xl px-2.5 py-2.5 flex items-center border-2 border-[#D4DEE1] focus-within:border-[#2F6F7A] shadow-sm transition-all ${
+                  className={`bg-white rounded-2xl px-2.5 py-2.5 flex items-center border-2 border-[#CDE3E8] focus-within:border-[#0E92A3] shadow-sm transition-all ${
                     inputDisabled ? "opacity-60" : ""
                   }`}
                 >
                   <button
-                    className="h-9 w-9 rounded-xl bg-[#F7F0EC] text-[#A65A3F] flex items-center justify-center transition-all flex-shrink-0"
+                    className="h-9 w-9 rounded-xl bg-[#FFF0E7] text-[#E1603F] flex items-center justify-center transition-all flex-shrink-0"
                     type="button"
                     tabIndex={-1}
                   >
@@ -157,12 +157,12 @@ const Hero1 = ({
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
-                    className="bg-transparent flex-1 outline-none text-[#2B2B2B] placeholder-[#6C7E83] pl-3 pr-2 text-[15px]"
+                    className="bg-transparent flex-1 outline-none text-[#2B2B2B] placeholder-[#5C7F87] pl-3 pr-2 text-[15px]"
                   />
                   {controlled && (
                     <button
                       disabled={inputDisabled || !value.trim()}
-                      className="min-h-10 rounded-xl bg-[#2F6F7A] px-3 text-sm font-extrabold text-white hover:bg-[#285F69] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0 inline-flex items-center gap-1.5"
+                      className="min-h-10 rounded-xl bg-[#0E92A3] px-3 text-sm font-extrabold text-white hover:bg-[#0A7685] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0 inline-flex items-center gap-1.5"
                       type="submit"
                       aria-label="Send message"
                     >

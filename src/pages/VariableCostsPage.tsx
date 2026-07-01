@@ -56,13 +56,13 @@ function Tip({ text }: { text: string }) {
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full border border-[#2F6F7A] bg-white text-[9px] font-bold text-[#2F6F7A] hover:border-[#A65A3F] hover:text-[#A65A3F] transition-colors"
+        className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full border border-[#0E92A3] bg-white text-[9px] font-bold text-[#0E92A3] hover:border-[#E1603F] hover:text-[#E1603F] transition-colors"
         aria-label="Help"
       >
         ?
       </button>
       {open && (
-        <span className="absolute left-6 top-1/2 z-30 w-56 -translate-y-1/2 rounded-xl border border-[#B9C9CE] bg-white px-3 py-2 text-[11px] font-medium text-[#2B2B2B] shadow-lg leading-relaxed normal-case tracking-normal">
+        <span className="absolute left-6 top-1/2 z-30 w-56 -translate-y-1/2 rounded-xl border border-[#9BD8E2] bg-white px-3 py-2 text-[11px] font-medium text-[#2B2B2B] shadow-lg leading-relaxed normal-case tracking-normal">
           {text}
         </span>
       )}
@@ -143,7 +143,7 @@ function NumInput({
   return (
     <div className="relative">
       {prefix && (
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6C7E83] font-semibold select-none pointer-events-none text-sm">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5C7F87] font-semibold select-none pointer-events-none text-sm">
           {prefix}
         </span>
       )}
@@ -164,7 +164,7 @@ function NumInput({
         placeholder={placeholder ?? "0"}
         style={{
           ...(prefix ? { paddingLeft: "1.75rem" } : {}),
-          ...(invalid ? { borderColor: "#A65A3F", background: "#F7F0EC" } : {}),
+          ...(invalid ? { borderColor: "#E1603F", background: "#FFF0E7" } : {}),
         }}
       />
       {showStepper && (
@@ -185,7 +185,7 @@ function NumInput({
                 applyStep(-stepAmount);
               }
             }}
-            className="h-8 w-8 rounded-lg border border-[#D4DDE0] bg-white text-[#6C7E83] text-base font-extrabold hover:border-[#2F6F7A] hover:text-[#2F6F7A] transition-colors"
+            className="h-8 w-8 rounded-lg border border-[#D4DDE0] bg-white text-[#5C7F87] text-base font-extrabold hover:border-[#0E92A3] hover:text-[#0E92A3] transition-colors"
             aria-label={`Decrease value by ${stepAmount}`}
           >
             −
@@ -206,7 +206,7 @@ function NumInput({
                 applyStep(stepAmount);
               }
             }}
-            className="h-8 w-8 rounded-lg border border-[#D4DDE0] bg-white text-[#6C7E83] text-base font-extrabold hover:border-[#2F6F7A] hover:text-[#2F6F7A] transition-colors"
+            className="h-8 w-8 rounded-lg border border-[#D4DDE0] bg-white text-[#5C7F87] text-base font-extrabold hover:border-[#0E92A3] hover:text-[#0E92A3] transition-colors"
             aria-label={`Increase value by ${stepAmount}`}
           >
             +
@@ -220,7 +220,7 @@ function NumInput({
 // ─── card shell (bauhaus gradient border + mouse tracking) ────────────────────
 
 function CardShell({
-  accentColor = "#2F6F7A",
+  accentColor = "#0E92A3",
   compact = false,
   children,
 }: {
@@ -281,19 +281,19 @@ function CompactCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xl select-none leading-none">{categoryEmoji(item.category)}</span>
-            <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#9AA9AD]"}`}>
+            <p className={`font-bold text-sm leading-tight truncate ${item.name ? "text-[#2B2B2B]" : "text-[#8CA5AB]"}`}>
               {item.name || "Unnamed input"}
             </p>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-            <span className="px-2 py-0.5 rounded-full bg-[#F1F5F6] text-[#2F6F7A]">{item.category}</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#E8F8FA] text-[#0E92A3]">{item.category}</span>
             {item.unitsPerProduct !== "" && (
-              <span className="px-2 py-0.5 rounded-full bg-[#F7F0EC] text-[#A65A3F]">
+              <span className="px-2 py-0.5 rounded-full bg-[#FFF0E7] text-[#E1603F]">
                 {item.unitsPerProduct} used/product
               </span>
             )}
             {item.unitsPerPack !== "" && (
-              <span className="px-2 py-0.5 rounded-full bg-[#F7F9FA] text-[#6C7E83]">
+              <span className="px-2 py-0.5 rounded-full bg-[#F8FBFC] text-[#5C7F87]">
                 {item.unitsPerPack} per pack
               </span>
             )}
@@ -301,24 +301,24 @@ function CompactCard({
         </div>
 
         <div className="shrink-0 text-left sm:text-right">
-          <p className="font-extrabold text-[#A65A3F] text-base leading-tight">
+          <p className="font-extrabold text-[#E1603F] text-base leading-tight">
             {cpp > 0 ? `$${cpp.toFixed(2)}` : "—"}
           </p>
-          <p className="text-[10px] text-[#84999E] font-semibold">cost per product</p>
+          <p className="text-[10px] text-[#71939B] font-semibold">cost per product</p>
         </div>
 
         <div className="shrink-0 flex items-center gap-2">
           <button
             type="button"
             onClick={onEdit}
-            className="min-h-10 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#F1F5F6] text-[#2F6F7A] hover:bg-[#2F6F7A] hover:text-white transition-colors"
+            className="min-h-10 rounded-lg px-3 py-1.5 text-xs font-bold bg-[#E8F8FA] text-[#0E92A3] hover:bg-[#0E92A3] hover:text-white transition-colors"
           >
             Edit
           </button>
           <button
             type="button"
             onClick={onDelete}
-            className="min-h-10 flex items-center justify-center rounded-lg bg-[#F6EDE8] text-[#A65A3F] hover:bg-[#A65A3F] hover:text-white transition-colors text-xs font-bold px-3"
+            className="min-h-10 flex items-center justify-center rounded-lg bg-[#FFEDE3] text-[#E1603F] hover:bg-[#E1603F] hover:text-white transition-colors text-xs font-bold px-3"
             aria-label="Delete"
           >
             Delete
@@ -337,9 +337,9 @@ function SectionTitle({
   hint: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#E1E7E9] bg-[#F8FAFA] px-3 py-1.5 mb-2">
-      <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#65777D]">{title}</p>
-      <p className="text-[11px] text-[#788B90]">{hint}</p>
+    <div className="rounded-xl border border-[#D9EEF2] bg-[#F8FCFD] px-3 py-1.5 mb-2">
+      <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#4F747C]">{title}</p>
+      <p className="text-[11px] text-[#6C8991]">{hint}</p>
     </div>
   );
 }
@@ -372,7 +372,7 @@ function EditCard({
     (item.unitsPerProduct === "" || Number(item.unitsPerProduct) <= 0);
 
   return (
-    <CardShell accentColor={cpp > 0 ? "#A65A3F" : "#2F6F7A"}>
+    <CardShell accentColor={cpp > 0 ? "#E1603F" : "#0E92A3"}>
       <SectionTitle
         title="What This Item Is"
         hint="Name the input and choose a category."
@@ -389,10 +389,10 @@ function EditCard({
             onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
             placeholder="e.g. Batteries, Fabric, Flour"
             autoFocus
-            style={nameError ? { borderColor: "#A65A3F", background: "#F7F0EC" } : undefined}
+            style={nameError ? { borderColor: "#E1603F", background: "#FFF0E7" } : undefined}
           />
           {nameError && (
-            <p className="mt-1 text-xs font-semibold text-[#A65A3F]">
+            <p className="mt-1 text-xs font-semibold text-[#E1603F]">
               Add a name so you can track this input.
             </p>
           )}
@@ -404,7 +404,7 @@ function EditCard({
             value={item.category}
             onChange={(e) => onUpdate({ category: e.target.value as VariableCostCategory })}
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%232F6F7A' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230E92A3' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
               backgroundRepeat: "no-repeat",
               backgroundPosition: "right 10px center",
               appearance: "none",
@@ -421,7 +421,7 @@ function EditCard({
         <button
           type="button"
           onClick={onDelete}
-          className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#F6EDE8] text-[#A65A3F] hover:bg-[#A65A3F] hover:text-white transition-colors text-xs font-bold px-3"
+          className="sm:mb-[1px] min-h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#FFEDE3] text-[#E1603F] hover:bg-[#E1603F] hover:text-white transition-colors text-xs font-bold px-3"
           aria-label="Delete"
         >
           Delete
@@ -454,7 +454,7 @@ function EditCard({
             invalid={priceError}
           />
           {priceError && (
-            <p className="mt-1 text-xs font-semibold text-[#A65A3F]">
+            <p className="mt-1 text-xs font-semibold text-[#E1603F]">
               Enter a pack price bigger than $0.00.
             </p>
           )}
@@ -476,7 +476,7 @@ function EditCard({
             invalid={perPackError}
           />
           {perPackError && (
-            <p className="mt-1 text-xs font-semibold text-[#A65A3F]">
+            <p className="mt-1 text-xs font-semibold text-[#E1603F]">
               Enter how many units are in one pack.
             </p>
           )}
@@ -500,7 +500,7 @@ function EditCard({
             invalid={unitsPerProductError}
           />
           {unitsPerProductError && (
-            <p className="mt-1 text-xs font-semibold text-[#A65A3F]">
+            <p className="mt-1 text-xs font-semibold text-[#E1603F]">
               Enter how many units you use per product.
             </p>
           )}
@@ -510,34 +510,34 @@ function EditCard({
       <div
         className={`rounded-xl px-3 py-2.5 mb-2.5 transition-colors ${
           cpp > 0
-            ? "bg-[#F6EDE8] border border-[#A65A3F]/25"
-            : "bg-[#F7F9FA] border border-[#DCE5E8]"
+            ? "bg-[#FFEDE3] border border-[#E1603F]/25"
+            : "bg-[#F8FBFC] border border-[#CDEBF0]"
         }`}
       >
         {cpp > 0 ? (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-            <p className="text-xs text-[#A65A3F] font-semibold">
+            <p className="text-xs text-[#E1603F] font-semibold">
               (${Number(item.pricePerPack).toFixed(2)} ÷ {item.unitsPerPack}) × {item.unitsPerProduct}
             </p>
-            <p className="text-base sm:text-lg font-extrabold text-[#A65A3F]">
+            <p className="text-base sm:text-lg font-extrabold text-[#E1603F]">
               ${cpp.toFixed(2)} per product
             </p>
           </div>
         ) : (
-          <p className="text-xs text-[#9AA9AD] font-semibold text-center">
+          <p className="text-xs text-[#8CA5AB] font-semibold text-center">
             Fill all three pack math fields to see the cost per product.
           </p>
         )}
       </div>
 
-      <div className="pt-2 border-t border-[#DCE5E8] flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#84999E]">
+      <div className="pt-2 border-t border-[#CDEBF0] flex items-center justify-between">
+        <span className="text-xs font-semibold text-[#71939B]">
           {categoryEmoji(item.category)} {item.category}
         </span>
         <button
           type="button"
           onClick={onDone}
-          className="min-h-10 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#2F6F7A] text-white hover:bg-[#285F69] transition-colors"
+          className="min-h-10 rounded-xl px-4 py-1.5 text-xs font-extrabold bg-[#0E92A3] text-white hover:bg-[#0A7685] transition-colors"
         >
           ✓ Done
         </button>
@@ -609,10 +609,10 @@ export default function VariableCostsPage() {
   return (
     <div className="priceit-cost-page min-h-screen flex flex-col priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[#DCE5E8] bg-white sticky top-0 z-20">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-[#CDEBF0] bg-white sticky top-0 z-20">
         <button
           onClick={() => navigate("/setup/costs")}
-          className="min-h-11 px-3 flex items-center gap-2 text-[#2F6F7A] font-semibold text-sm hover:text-[#A65A3F] transition-colors"
+          className="min-h-11 px-3 flex items-center gap-2 text-[#0E92A3] font-semibold text-sm hover:text-[#E1603F] transition-colors"
         >
           Back
         </button>
@@ -629,7 +629,7 @@ export default function VariableCostsPage() {
               {mode === "improve" ? "Review what goes into each product or session" : "What goes into each product or session?"}
               <HelpTooltip term="Variable costs" />
             </h1>
-            <p className="mt-1 text-[#6C7E83] text-sm">
+            <p className="mt-1 text-[#5C7F87] text-sm">
               {mode === "improve"
                 ? "Enter today's inputs so LaunchPad can spot where changes may help."
                 : "Add every material, ingredient, or supply you use per product or service session. Pure service businesses (tutoring, consulting, etc.) with no per-session costs can skip this step."}
@@ -639,18 +639,18 @@ export default function VariableCostsPage() {
           {/* Item cards */}
           <div className={`flex flex-col gap-2.5 rounded-2xl ${assistantHighlight ? "priceit-agent-highlight p-1" : ""}`}>
             {variableCosts.length === 0 && (
-              <div className="rounded-2xl border-2 border-dashed border-[#BCCDD1] bg-white py-8 px-5 text-center flex flex-col items-center gap-3">
+              <div className="rounded-2xl border-2 border-dashed border-[#AEDBE3] bg-white py-8 px-5 text-center flex flex-col items-center gap-3">
                 <p className="text-3xl">🧩</p>
                 <div>
-                  <p className="text-[#6C7E83] font-semibold text-sm">No variable costs added yet.</p>
-                  <p className="text-[#9AA9AD] text-xs mt-0.5">
+                  <p className="text-[#5C7F87] font-semibold text-sm">No variable costs added yet.</p>
+                  <p className="text-[#8CA5AB] text-xs mt-0.5">
                     Add materials or supplies per product — or skip if you're a service business with no per-session costs.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate("/setup/pricing")}
-                  className="mt-1 rounded-xl border-2 border-[#BCCDD1] bg-white px-5 py-2.5 text-sm font-bold text-[#2F6F7A] hover:border-[#2F6F7A] hover:bg-[#EFF4F5] transition-colors"
+                  className="mt-1 rounded-xl border-2 border-[#AEDBE3] bg-white px-5 py-2.5 text-sm font-bold text-[#0E92A3] hover:border-[#0E92A3] hover:bg-[#EAF8FA] transition-colors"
                 >
                   I have no variable costs — skip this step →
                 </button>
@@ -680,9 +680,9 @@ export default function VariableCostsPage() {
               <ChronicleButton
                 text="+ Add Input"
                 onClick={handleAdd}
-                hoverColor="#A65A3F"
-                customBackground="#EFF4F5"
-                customForeground="#2F6F7A"
+                hoverColor="#E1603F"
+                customBackground="#EAF8FA"
+                customForeground="#0E92A3"
                 hoverForeground="#ffffff"
                 width="100%"
                 borderRadius="14px"
@@ -692,18 +692,18 @@ export default function VariableCostsPage() {
 
           {/* Running total */}
           {variableCosts.length > 0 && (
-            <div className="mt-3 rounded-2xl bg-white border border-[#DCE5E8] px-4 py-3 flex items-center justify-between shadow-sm">
+            <div className="mt-3 rounded-2xl bg-white border border-[#CDEBF0] px-4 py-3 flex items-center justify-between shadow-sm">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-[#6C7E83]">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#5C7F87]">
                   Total Variable Cost
                 </p>
-                <p className="text-xs text-[#9AA9AD] mt-0.5">
+                <p className="text-xs text-[#8CA5AB] mt-0.5">
                   Cost of materials per product made
                 </p>
               </div>
-              <p className="text-2xl font-extrabold text-[#A65A3F]">
+              <p className="text-2xl font-extrabold text-[#E1603F]">
                 ${total.toFixed(2)}
-                <span className="text-sm font-bold text-[#84999E]">/product</span>
+                <span className="text-sm font-bold text-[#71939B]">/product</span>
               </p>
             </div>
           )}
@@ -713,9 +713,9 @@ export default function VariableCostsPage() {
             <ChronicleButton
               text="Back"
               onClick={() => navigate("/setup/costs")}
-              hoverColor="#2F6F7A"
-              customBackground="#E7EBED"
-              customForeground="#2F6F7A"
+              hoverColor="#0E92A3"
+              customBackground="#ECF7F9"
+              customForeground="#0E92A3"
               hoverForeground="#ffffff"
               width="140px"
               borderRadius="10px"
@@ -723,8 +723,8 @@ export default function VariableCostsPage() {
             <ChronicleButton
               text="Next"
               onClick={() => { if (canProceed) navigate("/setup/pricing"); }}
-              hoverColor="#A65A3F"
-              customBackground="#2F6F7A"
+              hoverColor="#E1603F"
+              customBackground="#0E92A3"
               customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="160px"

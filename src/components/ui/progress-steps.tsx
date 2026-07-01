@@ -23,17 +23,17 @@ export function ProgressSteps({ currentStep, mode = "create" }: { currentStep: n
               <div
                 className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
                   isActive
-                    ? "bg-[#2F6F7A] text-white shadow-md shadow-[#2F6F7A]/40 scale-110"
+                    ? "bg-[#E1603F] text-white shadow-md shadow-[#E1603F]/35 scale-110"
                     : isDone
-                    ? "bg-[#2F6F7A] text-white"
-                    : "bg-[#DCE5E8] text-[#84999E]"
+                    ? "bg-[#0E92A3] text-white"
+                    : "bg-[#FFF4D6] text-[#9E7B20]"
                 }`}
               >
                 {isDone ? "✓" : step.number}
               </div>
               <span
                 className={`text-[9px] sm:text-[10px] font-semibold hidden sm:block max-w-[56px] text-center leading-tight ${
-                  isActive ? "text-[#2F6F7A]" : isDone ? "text-[#2F6F7A]/70" : "text-[#9AA9AD]"
+                  isActive ? "text-[#C94E32]" : isDone ? "text-[#0E92A3]" : "text-[#9E7B20]"
                 }`}
               >
                 {step.label}
@@ -42,7 +42,7 @@ export function ProgressSteps({ currentStep, mode = "create" }: { currentStep: n
             {index < steps.length - 1 && (
               <div
                 className={`h-0.5 flex-1 max-w-[32px] sm:max-w-[48px] rounded-full transition-all mb-4 ${
-                  isDone ? "bg-[#2F6F7A]" : "bg-[#DCE5E8]"
+                  isDone ? "bg-[#0E92A3]" : "bg-[#FFE8A8]"
                 }`}
               />
             )}

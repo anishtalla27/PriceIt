@@ -52,7 +52,7 @@ const BAUHAUS_CARD_STYLES = `
   padding-bottom: 7px;
 }
 .bauhaus-date {
-  color: var(--card-text-top, #B9C1CC);
+  color: var(--card-text-top, #C6D5E4);
 }
 .bauhaus-size6 {
   width: 2.5rem;
@@ -75,7 +75,7 @@ const BAUHAUS_CARD_STYLES = `
   color: var(--card-text-main, #f0f0f1);
 }
 .bauhaus-card-body p {
-  color: var(--card-text-sub, #8F94A3);
+  color: var(--card-text-sub, #8593AA);
   font-size: 1rem;
   letter-spacing: 0.031rem;
 }
@@ -100,13 +100,13 @@ const BAUHAUS_CARD_STYLES = `
   width: 100%;
   display: block;
   margin-bottom: 0.313rem;
-  color: var(--card-text-progress-label, #AEBBCB);
+  color: var(--card-text-progress-label, #B8CBE0);
 }
 .bauhaus-progress span:last-of-type {
   margin-top: 0.313rem;
   text-align: right;
   display: block;
-  color: var(--card-text-progress-value, #E6E8EE);
+  color: var(--card-text-progress-value, #ECF0F7);
 }
 .bauhaus-card-footer {
   position: absolute;
@@ -174,7 +174,7 @@ export const Component: React.FC<BauhausCardProps> = ({
   borderRadius = "2em",
   backgroundColor = "#151419",
   separatorColor = "#2F2B2A",
-  accentColor = "#255D8F",
+  accentColor = "#246EB4",
   borderWidth = "2px",
   topInscription = "Not Set!",
   swapButtons = false,
@@ -189,12 +189,12 @@ export const Component: React.FC<BauhausCardProps> = ({
   onOutlinedButtonClick,
   onMoreOptionsClick,
   mirrored = false,
-  ChronicleButtonHoverColor = "#255D8F",
-  textColorTop = "#B9C1CC",
+  ChronicleButtonHoverColor = "#246EB4",
+  textColorTop = "#C6D5E4",
   textColorMain = "#f0f0f1",
-  textColorSub = "#8F94A3",
-  textColorProgressLabel = "#AEBBCB",
-  textColorProgressValue = "#E6E8EE",
+  textColorSub = "#8593AA",
+  textColorProgressLabel = "#B8CBE0",
+  textColorProgressValue = "#ECF0F7",
   progressBarBackground = "#363636",
   chronicleButtonBg = "#151419",
   chronicleButtonFg = "#fff",

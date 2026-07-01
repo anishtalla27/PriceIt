@@ -16,7 +16,7 @@ export function SaveStatus() {
   }, [lastSavedAt]);
 
   return (
-    <p className="text-center text-[11px] text-[#84999E] mt-2 select-none transition-all duration-300">
+    <p className="text-center text-[11px] text-[#71939B] mt-2 select-none transition-all duration-300">
       {label}
     </p>
   );

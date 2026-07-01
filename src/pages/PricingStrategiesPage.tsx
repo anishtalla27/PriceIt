@@ -43,7 +43,7 @@ export default function PricingStrategiesPage() {
       subtitle: "Start with your costs.",
       text: "Best when you want a clear, safe starting price. You choose how much profit to add on top of what each product costs.",
       example: `$${fmt(costPerProduct)} cost + your profit goal = your price`,
-      accent: "#2F6F7A",
+      accent: "#0E92A3",
     },
     {
       path: "market",
@@ -52,7 +52,7 @@ export default function PricingStrategiesPage() {
       subtitle: "Compare similar products.",
       text: "Best when customers can compare your product to other options. You decide if you want to be budget, average, or premium.",
       example: `Your current price is $${fmt(currentPrice)}. Compare it with similar products.`,
-      accent: "#A86F20",
+      accent: "#F0A92E",
     },
     {
       path: "value",
@@ -63,14 +63,14 @@ export default function PricingStrategiesPage() {
       example: productInfo.specialFeature
         ? `Your special feature: ${productInfo.specialFeature}`
         : "Special features can support a higher price.",
-      accent: "#A65A3F",
+      accent: "#E1603F",
     },
   ];
 
   return (
     <div className="min-h-screen priceit-fade-in" style={{ background: "radial-gradient(ellipse 120% 80% at 50% 0%, #ffffff 30%, #fff0e8 65%, #ffd6bc 100%)" }}>
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#DCE5E8] bg-white px-6 py-4">
-        <button onClick={() => navigate("/setup/pricing-lab")} className="min-h-11 px-3 text-sm font-semibold text-[#2F6F7A] transition-colors hover:text-[#A65A3F]">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#CDEBF0] bg-white px-6 py-4">
+        <button onClick={() => navigate("/setup/pricing-lab")} className="min-h-11 px-3 text-sm font-semibold text-[#0E92A3] transition-colors hover:text-[#E1603F]">
           Lab
         </button>
         <img src={logo} alt="LaunchPad logo" className="h-14 w-auto" />
@@ -80,11 +80,11 @@ export default function PricingStrategiesPage() {
       <main className="px-4 py-5">
         <div className="mx-auto w-full max-w-5xl">
           <div className="mb-5">
-            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#2F6F7A]">Pricing Lab: methods</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#0E92A3]">Pricing Lab: methods</p>
             <h1 className="mt-1 text-3xl font-extrabold leading-tight text-[#2B2B2B] sm:text-[2.35rem]">
               Pick one way to think about your price.
             </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#65777D]">
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#4F747C]">
               These are three common pricing models. Each one teaches a different way to decide what {productInfo.productName || "your product"} should cost.
             </p>
           </div>
@@ -97,15 +97,15 @@ export default function PricingStrategiesPage() {
                 onClick={() => navigate(`/setup/pricing-lab/${strategy.path}`)}
                 className="priceit-feature-cta flex min-h-[290px] flex-col rounded-3xl bg-white px-4 py-4 text-left transition-all"
               >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-[#B9C9CE] bg-white shadow-sm" style={{ color: strategy.accent }}>
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-[#9BD8E2] bg-white shadow-sm" style={{ color: strategy.accent }}>
                   {strategy.icon}
                 </div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em]" style={{ color: strategy.accent }}>
                   {strategy.subtitle}
                 </p>
                 <h2 className="mt-1 text-xl font-extrabold text-[#2B2B2B]">{strategy.title}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#65777D]">{strategy.text}</p>
-                <p className="mt-3 rounded-2xl bg-[#F7F9FA] px-3 py-2 text-sm font-bold text-[#2B2B2B]">
+                <p className="mt-2 text-sm leading-relaxed text-[#4F747C]">{strategy.text}</p>
+                <p className="mt-3 rounded-2xl bg-[#F8FBFC] px-3 py-2 text-sm font-bold text-[#2B2B2B]">
                   {strategy.example}
                 </p>
                 <div className="mt-auto flex items-center justify-between gap-3 pt-4">
@@ -120,9 +120,9 @@ export default function PricingStrategiesPage() {
             <ChronicleButton
               text="Back to Lab"
               onClick={() => navigate("/setup/pricing-lab")}
-              hoverColor="#2F6F7A"
-              customBackground="#E7EBED"
-              customForeground="#2F6F7A"
+              hoverColor="#0E92A3"
+              customBackground="#ECF7F9"
+              customForeground="#0E92A3"
               hoverForeground="#ffffff"
               width="150px"
               borderRadius="10px"
@@ -130,8 +130,8 @@ export default function PricingStrategiesPage() {
             <ChronicleButton
               text="See Results"
               onClick={() => navigate("/results")}
-              hoverColor="#A65A3F"
-              customBackground="#2F6F7A"
+              hoverColor="#E1603F"
+              customBackground="#0E92A3"
               customForeground="#ffffff"
               hoverForeground="#ffffff"
               width="160px"

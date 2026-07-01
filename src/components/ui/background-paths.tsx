@@ -82,7 +82,7 @@ export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
                     "radial-gradient(ellipse 120% 85% at 50% 0%, #ffffff 24%, #ffe8d8 52%, #ffc79f 78%, #f3a168 100%)",
             }}
         >
-            <div className="absolute right-4 top-4 z-20 rounded-xl border border-[#B9C9CE] bg-white p-2 shadow-sm sm:right-8 sm:top-6">
+            <div className="absolute right-4 top-4 z-20 rounded-xl border border-[#9BD8E2] bg-white p-2 shadow-sm sm:right-8 sm:top-6">
                 <img src={logo} alt="LaunchPad logo" className="h-10 w-auto sm:h-12" />
             </div>
             <div className="absolute inset-0">
@@ -127,7 +127,7 @@ export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
                         ))}
                     </h1>
 
-                    <p className="mx-auto mb-8 max-w-2xl text-base text-[#54666C] sm:text-lg">
+                    <p className="mx-auto mb-8 max-w-2xl text-base text-[#486B73] sm:text-lg">
                         Build the numbers behind a new idea or find the smartest next move for a product you already sell.
                     </p>
 
@@ -135,16 +135,16 @@ export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
                         <button
                             type="button"
                             onClick={() => start("create")}
-                            className="group rounded-3xl border border-[#B9C9CE] bg-white p-6 shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:border-[#2F6F7A]"
+                            className="group rounded-3xl border border-[#9BD8E2] bg-white p-6 shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:border-[#0E92A3]"
                         >
-                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EFF4F5] text-[#2F6F7A]">
+                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF8FA] text-[#0E92A3]">
                                 <Lightbulb className="h-6 w-6" />
                             </span>
                             <span className="block text-xl font-extrabold text-[#2B2B2B]">Create a new product</span>
-                            <span className="mt-2 block text-sm leading-relaxed text-[#65777D]">
+                            <span className="mt-2 block text-sm leading-relaxed text-[#4F747C]">
                                 Turn an idea into a product plan, calculate costs, choose a price, and test it.
                             </span>
-                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-[#2F6F7A]">
+                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-[#0E92A3]">
                                 Start creating <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                             </span>
                         </button>
@@ -152,16 +152,16 @@ export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
                         <button
                             type="button"
                             onClick={() => start("improve")}
-                            className="group rounded-3xl border border-[#CDA99D] bg-white p-6 shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:border-[#A65A3F]"
+                            className="group rounded-3xl border border-[#F0B39C] bg-white p-6 shadow-[0_18px_40px_rgba(50,50,93,0.13)] transition hover:-translate-y-1 hover:border-[#E1603F]"
                         >
-                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F6EDE8] text-[#8F4D38]">
+                            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFEDE3] text-[#C94E32]">
                                 <TrendingUp className="h-6 w-6" />
                             </span>
                             <span className="block text-xl font-extrabold text-[#2B2B2B]">Improve a current product</span>
-                            <span className="mt-2 block text-sm leading-relaxed text-[#65777D]">
+                            <span className="mt-2 block text-sm leading-relaxed text-[#4F747C]">
                                 Review what you sell today, identify the problem, rework costs and pricing, and compare improvements.
                             </span>
-                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-[#8F4D38]">
+                            <span className="mt-5 flex items-center gap-2 text-sm font-bold text-[#C94E32]">
                                 Start improving <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                             </span>
                         </button>
@@ -173,7 +173,7 @@ export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
                         className="priceit-feature-cta mx-auto mt-5 flex w-full max-w-3xl items-center justify-between gap-4 rounded-3xl bg-white px-5 py-4 text-left transition-all"
                     >
                         <div className="flex items-center gap-4">
-                            <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl border-2 border-[#B9C9CE] bg-white text-[#2F6F7A] shadow-sm">
+                            <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl border-2 border-[#9BD8E2] bg-white text-[#0E92A3] shadow-sm">
                                 <FlaskConical className="h-6 w-6" />
                             </span>
                             <span>
@@ -181,7 +181,7 @@ export function BackgroundPaths({ title = "LaunchPad" }: { title?: string }) {
                                 <span className="block text-lg font-extrabold text-[#2B2B2B]">
                                     Load sample business and jump to pricing
                                 </span>
-                                <span className="mt-1 block text-sm leading-relaxed text-[#54666C]">
+                                <span className="mt-1 block text-sm leading-relaxed text-[#486B73]">
                                     Fills product info, fixed costs, variable costs, and starter pricing with realistic bracelet data.
                                 </span>
                             </span>
