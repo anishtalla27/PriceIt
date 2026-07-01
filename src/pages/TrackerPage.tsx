@@ -21,11 +21,14 @@ import {
 import { useTracker } from "@/context/TrackerContext";
 import type {
   InventoryItem,
+  MaterialInventoryItem,
   GoalRecord,
   ExpenseCategory,
   GoalType,
   FeedbackCategory,
+  SupplyUsage,
 } from "@/context/TrackerContext";
+import { readSavedProducts, type SavedProduct } from "@/lib/saved-products";
 import logo from "../../logo.png";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -340,67 +343,268 @@ function OverviewTab() {
 // ─── INVENTORY TAB ────────────────────────────────────────────────────────────
 
 interface InventoryFormState {
+  savedProductId: string;
   name: string;
   quantityMade: string;
   costPerItem: string;
   sellingPrice: string;
+  lowStockAt: string;
 }
 
-const emptyInventoryForm = (): InventoryFormState => ({ name: "", quantityMade: "", costPerItem: "", sellingPrice: "" });
+interface SupplyFormState {
+  materialId: string;
+  name: string;
+  quantity: string;
+  unitType: string;
+  cost: string;
+  supplier: string;
+  usedForProductId: string;
+  lowStockAt: string;
+}
+
+interface MakeProductFormState {
+  productChoice: string;
+  customProductName: string;
+  quantityMade: string;
+  supplyId: string;
+  supplyQty: string;
+}
+
+const emptyInventoryForm = (): InventoryFormState => ({
+  savedProductId: "",
+  name: "",
+  quantityMade: "",
+  costPerItem: "",
+  sellingPrice: "",
+  lowStockAt: "",
+});
+
+const emptySupplyForm = (): SupplyFormState => ({
+  materialId: "",
+  name: "",
+  quantity: "",
+  unitType: "pieces",
+  cost: "",
+  supplier: "",
+  usedForProductId: "",
+  lowStockAt: "",
+});
+
+const emptyMakeProductForm = (): MakeProductFormState => ({
+  productChoice: "",
+  customProductName: "",
+  quantityMade: "",
+  supplyId: "",
+  supplyQty: "",
+});
+
+function productInventoryFromSaved(product: SavedProduct): Omit<InventoryItem, "id" | "quantitySold"> {
+  return {
+    savedProductId: product.id,
+    name: product.productInfo.productName || "Untitled product",
+    quantityMade: 0,
+    costPerItem: product.summary.costPerUnit || "",
+    sellingPrice: product.summary.sellingPrice || "",
+    lowStockAt: 3,
+  };
+}
 
 function InventoryTab() {
-  const { data, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useTracker();
-  const [showAdd, setShowAdd] = useState(false);
+  const {
+    data,
+    addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    initializeProductInventory,
+    makeProduct,
+    updateMaterialItem,
+    deleteMaterialItem,
+    buySupplies,
+  } = useTracker();
+  const savedProducts = useMemo(() => readSavedProducts(), []);
+  const [showAdd, setShowAdd] = useState<"product" | "supplies" | "make" | null>(null);
   const [form, setForm] = useState<InventoryFormState>(emptyInventoryForm());
+  const [supplyForm, setSupplyForm] = useState<SupplyFormState>(emptySupplyForm());
+  const [makeForm, setMakeForm] = useState<MakeProductFormState>(emptyMakeProductForm());
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<InventoryFormState>(emptyInventoryForm());
+  const [editMaterialId, setEditMaterialId] = useState<string | null>(null);
+  const [editMaterialForm, setEditMaterialForm] = useState<SupplyFormState>(emptySupplyForm());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmMaterialDeleteId, setConfirmMaterialDeleteId] = useState<string | null>(null);
 
   const totalRemaining = data.inventory.reduce((s, i) => s + Math.max(0, i.quantityMade - i.quantitySold), 0);
+  const totalMaterials = data.materials.reduce((s, i) => s + Math.max(0, i.quantityAvailable), 0);
+  const savedProductsNotInInventory = savedProducts.filter((product) => !data.inventory.some((item) => item.savedProductId === product.id));
 
   function handleAdd() {
     if (!form.name.trim()) return;
     addInventoryItem({
+      savedProductId: form.savedProductId || null,
       name: form.name.trim(),
       quantityMade: parseInt(form.quantityMade) || 0,
       costPerItem: form.costPerItem !== "" ? parseFloat(form.costPerItem) : "",
       sellingPrice: form.sellingPrice !== "" ? parseFloat(form.sellingPrice) : "",
+      lowStockAt: form.lowStockAt !== "" ? parseInt(form.lowStockAt) || "" : "",
     });
     setForm(emptyInventoryForm());
-    setShowAdd(false);
+    setShowAdd(null);
+  }
+
+  function handleSavedProductSelect(savedProductId: string) {
+    const product = savedProducts.find((saved) => saved.id === savedProductId);
+    if (!product) {
+      setForm((f) => ({ ...f, savedProductId, name: "" }));
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      savedProductId,
+      name: product.productInfo.productName || f.name,
+      costPerItem: product.summary.costPerUnit ? String(product.summary.costPerUnit.toFixed(2)) : f.costPerItem,
+      sellingPrice: product.summary.sellingPrice ? String(product.summary.sellingPrice.toFixed(2)) : f.sellingPrice,
+    }));
+  }
+
+  function handleInitializeSavedProducts() {
+    savedProductsNotInInventory.forEach((product) => initializeProductInventory(productInventoryFromSaved(product)));
+  }
+
+  function handleBuySupplies() {
+    const existing = data.materials.find((item) => item.id === supplyForm.materialId);
+    const name = supplyForm.materialId ? existing?.name ?? "" : supplyForm.name.trim();
+    const qty = parseFloat(supplyForm.quantity) || 0;
+    const cost = parseFloat(supplyForm.cost) || 0;
+    if (!name || qty <= 0 || cost < 0) return;
+    const linkedProduct = data.inventory.find((item) => item.id === supplyForm.usedForProductId);
+    buySupplies({
+      date: today(),
+      materialId: supplyForm.materialId || null,
+      name,
+      quantityAdded: qty,
+      unitType: existing?.unitType || supplyForm.unitType || "pieces",
+      cost,
+      supplier: supplyForm.supplier,
+      usedForProductId: linkedProduct?.id ?? null,
+      usedForProductName: linkedProduct?.name ?? "",
+    });
+    if (supplyForm.lowStockAt !== "" && existing) {
+      updateMaterialItem(existing.id, { lowStockAt: parseFloat(supplyForm.lowStockAt) || "" });
+    }
+    setSupplyForm(emptySupplyForm());
+    setShowAdd(null);
+  }
+
+  function handleMakeProduct() {
+    const qty = parseInt(makeForm.quantityMade) || 0;
+    if (qty <= 0) return;
+    const selectedInventory = makeForm.productChoice.startsWith("inv:")
+      ? data.inventory.find((item) => item.id === makeForm.productChoice.slice(4))
+      : null;
+    const selectedSaved = makeForm.productChoice.startsWith("saved:")
+      ? savedProducts.find((product) => product.id === makeForm.productChoice.slice(6))
+      : null;
+    const productName = selectedInventory?.name || selectedSaved?.productInfo.productName || makeForm.customProductName.trim();
+    if (!productName) return;
+    const suppliesUsed: SupplyUsage[] = makeForm.supplyId && parseFloat(makeForm.supplyQty) > 0
+      ? [{ materialId: makeForm.supplyId, quantityUsed: parseFloat(makeForm.supplyQty) }]
+      : [];
+    makeProduct({
+      inventoryItemId: selectedInventory?.id ?? null,
+      savedProductId: selectedSaved?.id ?? selectedInventory?.savedProductId ?? null,
+      productName,
+      quantityMade: qty,
+      costPerItem: selectedInventory?.costPerItem ?? selectedSaved?.summary.costPerUnit ?? "",
+      sellingPrice: selectedInventory?.sellingPrice ?? selectedSaved?.summary.sellingPrice ?? "",
+      suppliesUsed,
+    });
+    setMakeForm(emptyMakeProductForm());
+    setShowAdd(null);
   }
 
   function startEdit(item: InventoryItem) {
     setEditId(item.id);
     setEditForm({
+      savedProductId: item.savedProductId ?? "",
       name: item.name,
       quantityMade: String(item.quantityMade),
       costPerItem: item.costPerItem !== "" ? String(item.costPerItem) : "",
       sellingPrice: item.sellingPrice !== "" ? String(item.sellingPrice) : "",
+      lowStockAt: item.lowStockAt !== "" && item.lowStockAt !== undefined ? String(item.lowStockAt) : "",
+    });
+  }
+
+  function startEditMaterial(item: MaterialInventoryItem) {
+    setEditMaterialId(item.id);
+    setEditMaterialForm({
+      materialId: item.id,
+      name: item.name,
+      quantity: String(item.quantityAvailable),
+      unitType: item.unitType,
+      cost: item.cost !== "" ? String(item.cost) : "",
+      supplier: item.supplier,
+      usedForProductId: item.usedForProductId ?? "",
+      lowStockAt: item.lowStockAt !== "" ? String(item.lowStockAt) : "",
     });
   }
 
   function handleSaveEdit(id: string) {
     if (!editForm.name.trim()) return;
     updateInventoryItem(id, {
+      savedProductId: editForm.savedProductId || null,
       name: editForm.name.trim(),
       quantityMade: parseInt(editForm.quantityMade) || 0,
       costPerItem: editForm.costPerItem !== "" ? parseFloat(editForm.costPerItem) : "",
       sellingPrice: editForm.sellingPrice !== "" ? parseFloat(editForm.sellingPrice) : "",
+      lowStockAt: editForm.lowStockAt !== "" ? parseInt(editForm.lowStockAt) || "" : "",
     });
     setEditId(null);
   }
 
+  function handleSaveMaterialEdit(id: string) {
+    if (!editMaterialForm.name.trim()) return;
+    const linkedProduct = data.inventory.find((item) => item.id === editMaterialForm.usedForProductId);
+    updateMaterialItem(id, {
+      name: editMaterialForm.name.trim(),
+      quantityAvailable: parseFloat(editMaterialForm.quantity) || 0,
+      unitType: editMaterialForm.unitType || "pieces",
+      cost: editMaterialForm.cost !== "" ? parseFloat(editMaterialForm.cost) : "",
+      supplier: editMaterialForm.supplier.trim(),
+      usedForProductId: linkedProduct?.id ?? null,
+      usedForProductName: linkedProduct?.name ?? "",
+      lowStockAt: editMaterialForm.lowStockAt !== "" ? parseFloat(editMaterialForm.lowStockAt) || "" : "",
+    });
+    setEditMaterialId(null);
+  }
+
   function stockStatus(item: InventoryItem): { label: string; color: "green" | "amber" | "gray" } {
     const remaining = item.quantityMade - item.quantitySold;
+    const lowStockAt = Number(item.lowStockAt) || 3;
     if (remaining <= 0) return { label: "Sold out", color: "gray" };
-    if (remaining <= 3 || (item.quantityMade > 0 && remaining / item.quantityMade <= 0.2)) return { label: "Low stock", color: "amber" };
+    if (remaining <= lowStockAt || (item.quantityMade > 0 && remaining / item.quantityMade <= 0.2)) return { label: "Low stock", color: "amber" };
     return { label: "In stock", color: "green" };
+  }
+
+  function materialStatus(item: MaterialInventoryItem): { label: string; color: "green" | "amber" | "gray" } {
+    const lowStockAt = Number(item.lowStockAt) || 3;
+    if (item.quantityAvailable <= 0) return { label: "Out", color: "gray" };
+    if (item.quantityAvailable <= lowStockAt) return { label: "Low", color: "amber" };
+    return { label: "Ready", color: "green" };
   }
 
   const AddForm = (
     <div className="rounded-2xl bg-[#F3FBFC] border border-[#B2E0E7] px-4 py-4 flex flex-col gap-3 mb-4">
-      <p className="text-sm font-bold text-[#2B2B2B]">Add a Product</p>
+      <p className="text-sm font-bold text-[#2B2B2B]">Add a Product You Sell</p>
+      {savedProducts.length > 0 && (
+        <Field label="Start from a saved product">
+          <select className={selectCls} value={form.savedProductId} onChange={(e) => handleSavedProductSelect(e.target.value)}>
+            <option value="">Choose saved product or type your own</option>
+            {savedProducts.map((product) => (
+              <option key={product.id} value={product.id}>{product.productInfo.productName || "Untitled product"}</option>
+            ))}
+          </select>
+        </Field>
+      )}
       <Field label="Product name *">
         <input className={inputCls} placeholder="e.g. Friendship Bracelet" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
       </Field>
@@ -415,37 +619,154 @@ function InventoryTab() {
           <MoneyInput value={form.sellingPrice} onChange={(v) => setForm((f) => ({ ...f, sellingPrice: v }))} placeholder="0.00" />
         </Field>
       </div>
+      <Field label="Low stock warning">
+        <input type="number" min="0" className={inputCls} placeholder="e.g. 3" value={form.lowStockAt} onChange={(e) => setForm((f) => ({ ...f, lowStockAt: e.target.value }))} />
+      </Field>
       <div className="flex gap-2">
         <Btn onClick={handleAdd} variant="primary" disabled={!form.name.trim()}>Save Product</Btn>
-        <Btn onClick={() => { setShowAdd(false); setForm(emptyInventoryForm()); }} variant="ghost">Cancel</Btn>
+        <Btn onClick={() => { setShowAdd(null); setForm(emptyInventoryForm()); }} variant="ghost">Cancel</Btn>
+      </div>
+    </div>
+  );
+
+  const BuySuppliesForm = (
+    <div className="rounded-2xl bg-[#FFF5E8] border border-[#F0C36F] px-4 py-4 flex flex-col gap-3 mb-4">
+      <p className="text-sm font-bold text-[#2B2B2B]">Buy Supplies</p>
+      <p className="text-xs text-[#4F747C]">This adds to Materials I Use and creates an expense automatically.</p>
+      {data.materials.length > 0 && (
+        <Field label="Add to existing material">
+          <select className={selectCls} value={supplyForm.materialId} onChange={(e) => {
+            const material = data.materials.find((item) => item.id === e.target.value);
+            setSupplyForm((f) => ({
+              ...f,
+              materialId: e.target.value,
+              name: material?.name ?? "",
+              unitType: material?.unitType ?? f.unitType,
+              supplier: material?.supplier ?? f.supplier,
+              usedForProductId: material?.usedForProductId ?? "",
+              lowStockAt: material?.lowStockAt !== "" && material?.lowStockAt !== undefined ? String(material.lowStockAt) : f.lowStockAt,
+            }));
+          }}>
+            <option value="">New material or supply</option>
+            {data.materials.map((material) => <option key={material.id} value={material.id}>{material.name}</option>)}
+          </select>
+        </Field>
+      )}
+      {!supplyForm.materialId && (
+        <Field label="Material or supply name *">
+          <input className={inputCls} placeholder="e.g. Beads, paper bags, thread" value={supplyForm.name} onChange={(e) => setSupplyForm((f) => ({ ...f, name: e.target.value }))} />
+        </Field>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Quantity added">
+          <input type="number" min="0" className={inputCls} placeholder="e.g. 50" value={supplyForm.quantity} onChange={(e) => setSupplyForm((f) => ({ ...f, quantity: e.target.value }))} />
+        </Field>
+        <Field label="Unit type">
+          <input className={inputCls} placeholder="pieces, packs, cups" value={supplyForm.unitType} onChange={(e) => setSupplyForm((f) => ({ ...f, unitType: e.target.value }))} />
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Total cost">
+          <MoneyInput value={supplyForm.cost} onChange={(v) => setSupplyForm((f) => ({ ...f, cost: v }))} />
+        </Field>
+        <Field label="Store (optional)">
+          <input className={inputCls} placeholder="e.g. Michaels" value={supplyForm.supplier} onChange={(e) => setSupplyForm((f) => ({ ...f, supplier: e.target.value }))} />
+        </Field>
+      </div>
+      <Field label="Used for product (optional)">
+        <select className={selectCls} value={supplyForm.usedForProductId} onChange={(e) => setSupplyForm((f) => ({ ...f, usedForProductId: e.target.value }))}>
+          <option value="">Any product</option>
+          {data.inventory.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+      </Field>
+      <Field label="Low stock warning">
+        <input type="number" min="0" className={inputCls} placeholder="e.g. 5" value={supplyForm.lowStockAt} onChange={(e) => setSupplyForm((f) => ({ ...f, lowStockAt: e.target.value }))} />
+      </Field>
+      <div className="flex gap-2">
+        <Btn onClick={handleBuySupplies} variant="primary" disabled={!(supplyForm.materialId || supplyForm.name.trim()) || parseFloat(supplyForm.quantity) <= 0 || supplyForm.cost === ""}>Save Supplies</Btn>
+        <Btn onClick={() => { setShowAdd(null); setSupplyForm(emptySupplyForm()); }} variant="ghost">Cancel</Btn>
+      </div>
+    </div>
+  );
+
+  const MakeProductForm = (
+    <div className="rounded-2xl bg-[#F2FAE8] border border-[#A9DDB9] px-4 py-4 flex flex-col gap-3 mb-4">
+      <p className="text-sm font-bold text-[#2B2B2B]">Make Product</p>
+      <p className="text-xs text-[#4F747C]">Add finished products that are ready to sell. You can subtract one material if you want.</p>
+      <Field label="Which product did you make?">
+        <select className={selectCls} value={makeForm.productChoice} onChange={(e) => setMakeForm((f) => ({ ...f, productChoice: e.target.value }))}>
+          <option value="">Choose product</option>
+          {data.inventory.map((item) => <option key={item.id} value={`inv:${item.id}`}>{item.name}</option>)}
+          {savedProductsNotInInventory.map((product) => <option key={product.id} value={`saved:${product.id}`}>{product.productInfo.productName || "Untitled product"} (saved)</option>)}
+          <option value="custom">Something else</option>
+        </select>
+      </Field>
+      {makeForm.productChoice === "custom" && (
+        <Field label="Product name">
+          <input className={inputCls} value={makeForm.customProductName} onChange={(e) => setMakeForm((f) => ({ ...f, customProductName: e.target.value }))} placeholder="e.g. Keychains" />
+        </Field>
+      )}
+      <Field label="How many did you make?">
+        <input type="number" min="1" className={inputCls} placeholder="e.g. 10" value={makeForm.quantityMade} onChange={(e) => setMakeForm((f) => ({ ...f, quantityMade: e.target.value }))} />
+      </Field>
+      {data.materials.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Material used (optional)">
+            <select className={selectCls} value={makeForm.supplyId} onChange={(e) => setMakeForm((f) => ({ ...f, supplyId: e.target.value }))}>
+              <option value="">Do not subtract supplies</option>
+              {data.materials.map((material) => <option key={material.id} value={material.id}>{material.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Amount used">
+            <input type="number" min="0" className={inputCls} placeholder="e.g. 10" value={makeForm.supplyQty} onChange={(e) => setMakeForm((f) => ({ ...f, supplyQty: e.target.value }))} />
+          </Field>
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Btn onClick={handleMakeProduct} variant="primary" disabled={!makeForm.productChoice || parseInt(makeForm.quantityMade) <= 0 || (makeForm.productChoice === "custom" && !makeForm.customProductName.trim())}>Add Made Products</Btn>
+        <Btn onClick={() => { setShowAdd(null); setMakeForm(emptyMakeProductForm()); }} variant="ghost">Cancel</Btn>
       </div>
     </div>
   );
 
   return (
     <div className="flex flex-col gap-5">
-      <TabHero icon={<Package className="h-6 w-6" />} title="Inventory" description="Track what you have ready to sell, what has already sold, and what needs restocking." />
+      <TabHero icon={<Package className="h-6 w-6" />} title="Inventory" description="Products are things you sell. Materials are things you use to make your products." />
 
       <StatRow stats={[
         { label: "Products", value: String(data.inventory.length), accent: "teal" },
         { label: "Items Remaining", value: String(totalRemaining), accent: totalRemaining <= 5 ? "red" : "default" },
+        { label: "Supplies", value: String(data.materials.length), sub: `${totalMaterials} total units`, accent: "default" },
       ]} />
 
       <div>
         {!showAdd && (
-          <div className="flex justify-end mb-3">
-            <Btn onClick={() => setShowAdd(true)} variant="primary" size="md"><span className="inline-flex items-center gap-1"><Plus className="h-4 w-4" /> Add Product</span></Btn>
+          <div className="mb-3 flex flex-wrap justify-end gap-2">
+            {savedProductsNotInInventory.length > 0 && (
+              <Btn onClick={handleInitializeSavedProducts} variant="outline" size="md">Add Saved Products</Btn>
+            )}
+            <Btn onClick={() => setShowAdd("supplies")} variant="outline" size="md">Buy Supplies</Btn>
+            <Btn onClick={() => setShowAdd("make")} variant="primary" size="md">Make Product</Btn>
+            <Btn onClick={() => setShowAdd("product")} variant="primary" size="md"><span className="inline-flex items-center gap-1"><Plus className="h-4 w-4" /> Add Product</span></Btn>
           </div>
         )}
-        {showAdd && AddForm}
+        {showAdd === "product" && AddForm}
+        {showAdd === "supplies" && BuySuppliesForm}
+        {showAdd === "make" && MakeProductForm}
 
-        {data.inventory.length === 0 && !showAdd ? (
-          <EmptyState icon={<Package className="h-7 w-7" />} title="No products added yet" description="Add the products you have made or plan to sell. Inventory makes sales tracking easier and helps you know when to restock." cta="Add your first product" onCta={() => setShowAdd(true)} />
-        ) : (
-          <div className="flex flex-col gap-3">
+        <div className="mb-6">
+          <div className="mb-2">
+            <p className="text-sm font-bold text-[#2B2B2B]">Products I Sell</p>
+            <p className="text-xs text-[#4F747C]">Finished products that are ready to sell.</p>
+          </div>
+          {data.inventory.length === 0 && !showAdd ? (
+            <EmptyState icon={<Package className="h-7 w-7" />} title="No products added yet" description="Add saved products or products you made. Inventory makes sales tracking easier and helps you know when to restock." cta="Add your first product" onCta={() => setShowAdd("product")} />
+          ) : (
+            <div className="flex flex-col gap-3">
             {data.inventory.map((item) => {
               const remaining = item.quantityMade - item.quantitySold;
               const status = stockStatus(item);
+              const value = Math.max(0, remaining) * (Number(item.sellingPrice) || Number(item.costPerItem) || 0);
 
               if (editId === item.id) {
                 return (
@@ -466,6 +787,9 @@ function InventoryTab() {
                           <MoneyInput value={editForm.sellingPrice} onChange={(v) => setEditForm((f) => ({ ...f, sellingPrice: v }))} />
                         </Field>
                       </div>
+                      <Field label="Low stock warning">
+                        <input type="number" min="0" className={inputCls} placeholder="3" value={editForm.lowStockAt} onChange={(e) => setEditForm((f) => ({ ...f, lowStockAt: e.target.value }))} />
+                      </Field>
                       <div className="flex gap-2">
                         <Btn onClick={() => handleSaveEdit(item.id)} variant="primary">Save Changes</Btn>
                         <Btn variant="ghost" onClick={() => setEditId(null)}>Cancel</Btn>
@@ -489,6 +813,7 @@ function InventoryTab() {
                         <p className="text-xs text-[#4F747C]">Left: <strong className={remaining <= 0 ? "text-red-500" : remaining <= 3 ? "text-amber-600" : "text-green-600"}>{Math.max(0, remaining)}</strong></p>
                         {item.costPerItem !== "" && <p className="text-xs text-[#4F747C]">Cost: <strong>{fmt$(Number(item.costPerItem))}</strong></p>}
                         {item.sellingPrice !== "" && <p className="text-xs text-[#4F747C]">Price: <strong>{fmt$(Number(item.sellingPrice))}</strong></p>}
+                        <p className="text-xs text-[#4F747C]">Value: <strong>{fmt$(value)}</strong></p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
@@ -503,8 +828,93 @@ function InventoryTab() {
                 </Card>
               );
             })}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="mb-2">
+            <p className="text-sm font-bold text-[#2B2B2B]">Materials I Use</p>
+            <p className="text-xs text-[#4F747C]">Supplies and materials you use to make products.</p>
           </div>
-        )}
+          {data.materials.length === 0 && !showAdd ? (
+            <EmptyState icon={<Receipt className="h-7 w-7" />} title="No materials yet" description="Buy supplies like beads, bags, ingredients, or paper. The tracker will add them here and record the expense." cta="Buy supplies" onCta={() => setShowAdd("supplies")} />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {data.materials.map((item) => {
+                const status = materialStatus(item);
+                if (editMaterialId === item.id) {
+                  return (
+                    <Card key={item.id} className="border-[#0E92A3]">
+                      <p className="text-sm font-bold text-[#2B2B2B] mb-3">Edit Material</p>
+                      <div className="flex flex-col gap-3">
+                        <Field label="Material name">
+                          <input className={inputCls} value={editMaterialForm.name} onChange={(e) => setEditMaterialForm((f) => ({ ...f, name: e.target.value }))} />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Field label="Available">
+                            <input type="number" min="0" className={inputCls} value={editMaterialForm.quantity} onChange={(e) => setEditMaterialForm((f) => ({ ...f, quantity: e.target.value }))} />
+                          </Field>
+                          <Field label="Unit type">
+                            <input className={inputCls} value={editMaterialForm.unitType} onChange={(e) => setEditMaterialForm((f) => ({ ...f, unitType: e.target.value }))} />
+                          </Field>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Field label="Cost">
+                            <MoneyInput value={editMaterialForm.cost} onChange={(v) => setEditMaterialForm((f) => ({ ...f, cost: v }))} />
+                          </Field>
+                          <Field label="Store">
+                            <input className={inputCls} value={editMaterialForm.supplier} onChange={(e) => setEditMaterialForm((f) => ({ ...f, supplier: e.target.value }))} />
+                          </Field>
+                        </div>
+                        <Field label="Used for product">
+                          <select className={selectCls} value={editMaterialForm.usedForProductId} onChange={(e) => setEditMaterialForm((f) => ({ ...f, usedForProductId: e.target.value }))}>
+                            <option value="">Any product</option>
+                            {data.inventory.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+                          </select>
+                        </Field>
+                        <Field label="Low stock warning">
+                          <input type="number" min="0" className={inputCls} value={editMaterialForm.lowStockAt} onChange={(e) => setEditMaterialForm((f) => ({ ...f, lowStockAt: e.target.value }))} />
+                        </Field>
+                        <div className="flex gap-2">
+                          <Btn onClick={() => handleSaveMaterialEdit(item.id)} variant="primary">Save Changes</Btn>
+                          <Btn variant="ghost" onClick={() => setEditMaterialId(null)}>Cancel</Btn>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <Card key={item.id} className={status.color === "gray" ? "opacity-60" : ""}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="text-sm font-bold text-[#2B2B2B]">{item.name}</p>
+                          <Badge label={status.label} color={status.color} />
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                          <p className="text-xs text-[#4F747C]">Available: <strong className={item.quantityAvailable <= (Number(item.lowStockAt) || 3) ? "text-amber-600" : "text-[#2B2B2B]"}>{item.quantityAvailable} {item.unitType}</strong></p>
+                          {item.cost !== "" && <p className="text-xs text-[#4F747C]">Cost: <strong>{fmt$(Number(item.cost))}</strong></p>}
+                          {item.supplier && <p className="text-xs text-[#4F747C]">Store: <strong>{item.supplier}</strong></p>}
+                          {item.usedForProductName && <p className="text-xs text-[#4F747C]">For: <strong>{item.usedForProductName}</strong></p>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Btn variant="ghost" onClick={() => startEditMaterial(item)}>Edit</Btn>
+                        {confirmMaterialDeleteId === item.id ? (
+                          <DeleteConfirm id={item.id} onConfirm={(id) => { deleteMaterialItem(id); setConfirmMaterialDeleteId(null); }} onCancel={() => setConfirmMaterialDeleteId(null)} />
+                        ) : (
+                          <Btn variant="danger" onClick={() => setConfirmMaterialDeleteId(item.id)}><X className="h-4 w-4" /></Btn>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -514,37 +924,83 @@ function InventoryTab() {
 
 interface SaleFormState {
   date: string;
-  inventoryItemId: string;
+  productChoice: string;
   customProductName: string;
   quantity: string;
   pricePerUnit: string;
+  buyer: string;
   note: string;
+  allowOversell: boolean;
 }
 
 function SalesTab() {
   const { data, addSale, deleteSale } = useTracker();
+  const savedProducts = useMemo(() => readSavedProducts(), []);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<SaleFormState>({ date: today(), inventoryItemId: "", customProductName: "", quantity: "", pricePerUnit: "", note: "" });
+  const [form, setForm] = useState<SaleFormState>({
+    date: today(),
+    productChoice: "",
+    customProductName: "",
+    quantity: "",
+    pricePerUnit: "",
+    buyer: "",
+    note: "",
+    allowOversell: false,
+  });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const isOther = form.inventoryItemId === "other";
-  const selectedItem = data.inventory.find((i) => i.id === form.inventoryItemId);
+  const isOther = form.productChoice === "other";
+  const selectedItem = form.productChoice.startsWith("inv:")
+    ? data.inventory.find((i) => i.id === form.productChoice.slice(4))
+    : null;
+  const selectedSavedProduct = form.productChoice.startsWith("saved:")
+    ? savedProducts.find((product) => product.id === form.productChoice.slice(6))
+    : null;
   const qty = parseFloat(form.quantity) || 0;
   const price = parseFloat(form.pricePerUnit) || 0;
   const lineTotal = qty * price;
   const totalRevenue = data.sales.reduce((s, sale) => s + sale.quantity * sale.pricePerUnit, 0);
   const totalUnits = data.sales.reduce((s, sale) => s + sale.quantity, 0);
+  const remaining = selectedItem ? selectedItem.quantityMade - selectedItem.quantitySold : null;
+  const oversellWarning = selectedItem && qty > 0 && remaining !== null && qty > remaining
+    ? `You only have ${Math.max(0, remaining)} ${selectedItem.name} left.`
+    : "";
+  const savedProductsNotInInventory = savedProducts.filter((product) => !data.inventory.some((item) => item.savedProductId === product.id));
 
-  function handleItemSelect(id: string) {
-    const item = data.inventory.find((i) => i.id === id);
-    setForm((f) => ({ ...f, inventoryItemId: id, pricePerUnit: item && item.sellingPrice !== "" ? String(item.sellingPrice) : f.pricePerUnit }));
+  function handleItemSelect(choice: string) {
+    const item = choice.startsWith("inv:") ? data.inventory.find((i) => i.id === choice.slice(4)) : null;
+    const savedProduct = choice.startsWith("saved:") ? savedProducts.find((product) => product.id === choice.slice(6)) : null;
+    setForm((f) => ({
+      ...f,
+      productChoice: choice,
+      allowOversell: false,
+      pricePerUnit:
+        item && item.sellingPrice !== ""
+          ? String(item.sellingPrice)
+          : savedProduct?.summary.sellingPrice
+            ? String(savedProduct.summary.sellingPrice)
+            : f.pricePerUnit,
+    }));
   }
 
   function handleAdd() {
-    const productName = isOther ? form.customProductName.trim() : selectedItem?.name ?? "";
+    const productName = isOther
+      ? form.customProductName.trim()
+      : selectedItem?.name ?? selectedSavedProduct?.productInfo.productName ?? "";
     if (!productName || qty <= 0 || price <= 0) return;
-    addSale({ date: form.date || today(), productName, inventoryItemId: isOther ? null : (form.inventoryItemId || null), quantity: qty, pricePerUnit: price, note: form.note.trim() });
-    setForm({ date: today(), inventoryItemId: "", customProductName: "", quantity: "", pricePerUnit: "", note: "" });
+    if (oversellWarning && !form.allowOversell) return;
+    addSale({
+      date: form.date || today(),
+      productName,
+      savedProductId: selectedSavedProduct?.id ?? selectedItem?.savedProductId ?? null,
+      inventoryItemId: selectedItem?.id ?? null,
+      quantity: qty,
+      pricePerUnit: price,
+      buyer: form.buyer.trim(),
+      note: form.note.trim(),
+      allowOversell: form.allowOversell,
+    });
+    setForm({ date: today(), productChoice: "", customProductName: "", quantity: "", pricePerUnit: "", buyer: "", note: "", allowOversell: false });
     setShowForm(false);
   }
 
@@ -573,9 +1029,10 @@ function SalesTab() {
               <input type="date" className={inputCls} value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
             </Field>
             <Field label="What did you sell?">
-              <select className={selectCls} value={form.inventoryItemId} onChange={(e) => handleItemSelect(e.target.value)}>
+              <select className={selectCls} value={form.productChoice} onChange={(e) => handleItemSelect(e.target.value)}>
                 <option value="">— Choose a product —</option>
-                {data.inventory.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+                {data.inventory.map((i) => <option key={i.id} value={`inv:${i.id}`}>{i.name}</option>)}
+                {savedProductsNotInInventory.map((product) => <option key={product.id} value={`saved:${product.id}`}>{product.productInfo.productName || "Untitled product"} (saved)</option>)}
                 <option value="other">Something else (type name)</option>
               </select>
             </Field>
@@ -592,17 +1049,33 @@ function SalesTab() {
                 <MoneyInput value={form.pricePerUnit} onChange={(v) => setForm((f) => ({ ...f, pricePerUnit: v }))} />
               </Field>
             </div>
+            {oversellWarning && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <p className="text-xs font-bold text-amber-700">{oversellWarning}</p>
+                <label className="mt-2 flex items-center gap-2 text-xs font-semibold text-amber-700">
+                  <input
+                    type="checkbox"
+                    checked={form.allowOversell}
+                    onChange={(e) => setForm((f) => ({ ...f, allowOversell: e.target.checked }))}
+                  />
+                  Record anyway
+                </label>
+              </div>
+            )}
             {qty > 0 && price > 0 && (
               <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2.5 flex items-center justify-between">
                 <p className="text-xs font-semibold text-green-700">Sale total</p>
                 <p className="text-sm font-extrabold text-green-700">{fmt$(lineTotal)}</p>
               </div>
             )}
+            <Field label="Buyer (optional)">
+              <input className={inputCls} placeholder="e.g. Maya, neighbor, school fair" value={form.buyer} onChange={(e) => setForm((f) => ({ ...f, buyer: e.target.value }))} />
+            </Field>
             <Field label="Note (optional)">
               <input className={inputCls} placeholder="e.g. Sold at the school fair" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
             </Field>
             <div className="flex gap-2">
-              <Btn onClick={handleAdd} variant="primary" disabled={!form.inventoryItemId || (isOther && !form.customProductName.trim()) || qty <= 0 || price <= 0}>Save Sale</Btn>
+              <Btn onClick={handleAdd} variant="primary" disabled={!form.productChoice || (isOther && !form.customProductName.trim()) || qty <= 0 || price <= 0 || Boolean(oversellWarning && !form.allowOversell)}>Save Sale</Btn>
               <Btn onClick={() => setShowForm(false)} variant="ghost">Cancel</Btn>
             </div>
           </div>
@@ -622,6 +1095,7 @@ function SalesTab() {
                       <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{fmt$(s.quantity * s.pricePerUnit)}</span>
                     </div>
                     <p className="text-xs text-[#4F747C] mt-0.5">{fmtDate(s.date)} · {s.quantity} × {fmt$(s.pricePerUnit)}</p>
+                    {s.buyer && <p className="text-xs text-[#4F747C] mt-0.5">Buyer: {s.buyer}</p>}
                     {s.note && <p className="text-xs text-[#71939B] mt-0.5 italic">"{s.note}"</p>}
                   </div>
                   {confirmDeleteId === s.id ? (
