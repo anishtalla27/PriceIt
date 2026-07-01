@@ -230,16 +230,27 @@ export default function PricingStrategyPage() {
               <LessonBox>
                 <h2 className="text-xl font-extrabold text-[#2B2B2B]">Enter competitor prices</h2>
                 <p className="mt-1 text-sm text-[#6F8A91]">Use prices from similar products. They do not need to be perfect.</p>
-                <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  {[
-                    ["Low competitor", lowPrice, setLowPrice],
-                    ["Average competitor", averagePrice, setAveragePrice],
-                    ["High competitor", highPrice, setHighPrice],
-                  ].map(([label, value, setter]) => (
-                    <label key={label as string} className="text-xs font-bold uppercase tracking-wider text-[#6F8A91]">
-                      {label as string}
-                      <input className="bauhaus-field-input mt-1" type="number" min="0" step={priceStep} value={value as number} onChange={(event) => (setter as (value: number) => void)(Math.max(0, Number(event.target.value) || 0))} />
-                    </label>
+                <div className="mt-4 flex flex-col gap-3">
+                  {([
+                    { label: "Low", dot: "#22c55e", value: lowPrice, setter: setLowPrice },
+                    { label: "Average", dot: "#F59E0B", value: averagePrice, setter: setAveragePrice },
+                    { label: "High", dot: "#F36C3D", value: highPrice, setter: setHighPrice },
+                  ] as const).map(({ label, dot, value, setter }) => (
+                    <div key={label} className="flex items-center gap-3 rounded-2xl border border-[#E0EFF1] bg-[#F7FCFD] px-4 py-3">
+                      <span className="h-2.5 w-2.5 flex-none rounded-full" style={{ backgroundColor: dot }} />
+                      <span className="w-16 text-xs font-bold uppercase tracking-wider text-[#6F8A91]">{label}</span>
+                      <div className="flex flex-1 items-center gap-1">
+                        <span className="text-sm font-bold text-[#6F8A91]">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step={priceStep}
+                          value={value}
+                          onChange={(e) => setter(Math.max(0, Number(e.target.value) || 0))}
+                          className="w-full rounded-xl border border-[#A9DDE3] bg-white px-3 py-2 text-sm font-bold text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#5DB7C4]"
+                        />
+                      </div>
+                    </div>
                   ))}
                 </div>
               </LessonBox>
